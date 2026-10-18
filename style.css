@@ -33,11 +33,11 @@ body {
   padding: 16px;
 }
 
-/* 機台區：用 container query 讓機台同時不超過寬和高 */
+/* 機台區：實際寬高由 game.js 依可見範圍計算（fitLayout），這裡只負責置中 */
 .stage {
-  container-type: size;
-  flex: 0 1 calc((100dvh - 32px) * 520 / 1054);
+  flex: 0 1 auto;
   min-width: 0;
+  min-height: 0;
   height: 100%;
   display: flex;
   align-items: center;
@@ -46,7 +46,9 @@ body {
 
 .cabinet {
   position: relative;
-  width: min(100cqw, 100cqh * 520 / 1054);
+  flex-shrink: 0;
+  height: 100%;
+  max-width: 100%;
   aspect-ratio: var(--cabinet-ratio);
   border-radius: 12px;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
@@ -299,6 +301,6 @@ kbd {
     align-items: center;
   }
 
-  .stage { flex: 1 1 auto; min-height: 0; width: 100%; }
+  .stage { flex: 1 1 auto; width: 100%; }
   .panel { display: none; }
 }

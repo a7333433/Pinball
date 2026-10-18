@@ -1462,6 +1462,28 @@
   $('lock-btn').addEventListener('click', lockLights);
   window.addEventListener('blur', release);
 
+  // 依「實際看得到的範圍」縮放機台：手機瀏覽器的網址列、工具列會吃掉高度，
+  // 單靠 CSS 的 100vh / 100dvh 在部分瀏覽器會把機台底部切掉
+  const appEl = document.querySelector('.app');
+  const stageEl = document.querySelector('.stage');
+  const cabinetEl = document.querySelector('.cabinet');
+  function fitLayout() {
+    const vv = window.visualViewport;
+    const vh = Math.min(window.innerHeight, vv ? vv.height : Infinity);
+    appEl.style.height = Math.floor(vh) + 'px';
+    // 桌機有右側面板時，機台寬度 = 視窗寬 - 左右 padding - 間距 - 面板寬；手機版直接用機台區的寬
+    const panel = document.querySelector('.panel');
+    const availW = panel.offsetWidth ? appEl.clientWidth - 32 - 24 - panel.offsetWidth : stageEl.clientWidth;
+    const availH = stageEl.clientHeight;
+    const w = Math.max(1, Math.floor(Math.min(availW, availH * W / H)));
+    cabinetEl.style.width = w + 'px';
+    cabinetEl.style.height = Math.floor(w * H / W) + 'px';
+  }
+  window.addEventListener('resize', fitLayout);
+  window.addEventListener('orientationchange', () => setTimeout(fitLayout, 200));
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', fitLayout);
+  fitLayout();
+
   if ('ResizeObserver' in window) new ResizeObserver(resize).observe(canvas);
   window.addEventListener('resize', resize);
   resize();
