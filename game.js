@@ -1062,7 +1062,7 @@
     c.beginPath();
     c.rect(34, 184, 452, 652);
     c.clip();
-    const streaks = [[70, 110, 0.13], [250, 40, 0.07], [360, 24, 0.06]];
+    const streaks = [[70, 110, 0.13]];   // 只留左邊一道反光
     for (const [x, w, a] of streaks) {
       const g = c.createLinearGradient(x, 0, x + w, 0);
       g.addColorStop(0, 'rgba(255,255,255,0)');
