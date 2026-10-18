@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>柑仔店彈珠台</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <div class="cabinet">
+      <canvas id="board" aria-label="糖果彈珠台遊戲畫面"></canvas>
+      <div id="overlay" class="overlay">
+        <div class="overlay-card">
+          <h2>柑仔店彈珠台</h2>
+          <p>投一枚硬幣，換 20 顆彈珠！</p>
+          <button id="overlay-coin" class="btn coin">投幣開始</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <h1 class="sign">柑仔店<br><span>彈珠台</span></h1>
+
+      <div class="stats">
+        <div class="stat"><span class="label">持有彈珠</span><span id="credits" class="value">0</span></div>
+        <div class="stat"><span class="label">投珠數</span><span id="bet" class="value">0</span></div>
+        <div class="stat"><span class="label">倍率</span><span id="mult" class="value">×2</span></div>
+        <div class="stat"><span class="label">上局得珠</span><span id="win" class="value">-</span></div>
+        <div class="stat"><span class="label">最高分</span><span id="best-win" class="value">0</span></div>
+        <div class="stat"><span class="label">最多持珠</span><span id="best" class="value">0</span></div>
+      </div>
+
+      <p id="msg" class="msg" aria-live="polite">請投幣換彈珠</p>
+
+      <div class="power">
+        <span class="label">力道</span>
+        <div class="power-bar"><div id="power-fill"></div></div>
+      </div>
+
+      <div class="buttons">
+        <button id="mult-btn" class="btn">投倍率孔 <kbd>X</kbd></button>
+        <button id="lock-btn" class="btn lock">定燈 <kbd>D</kbd></button>
+        <button id="bet-btn" class="btn">投珠孔 <kbd>B</kbd></button>
+        <button id="fire" class="btn fire">按住拉彈簧 <kbd>空白</kbd></button>
+        <button id="coin" class="btn coin">投幣 <kbd>C</kbd></button>
+        <button id="mute" class="btn" aria-label="切換音效">🔊</button>
+      </div>
+
+      <section class="help">
+        <h3>玩法</h3>
+        <ol>
+          <li>投幣換 20 顆彈珠，會從出珠口掉進下方托盤。</li>
+          <li>每局開始時，底部落獎區的燈會一直隨機閃。這時可以往「倍率孔」投珠：倍率分 2、4、6、8、10 倍，每升一段直接扣 2 顆，手上不足 2 顆就不能升；倍率越高，定燈後亮的燈越少（2 倍亮 5 顆，10 倍只亮 1 顆）。</li>
+          <li>按下<strong>藍色按鈕</strong>定燈，決定這一局哪幾排有獎。定燈後就不能再投倍率孔。</li>
+          <li>定燈後往「投珠孔」投珠，投幾顆都可以，左上角數字顯示投了幾顆。</li>
+          <li>在檯面上按住滑鼠（或空白鍵）拉彈簧，放開發射，按越久彈越遠。</li>
+          <li>鋼珠落進<strong>有亮燈的那一排</strong>才算中，得珠 = 倍率 × 投珠數，從出珠口掉出來。</li>
+        </ol>
+      </section>
+    </aside>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>
