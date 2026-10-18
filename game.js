@@ -8,6 +8,86 @@
   const COIN_BALLS = 20;      // 投一次幣換幾顆彈珠
   const SLOT_COUNT = 11;      // 底部落點數，每一排一顆 LED
 
+
+  // ===== 語言（中文 / English） =====
+  const I18N = {
+    zh: {
+      title: '柑仔店彈珠台',
+      selectHint: '燈在閃：可投倍率孔加倍，按藍色按鈕定燈',
+      insertCoin: '請投幣換彈珠',
+      lockedAlready: '燈已經定了，往投珠孔投珠再發射',
+      roundNotOver: '這一局還沒結束',
+      locked: '定燈！{mult} 倍，亮 {lit} 顆。往投珠孔投珠，再拉彈簧發射',
+      noBalls: '彈珠不夠了，請投幣',
+      betBeforeLock: '燈還在閃，先按藍色按鈕定燈才能投珠',
+      inPlay: '鋼珠已發射，請等這一局結束',
+      betInfo: '投珠 {bet} 顆 × {mult} 倍，中了得 {win} 顆',
+      multLocked: '燈已經定了，這一局不能再投倍率孔',
+      multMax: '倍率最高 {max} 倍',
+      multShort: '彈珠不足 {cost} 顆，不能提升倍率',
+      multUp: '{mult} 倍！定燈後亮 {lit} 顆，按藍色按鈕定燈',
+      winPop: '+{win} 顆',
+      winMsg: '中了！{mult} 倍 × {bet} 顆 = {win} 顆',
+      losePop: '銘謝惠顧',
+      loseMsg: '沒落在亮燈的那一排，銘謝惠顧',
+      rolledBack: '力道不夠，鋼珠滾回來了，再按一次發射',
+      lockFirst: '先按藍色按鈕定燈，再投珠發射',
+      betFirst: '請先投珠再按發射鈕',
+      fired: '發射！',
+      moreBalls: '另有 {n} 顆',
+      hintMult: '加倍', hintLock: '定燈', hintBet: '投珠', hintPull: '拉桿發射',
+      cvBet: '投珠', cvBalls: '顆', cvLit: '亮{n}燈', cvMultHole: '倍率孔', cvBetHole: '投珠孔',
+      cvLock: '定燈', cvPull: '拉桿', cvChute: '出珠口', cvDisplay: '持珠',
+      coin: '投幣', overlayText: '投一枚硬幣，換 20 顆彈珠！', overlayCoin: '投幣開始', howTo: '玩法說明',
+      sign: '柑仔店<br><span>彈珠台</span>', stCredits: '持有彈珠', stBet: '投珠數', stMult: '倍率',
+      stWin: '上局得珠', stBestWin: '最高分', stBest: '最多持珠', power: '力道',
+      btnMult: '投倍率孔', btnLock: '定燈', btnBet: '投珠孔', btnFire: '按住拉彈簧',
+      langBtn: 'English', langShort: 'EN', close: '關閉',
+    },
+    en: {
+      title: 'Candy Pinball',
+      selectHint: 'Raise the multiplier, then press blue to lock',
+      insertCoin: 'Insert a coin to get balls',
+      lockedAlready: 'Already locked. Bet, then shoot',
+      roundNotOver: 'This round isn\'t over yet',
+      locked: 'Locked! ×{mult}, {lit} lit. Bet, then pull to shoot',
+      noBalls: 'Out of balls: insert a coin',
+      betBeforeLock: 'Press blue to lock before betting',
+      inPlay: 'Ball in play. Wait for the result',
+      betInfo: 'Bet {bet} × {mult}: win pays {win}',
+      multLocked: 'Locked. No more multiplier this round',
+      multMax: 'Max multiplier is ×{max}',
+      multShort: 'Need {cost} balls to raise the multiplier',
+      multUp: '×{mult}! {lit} lit after locking',
+      winPop: '+{win}',
+      winMsg: 'Win! ×{mult} × {bet} = {win} balls',
+      losePop: 'No luck',
+      loseMsg: 'Missed the lit lanes. No luck',
+      rolledBack: 'Too weak, ball rolled back. Shoot again',
+      lockFirst: 'Press blue to lock first',
+      betFirst: 'Bet first, then shoot',
+      fired: 'Fire!',
+      moreBalls: '+{n} more',
+      hintMult: 'Multiply', hintLock: 'Lock', hintBet: 'Bet', hintPull: 'Pull to shoot',
+      cvBet: 'BET', cvBalls: 'balls', cvLit: '{n} lit', cvMultHole: 'MULTIPLY', cvBetHole: 'BET',
+      cvLock: 'LOCK', cvPull: 'PULL', cvChute: 'PAYOUT', cvDisplay: 'BALLS',
+      coin: 'Coin', overlayText: 'Insert a coin for 20 balls!', overlayCoin: 'Insert coin', howTo: 'How to play',
+      sign: 'Candy<br><span>Pinball</span>', stCredits: 'Balls', stBet: 'Bet', stMult: 'Multiplier',
+      stWin: 'Last win', stBestWin: 'High score', stBest: 'Most balls', power: 'Power',
+      btnMult: 'Multiply', btnLock: 'Lock', btnBet: 'Bet', btnFire: 'Hold to pull',
+      langBtn: '中文', langShort: '中', close: 'Close',
+    },
+  };
+  let lang = 'zh';
+  try {
+    const saved = localStorage.getItem('candy-pinball-lang');
+    lang = saved === 'en' || saved === 'zh' ? saved : (/^zh/i.test(navigator.language || '') ? 'zh' : 'en');
+  } catch (e) { lang = /^zh/i.test(navigator.language || '') ? 'zh' : 'en'; }
+  function t(key, vars = {}) {
+    const s = I18N[lang][key] ?? I18N.zh[key] ?? key;
+    return s.replace(/\{(\w+)\}/g, (_, k) => vars[k]);
+  }
+
   // ===== 機台尺寸（邏輯座標，畫布會依螢幕縮放） =====
   const W = 520, H = 1054;
   const BALL_R = 7;
@@ -31,8 +111,8 @@
   const SUBSTEPS = 8;
 
   const HOLES = {
-    bet: { x: 462, y: 980, r: 19, label: '投珠' },     // 拉桿下方，白邊黑心的圓孔
-    mult: { x: 448, y: 108, label: '倍率' },           // 上方金屬板
+    bet: { x: 462, y: 980, r: 19 },     // 拉桿下方，白邊黑心的圓孔
+    mult: { x: 448, y: 108 },           // 上方金屬板
   };
   const KNOB_Y = 854;               // 前面板上的拉桿把手
   const CHUTE = { x: 92, y: 914 };
@@ -232,27 +312,30 @@
     round.landSlot = -1;
     rollLit(litFor(0));
     if (!ball) ball = { x: PLUNGER_X, y: SHOOTER_FLOOR - BALL_R - 1, vx: 0, vy: 0, still: 0 };
-    say(state.credits > 0 || state.payoutQueue > 0 ? SELECT_HINT : '請投幣換彈珠');
+    say(state.credits > 0 || state.payoutQueue > 0 ? 'selectHint' : 'insertCoin');
   }
-
-  const SELECT_HINT = '燈在閃：可投倍率孔加倍，按藍色按鈕定燈';
 
   // 藍色按鈕：停止閃燈，決定這一局的落獎點
   function lockLights() {
     Sound.init();
     state.buttonT = 0.15;
     if (round.phase !== 'select') {
-      say(round.phase === 'bet' ? '燈已經定了，往投珠孔投珠再發射' : '這一局還沒結束');
+      say(round.phase === 'bet' ? 'lockedAlready' : 'roundNotOver');
       Sound.error();
       return;
     }
     rollLit(litFor(round.level));
     round.phase = 'bet';
     Sound.lock();
-    say(`定燈！${mult()} 倍，亮 ${round.lit.size} 顆。往投珠孔投珠，再拉彈簧發射`);
+    say('locked', { mult: mult(), lit: round.lit.size });
   }
 
-  function say(text) { for (const el of msgEls) el.textContent = text; }
+  let lastMsg = ['insertCoin', {}];
+  function say(key, vars = {}) {
+    lastMsg = [key, vars];
+    const text = t(key, vars);
+    for (const el of msgEls) el.textContent = text;
+  }
 
   function takeBall(hole, delay = 0) {
     state.credits--;
@@ -268,35 +351,35 @@
 
   function hasCredits() {
     if (state.credits > 0) return true;
-    say('彈珠不夠了，請投幣');
+    say('noBalls');
     Sound.error();
     return false;
   }
 
   function addBet() {
     Sound.init();
-    if (round.phase === 'select') { say('燈還在閃，先按藍色按鈕定燈才能投珠'); Sound.error(); return; }
-    if (round.phase !== 'bet') { say('鋼珠已發射，請等這一局結束'); Sound.error(); return; }
+    if (round.phase === 'select') { say('betBeforeLock'); Sound.error(); return; }
+    if (round.phase !== 'bet') { say('inPlay'); Sound.error(); return; }
     if (!hasCredits()) return;
     takeBall(HOLES.bet);
     round.bet++;
     Sound.clunk();
-    say(`投珠 ${round.bet} 顆 × ${mult()} 倍，中了得 ${round.bet * mult()} 顆`);
+    say('betInfo', { bet: round.bet, mult: mult(), win: round.bet * mult() });
   }
 
   function addMult() {
     Sound.init();
-    if (round.phase !== 'select') { say('燈已經定了，這一局不能再投倍率孔'); Sound.error(); return; }
-    if (round.level >= MULTS.length - 1) { say(`倍率最高 ${MULTS[MULTS.length - 1]} 倍`); Sound.error(); return; }
+    if (round.phase !== 'select') { say('multLocked'); Sound.error(); return; }
+    if (round.level >= MULTS.length - 1) { say('multMax', { max: MULTS[MULTS.length - 1] }); Sound.error(); return; }
     if (state.credits < MULT_COST) {
-      say(`彈珠不足 ${MULT_COST} 顆，不能提升倍率`);
+      say('multShort', { cost: MULT_COST });
       Sound.error();
       return;
     }
     for (let i = 0; i < MULT_COST; i++) takeBall(HOLES.mult, i * 0.12);
     Sound.clunk();
     round.level++;
-    say(`${mult()} 倍！定燈後亮 ${litFor(round.level)} 顆，按藍色按鈕定燈`);
+    say('multUp', { mult: mult(), lit: litFor(round.level) });
   }
 
   function insertCoin() {
@@ -305,7 +388,7 @@
     state.payoutQueue += COIN_BALLS;
     state.started = true;
     overlay.classList.add('hidden');
-    if (round.phase === 'select') say(SELECT_HINT);
+    if (round.phase === 'select') say('selectHint');
   }
 
   function land(slot) {
@@ -322,14 +405,14 @@
         state.bestWin = win;
         saveRecord('candy-pinball-best-win', win);
       }
-      popups.push({ x: px, y: SLOT_TOP - 16, text: `+${win} 顆`, t: 0, color: '#ffd166' });
-      say(`中了！${mult()} 倍 × ${round.bet} 顆 = ${win} 顆`);
+      popups.push({ x: px, y: SLOT_TOP - 16, text: t('winPop', { win }), t: 0, color: '#ffd166' });
+      say('winMsg', { mult: mult(), bet: round.bet, win });
       Sound.win();
     } else {
       round.phase = 'lose';
       state.lastWin = 0;
-      popups.push({ x: px, y: SLOT_TOP - 16, text: '銘謝惠顧', t: 0, color: '#cbd5e1' });
-      say('沒落在亮燈的那一排，銘謝惠顧');
+      popups.push({ x: px, y: SLOT_TOP - 16, text: t('losePop'), t: 0, color: '#cbd5e1' });
+      say('loseMsg');
       Sound.lose();
     }
   }
@@ -388,7 +471,7 @@
       if (b.vy > 0) {
         if (b.vy > 150) {
           Sound.thud();
-          if (round.phase === 'flying') say('力道不夠，鋼珠滾回來了，再按一次發射');
+          if (round.phase === 'flying') say('rolledBack');
         }
         b.vy = -b.vy * 0.15;
       }
@@ -524,12 +607,12 @@
     Sound.init();
     if (!ballAtShooter()) return;
     if (round.phase === 'select') {
-      say('先按藍色按鈕定燈，再投珠發射');
+      say('lockFirst');
       Sound.error();
       return;
     }
     if (round.phase === 'bet' && round.bet === 0) {
-      say(state.credits > 0 ? '請先投珠再按發射鈕' : '請投幣換彈珠');
+      say(state.credits > 0 ? 'betFirst' : 'insertCoin');
       Sound.error();
       return;
     }
@@ -549,7 +632,7 @@
       ball.vx = 0;
       round.phase = 'flying';
       Sound.spring(p);
-      say('發射！');
+      say('fired');
     }
   }
 
@@ -694,27 +777,37 @@
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     // 左邊：投珠數（數字顯示）
-    c.font = `bold 15px ${KAI}`;
-    c.fillText('投', 60, 48);
-    c.fillText('珠', 60, 64);
+    if (lang === 'zh') {
+      c.font = `bold 15px ${KAI}`;
+      c.fillText('投', 60, 48);
+      c.fillText('珠', 60, 64);
+    } else {
+      c.font = `bold 14px ${SANS}`;
+      c.fillText(t('cvBet'), 60, 58);
+    }
     roundRect(c, BET_BOX.x, BET_BOX.y, BET_BOX.w, BET_BOX.h, 4);
     c.fillStyle = '#0b0b0b';
     c.fill();
     c.fillStyle = '#1a1a1a';
-    c.font = `bold 15px ${KAI}`;
-    c.fillText('顆', 60, 132);
+    c.font = lang === 'zh' ? `bold 15px ${KAI}` : `bold 12px ${SANS}`;
+    c.fillText(t('cvBalls'), 60, 132);
     c.strokeStyle = 'rgba(0,0,0,0.25)';
     c.beginPath(); c.moveTo(88, 40); c.lineTo(88, 154); c.stroke();
     // 右邊：倍率欄（毛筆字）
     for (let j = 0; j < MULTS.length; j++) {
       const x = multColX(j);
       c.fillStyle = '#111';
-      c.font = `bold 30px ${KAI}`;
-      c.fillText(MULT_COLS[j][0], x, 62);
-      c.fillText(MULT_COLS[j][1], x, 96);
+      if (lang === 'zh') {
+        c.font = `bold 30px ${KAI}`;
+        c.fillText(MULT_COLS[j][0], x, 62);
+        c.fillText(MULT_COLS[j][1], x, 96);
+      } else {
+        c.font = `bold 28px Georgia, "Times New Roman", serif`;
+        c.fillText('×' + MULTS[j], x, 80);
+      }
       c.font = `bold 13px ${SANS}`;
       c.fillStyle = '#7a1010';
-      c.fillText(`亮${litFor(j)}燈`, x, 124);
+      c.fillText(t('cvLit', { n: litFor(j) }), x, 124);
       led(c, x, 146, 5, false);
     }
     // 金屬投珠板
@@ -731,7 +824,7 @@
       const hole = HOLES.mult;
       c.fillStyle = '#333';
       c.font = `bold 13px ${SANS}`;
-      c.fillText(hole.label + '孔', hole.x, hole.y - 20);
+      c.fillText(t('cvMultHole'), hole.x, hole.y - 20);
       roundRect(c, hole.x - 22, hole.y - 7, 44, 14, 7);
       c.fillStyle = '#0d0d0d';
       c.fill();
@@ -840,7 +933,7 @@
     screw(c, BUTTON.x - 24, BUTTON.y + 24); screw(c, BUTTON.x + 24, BUTTON.y + 24);
     c.fillStyle = '#3b2412';
     c.font = `bold 11px ${SANS}`;
-    c.fillText('定燈', BUTTON.x, BUTTON.y + 39);
+    c.fillText(t('cvLock'), BUTTON.x, BUTTON.y + 39);
     // 拉桿導槽
     roundRect(c, PLUNGER_X - 16, 844, 32, 72, 6);
     c.fillStyle = chrome;
@@ -850,8 +943,16 @@
     c.fill();
     c.fillStyle = '#3b2412';
     c.font = `bold 11px ${SANS}`;
-    c.fillText('拉', PLUNGER_X - 26, 870);
-    c.fillText('桿', PLUNGER_X - 26, 884);
+    if (lang === 'zh') {
+      c.fillText('拉', PLUNGER_X - 26, 870);
+      c.fillText('桿', PLUNGER_X - 26, 884);
+    } else {
+      c.save();
+      c.translate(PLUNGER_X - 26, 877);
+      c.rotate(-Math.PI / 2);
+      c.fillText(t('cvPull'), 0, 0);
+      c.restore();
+    }
     // 出珠口
     roundRect(c, CHUTE.x - 26, 890, 52, 30, 5);
     c.fillStyle = chrome;
@@ -861,7 +962,7 @@
     c.fill();
     c.fillStyle = '#3b2412';
     c.font = `bold 11px ${SANS}`;
-    c.fillText('出珠口', CHUTE.x, 880);
+    c.fillText(t('cvChute'), CHUTE.x, 880);
     // 持珠顯示器
     roundRect(c, DISPLAY.x, DISPLAY.y, DISPLAY.w, DISPLAY.h, 4);
     c.fillStyle = '#0b0b0b';
@@ -872,7 +973,7 @@
     c.fillStyle = '#9ca3af';
     c.font = `10px ${SANS}`;
     c.textAlign = 'left';
-    c.fillText('持珠', DISPLAY.x + 6, DISPLAY.y + 10);
+    c.fillText(t('cvDisplay'), DISPLAY.x + 6, DISPLAY.y + 10);
     c.textAlign = 'center';
 
     // ---- 托盤：不鏽鋼盤身、後壁、拉絲盤底（前緣在動態層畫，才能蓋住珠子） ----
@@ -948,7 +1049,7 @@
       c.font = `bold 12px ${SANS}`;
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      c.fillText(hole.label + '孔', hole.x, hole.y + hole.r + 14);
+      c.fillText(t('cvBetHole'), hole.x, hole.y + hole.r + 14);
     }
   }
 
@@ -1216,24 +1317,24 @@
   }
 
   // 每個階段閃爍下一步要按的地方；開始拉桿後就不提示
-  function drawHints(t) {
+  function drawHints(time) {
     if (state.charging || !state.started) return;
     if (round.phase === 'select') {
       const m = HOLES.mult;
       if (state.credits >= MULT_COST && round.level < MULTS.length - 1) {
-        hintRect(t, m.x - 34, m.y - 34, 68, 50);
-        hintBubble(t, m.x, m.y + 22, 'below', '加倍');
+        hintRect(time, m.x - 34, m.y - 34, 68, 50);
+        hintBubble(time, m.x, m.y + 22, 'below', t('hintMult'));
       }
-      hintCircle(t, BUTTON.x, BUTTON.y, BUTTON.r + 8);
-      hintBubble(t, BUTTON.x, BUTTON.y - BUTTON.r - 12, 'above', '定燈');
+      hintCircle(time, BUTTON.x, BUTTON.y, BUTTON.r + 8);
+      hintBubble(time, BUTTON.x, BUTTON.y - BUTTON.r - 12, 'above', t('hintLock'));
     } else if (round.phase === 'bet') {
       const b = HOLES.bet;
-      if (state.credits > 0) hintCircle(t, b.x, b.y, b.r + 5);
+      if (state.credits > 0) hintCircle(time, b.x, b.y, b.r + 5);
       if (round.bet === 0) {
-        hintBubble(t, b.x - b.r - 8, b.y, 'left', '投珠');
+        hintBubble(time, b.x - b.r - 8, b.y, 'left', t('hintBet'));
       } else if (ballAtShooter()) {
-        hintCircle(t, PLUNGER_X, KNOB_Y, 15);
-        hintBubble(t, PLUNGER_X - 20, KNOB_Y, 'left', '拉桿發射');
+        hintCircle(time, PLUNGER_X, KNOB_Y, 15);
+        hintBubble(time, PLUNGER_X - 20, KNOB_Y, 'left', t('hintPull'));
       }
     }
   }
@@ -1301,7 +1402,7 @@
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#374151';
-      ctx.fillText(`另有 ${hidden} 顆`, 398, 1041);
+      ctx.fillText(t('moreBalls', { n: hidden }), 398, 1041);
     }
   }
 
@@ -1393,6 +1494,7 @@
       case 'KeyC': case 'Enter': e.preventDefault(); insertCoin(); break;
       case 'KeyM': toggleMute(); break;
       case 'KeyH': openHelp(); break;
+      case 'KeyL': toggleLang(); break;
     }
   });
   window.addEventListener('keyup', e => {
@@ -1451,15 +1553,32 @@
     for (const el of byAction('mute')) el.textContent = Sound.muted ? '🔇' : '🔊';
   }
 
+  // 切換語言：更新頁面文字、重畫機台上的字、重新顯示目前的訊息
+  function applyLang() {
+    document.documentElement.lang = lang === 'zh' ? 'zh-Hant-TW' : 'en';
+    document.title = t('title');
+    for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
+    for (const el of document.querySelectorAll('[data-i18n-html]')) el.innerHTML = t(el.dataset.i18nHtml);
+    for (const el of document.querySelectorAll('[data-lang]')) el.hidden = el.dataset.lang !== lang;
+    drawStatic();
+    say(...lastMsg);
+  }
+
+  function toggleLang() {
+    lang = lang === 'zh' ? 'en' : 'zh';
+    try { localStorage.setItem('candy-pinball-lang', lang); } catch (e) { /* 無痕模式 */ }
+    applyLang();
+  }
+
   function openHelp() {
     release();
-    $('help-best-win').textContent = state.bestWin;
-    $('help-best').textContent = state.best;
+    for (const el of document.querySelectorAll('[data-record]')) el.textContent = state[el.dataset.record];
     helpDlg.showModal();
   }
 
   for (const el of byAction('coin')) el.addEventListener('click', insertCoin);
   for (const el of byAction('help')) el.addEventListener('click', openHelp);
+  for (const el of byAction('lang')) el.addEventListener('click', toggleLang);
   for (const el of byAction('mute')) el.addEventListener('click', toggleMute);
   helpDlg.addEventListener('click', e => { if (e.target === helpDlg) helpDlg.close(); });   // 點背景關閉
   $('overlay-coin').addEventListener('click', insertCoin);
@@ -1495,6 +1614,7 @@
   window.addEventListener('resize', resize);
   resize();
   newRound();
+  applyLang();
 
   let last = performance.now();
   function frame(now) {
