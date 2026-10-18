@@ -252,7 +252,7 @@
     say(`定燈！${mult()} 倍，亮 ${round.lit.size} 顆。往投珠孔投珠，再拉彈簧發射`);
   }
 
-  function say(text) { msgEl.textContent = text; }
+  function say(text) { for (const el of msgEls) el.textContent = text; }
 
   function takeBall(hole, delay = 0) {
     state.credits--;
@@ -1236,10 +1236,12 @@
   // ===== 介面 =====
   const $ = id => document.getElementById(id);
   const overlay = $('overlay');
-  const msgEl = $('msg');
+  const msgEls = document.querySelectorAll('[data-msg]');   // 手機精簡列和桌機面板各一個
+  const helpDlg = $('help');
   const creditsEl = $('credits'), betEl = $('bet'), multEl = $('mult'), winEl = $('win'), bestEl = $('best'), bestWinEl = $('best-win');
   const powerEl = $('power-fill');
-  const fireBtn = $('fire'), muteBtn = $('mute');
+  const fireBtn = $('fire');
+  const byAction = name => document.querySelectorAll(`[data-action="${name}"]`);
   const shown = {};
 
   function setText(el, key, val) {
@@ -1257,6 +1259,7 @@
   }
 
   window.addEventListener('keydown', e => {
+    if (helpDlg.open) return;   // 說明視窗開著時不操作機台（Esc 會關閉視窗）
     if (e.target instanceof HTMLButtonElement && (e.code === 'Space' || e.code === 'Enter')) e.preventDefault();
     if (e.repeat) return;
     switch (e.code) {
@@ -1266,6 +1269,7 @@
       case 'KeyD': lockLights(); break;
       case 'KeyC': case 'Enter': e.preventDefault(); insertCoin(); break;
       case 'KeyM': toggleMute(); break;
+      case 'KeyH': openHelp(); break;
     }
   });
   window.addEventListener('keyup', e => {
@@ -1291,7 +1295,7 @@
     else if (target === 'mult') addMult();
     else if (target === 'button') lockLights();
     else {
-      canvas.setPointerCapture?.(e.pointerId);
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 指標已失效時不影響蓄力 */ }
       startCharge();
     }
   });
@@ -1303,7 +1307,7 @@
 
   fireBtn.addEventListener('pointerdown', e => {
     e.preventDefault();
-    fireBtn.setPointerCapture?.(e.pointerId);
+    try { fireBtn.setPointerCapture(e.pointerId); } catch (err) { /* 同上 */ }
     fireBtn.classList.add('pressed');
     startCharge();
   });
@@ -1313,15 +1317,24 @@
 
   function toggleMute() {
     Sound.muted = !Sound.muted;
-    muteBtn.textContent = Sound.muted ? '🔇' : '🔊';
+    for (const el of byAction('mute')) el.textContent = Sound.muted ? '🔇' : '🔊';
   }
 
-  $('coin').addEventListener('click', insertCoin);
+  function openHelp() {
+    release();
+    $('help-best-win').textContent = state.bestWin;
+    $('help-best').textContent = state.best;
+    helpDlg.showModal();
+  }
+
+  for (const el of byAction('coin')) el.addEventListener('click', insertCoin);
+  for (const el of byAction('help')) el.addEventListener('click', openHelp);
+  for (const el of byAction('mute')) el.addEventListener('click', toggleMute);
+  helpDlg.addEventListener('click', e => { if (e.target === helpDlg) helpDlg.close(); });   // 點背景關閉
   $('overlay-coin').addEventListener('click', insertCoin);
   $('bet-btn').addEventListener('click', addBet);
   $('mult-btn').addEventListener('click', addMult);
   $('lock-btn').addEventListener('click', lockLights);
-  muteBtn.addEventListener('click', toggleMute);
   window.addEventListener('blur', release);
 
   if ('ResizeObserver' in window) new ResizeObserver(resize).observe(canvas);
