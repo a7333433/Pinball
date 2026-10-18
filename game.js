@@ -9,23 +9,23 @@
   const SLOT_COUNT = 11;      // 底部落點數，每一排一顆 LED
 
   // ===== 機台尺寸（邏輯座標，畫布會依螢幕縮放） =====
-  const W = 520, H = 1124;
+  const W = 520, H = 1054;
   const BALL_R = 7;
   const PIN_R = 2.6;
   const CAP_R = 5;                  // 橘色膠頭釘
   const GRAVITY = 620;
-  const B = { left: 40, right: 480, top: 190, bottom: 790 };
+  const B = { left: 40, right: 480, top: 190, bottom: 720 };
   const LANE_X = 456;               // 發射軌道內牆
   const ARC = { x: 392, y: 278, r: 88 };      // 右上角發射彎軌（外圈）
   const INNER_R = 64;                          // 彎軌內圈
   const INNER_END = -70 * Math.PI / 180;
   const CORNER = { x: 95, y: 245, r: 55 };    // 左上圓角
-  const SLOT_TOP = 590, SLOT_FLOOR = 760;
+  const SLOT_TOP = 590, SLOT_FLOOR = 690;
   const SLOT_W = (LANE_X - B.left) / SLOT_COUNT;
-  const LED_Y = 728;
-  const SHOOTER_FLOOR = 800;        // 彈簧頭放鬆時的位置
+  const LED_Y = 658;
+  const SHOOTER_FLOOR = 730;        // 彈簧頭放鬆時的位置
   const SPRING_TRAVEL = 60;         // 彈簧最多拉下多少
-  const LANE_BOTTOM = 904;          // 發射軌道一路延伸到下方
+  const LANE_BOTTOM = 834;          // 發射軌道一路延伸到下方
   const PLUNGER_X = (LANE_X + B.right) / 2;
   const MAX_SPEED = 1500;
   const SUBSTEPS = 8;
@@ -34,14 +34,14 @@
     bet: { x: 448, y: 80, label: '投珠' },
     mult: { x: 448, y: 136, label: '倍率' },
   };
-  const KNOB_Y = 924;               // 前面板上的拉桿把手
-  const CHUTE = { x: 92, y: 984 };
+  const KNOB_Y = 854;               // 前面板上的拉桿把手
+  const CHUTE = { x: 92, y: 914 };
   // 托盤：從斜上方看的不鏽鋼盤，y 方向是盤子的深度（往前傾）
-  const TRAY = { left: 34, right: 486, back: 1004, front: 1104 };
+  const TRAY = { left: 34, right: 486, back: 934, front: 1034 };
   const TRAY_TILT = 260;            // 盤子往前傾，珠子會滾到前緣
   const TRAY_CAP = 220;             // 托盤最多畫幾顆，超過只加數字
-  const DISPLAY = { x: 272, y: 926, w: 110, h: 46 };
-  const BUTTON = { x: 196, y: 946, r: 20 };   // 藍色定燈按鈕
+  const DISPLAY = { x: 272, y: 856, w: 110, h: 46 };
+  const BUTTON = { x: 196, y: 876, r: 20 };   // 藍色定燈按鈕
 
   function mulberry32(a) {
     return function () {
@@ -545,7 +545,7 @@
     state.floorY = SHOOTER_FLOOR;
     if (ballAtShooter()) {
       ball.y = Math.min(ball.y, SHOOTER_FLOOR - BALL_R);
-      ball.vy = -(640 + 680 * p);
+      ball.vy = -(600 + 640 * p);
       ball.vx = 0;
       round.phase = 'flying';
       Sound.spring(p);
@@ -741,9 +741,9 @@
 
     // ---- 遊戲檯面 ----
     c.fillStyle = '#5a3818';
-    c.fillRect(28, 178, 464, 734);
+    c.fillRect(28, 178, 464, 664);
     c.fillStyle = '#ebe9e3';
-    c.fillRect(34, 184, 452, 722);
+    c.fillRect(34, 184, 452, 652);
     c.save();
     boardPath(c);
     c.clip();
@@ -754,7 +754,7 @@
     c.fillRect(0, 0, W, H);
     const speck = mulberry32(11);
     c.fillStyle = 'rgba(255,255,255,0.03)';
-    for (let i = 0; i < 500; i++) c.fillRect(B.left + speck() * 440, B.top + speck() * 600, 1, 1);
+    for (let i = 0; i < 500; i++) c.fillRect(B.left + speck() * 440, B.top + speck() * (B.bottom - B.top), 1, 1);
     // 每一排的 LED 底座
     for (let i = 0; i < SLOT_COUNT; i++) led(c, B.left + (i + 0.5) * SLOT_W, LED_Y, 6, false);
     c.restore();
@@ -803,17 +803,17 @@
     c.fillRect(34, B.bottom, 452, 116);
     c.fillStyle = '#efede7';
     c.beginPath();
-    c.moveTo(34, 812); c.lineTo(452, 838); c.lineTo(452, 858); c.lineTo(34, 832);
+    c.moveTo(34, 742); c.lineTo(452, 768); c.lineTo(452, 788); c.lineTo(34, 762);
     c.closePath();
     c.fill();
     c.fillStyle = 'rgba(0,0,0,0.2)';
     c.beginPath();
-    c.moveTo(34, 832); c.lineTo(452, 858); c.lineTo(452, 862); c.lineTo(34, 836);
+    c.moveTo(34, 762); c.lineTo(452, 788); c.lineTo(452, 792); c.lineTo(34, 766);
     c.closePath();
     c.fill();
     c.fillStyle = '#dfe4ea';
     c.beginPath();
-    c.moveTo(372, 832); c.lineTo(452, 798); c.lineTo(452, 837);
+    c.moveTo(372, 762); c.lineTo(452, 728); c.lineTo(452, 767);
     c.closePath();
     c.fill();
     // 發射軌道延伸到下方，裡面是長彈簧
@@ -826,8 +826,8 @@
 
     // ---- 前面板 ----
     c.fillStyle = 'rgba(60,30,10,0.5)';
-    c.fillRect(0, 912, W, 3);
-    const chrome = c.createLinearGradient(0, 912, 0, 986);
+    c.fillRect(0, 842, W, 3);
+    const chrome = c.createLinearGradient(0, 842, 0, 916);
     chrome.addColorStop(0, '#f3f4f6');
     chrome.addColorStop(0.5, '#b7bdc6');
     chrome.addColorStop(1, '#e5e7eb');
@@ -841,26 +841,26 @@
     c.font = `bold 11px ${SANS}`;
     c.fillText('定燈', BUTTON.x, BUTTON.y + 39);
     // 拉桿導槽
-    roundRect(c, PLUNGER_X - 16, 914, 32, 72, 6);
+    roundRect(c, PLUNGER_X - 16, 844, 32, 72, 6);
     c.fillStyle = chrome;
     c.fill();
-    roundRect(c, PLUNGER_X - 4, 918, 8, 62, 4);
+    roundRect(c, PLUNGER_X - 4, 848, 8, 62, 4);
     c.fillStyle = '#0d0d0d';
     c.fill();
     c.fillStyle = '#3b2412';
     c.font = `bold 11px ${SANS}`;
-    c.fillText('拉', PLUNGER_X - 26, 940);
-    c.fillText('桿', PLUNGER_X - 26, 954);
+    c.fillText('拉', PLUNGER_X - 26, 870);
+    c.fillText('桿', PLUNGER_X - 26, 884);
     // 出珠口
-    roundRect(c, CHUTE.x - 26, 960, 52, 30, 5);
+    roundRect(c, CHUTE.x - 26, 890, 52, 30, 5);
     c.fillStyle = chrome;
     c.fill();
     c.fillStyle = '#0d0d0d';
-    roundRect(c, CHUTE.x - 18, 972, 36, 16, 4);
+    roundRect(c, CHUTE.x - 18, 902, 36, 16, 4);
     c.fill();
     c.fillStyle = '#3b2412';
     c.font = `bold 11px ${SANS}`;
-    c.fillText('出珠口', CHUTE.x, 950);
+    c.fillText('出珠口', CHUTE.x, 880);
     // 持珠顯示器
     roundRect(c, DISPLAY.x, DISPLAY.y, DISPLAY.w, DISPLAY.h, 4);
     c.fillStyle = '#0b0b0b';
@@ -875,51 +875,51 @@
     c.textAlign = 'center';
 
     // ---- 托盤：不鏽鋼盤身、後壁、拉絲盤底（前緣在動態層畫，才能蓋住珠子） ----
-    const body = c.createLinearGradient(0, 990, 0, 1120);
+    const body = c.createLinearGradient(0, 920, 0, 1050);
     body.addColorStop(0, '#f3f4f6');
     body.addColorStop(0.5, '#9ca3af');
     body.addColorStop(1, '#d1d5db');
-    roundRect(c, 20, 990, 480, 130, 14);
+    roundRect(c, 20, 920, 480, 130, 14);
     c.fillStyle = body;
     c.fill();
     c.save();
-    roundRect(c, 30, 997, 460, 112, 10);
+    roundRect(c, 30, 927, 460, 112, 10);
     c.clip();
-    const floor = c.createLinearGradient(0, 997, 0, 1108);
+    const floor = c.createLinearGradient(0, 927, 0, 1038);
     floor.addColorStop(0, '#4b5058');
     floor.addColorStop(0.2, '#868d95');
     floor.addColorStop(0.75, '#b9bec5');
     floor.addColorStop(1, '#d6dade');
     c.fillStyle = floor;
-    c.fillRect(30, 997, 460, 112);
+    c.fillRect(30, 927, 460, 112);
     const brush = mulberry32(5);
     for (let i = 0; i < 140; i++) {
-      const y = 999 + brush() * 108;
+      const y = 929 + brush() * 108;
       c.strokeStyle = brush() < 0.5 ? `rgba(255,255,255,${0.05 + brush() * 0.1})` : `rgba(0,0,0,${0.04 + brush() * 0.06})`;
       c.lineWidth = 0.6;
       const x0 = 30 + brush() * 200;
       c.beginPath(); c.moveTo(x0, y); c.lineTo(x0 + 120 + brush() * 260, y); c.stroke();
     }
     // 前面板在盤子後壁投下的陰影
-    const back = c.createLinearGradient(0, 997, 0, 1016);
+    const back = c.createLinearGradient(0, 927, 0, 946);
     back.addColorStop(0, 'rgba(0,0,0,0.55)');
     back.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = back;
-    c.fillRect(30, 997, 460, 19);
+    c.fillRect(30, 927, 460, 19);
     // 左右側壁
     for (const [x0, x1] of [[30, 48], [490, 472]]) {
       const side = c.createLinearGradient(x0, 0, x1, 0);
       side.addColorStop(0, 'rgba(0,0,0,0.35)');
       side.addColorStop(1, 'rgba(0,0,0,0)');
       c.fillStyle = side;
-      c.fillRect(Math.min(x0, x1), 997, 18, 112);
+      c.fillRect(Math.min(x0, x1), 927, 18, 112);
     }
     // 盤底反光
-    const sheen = c.createLinearGradient(0, 1050, 0, 1108);
+    const sheen = c.createLinearGradient(0, 980, 0, 1038);
     sheen.addColorStop(0, 'rgba(255,255,255,0)');
     sheen.addColorStop(1, 'rgba(255,255,255,0.25)');
     c.fillStyle = sheen;
-    c.fillRect(30, 1050, 460, 58);
+    c.fillRect(30, 980, 460, 58);
     c.restore();
   }
 
@@ -930,7 +930,7 @@
     c.setTransform(scale, 0, 0, scale, 0, 0);
     c.save();
     c.beginPath();
-    c.rect(34, 184, 452, 722);
+    c.rect(34, 184, 452, 652);
     c.clip();
     const streaks = [[70, 110, 0.13], [250, 40, 0.07], [360, 24, 0.06]];
     for (const [x, w, a] of streaks) {
@@ -1105,7 +1105,7 @@
   function drawKnob() {
     const y = KNOB_Y + state.power * 50;
     ctx.fillStyle = '#9aa1a9';
-    ctx.fillRect(PLUNGER_X - 2, 912, 4, y - 912);
+    ctx.fillRect(PLUNGER_X - 2, 842, 4, y - 842);
     const g = ctx.createRadialGradient(PLUNGER_X - 4, y - 4, 1, PLUNGER_X, y, 11);
     g.addColorStop(0, '#ff8a8a');
     g.addColorStop(0.5, '#c1121f');
@@ -1159,19 +1159,19 @@
     for (const t of sorted) drawShadow(t.x + 1, t.y + 4, 0.8 - Math.min(0.5, t.z / 50), (1.15 + t.z / 40) * depth(t));
     for (const t of sorted) drawBall(t.x, t.y - t.z, sprites.tray, depth(t));
     // 圓弧前緣蓋住最前排珠子的下半部
-    const lip = ctx.createLinearGradient(0, 1100, 0, 1122);
+    const lip = ctx.createLinearGradient(0, 1030, 0, 1052);
     lip.addColorStop(0, '#6b7280');
     lip.addColorStop(0.3, '#f9fafb');
     lip.addColorStop(0.6, '#b6bcc4');
     lip.addColorStop(1, '#5b626b');
-    roundRect(ctx, 20, 1100, 480, 22, 11);
+    roundRect(ctx, 20, 1030, 480, 22, 11);
     ctx.fillStyle = lip;
     ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.85)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(36, 1105.5);
-    ctx.lineTo(484, 1105.5);
+    ctx.moveTo(36, 1035.5);
+    ctx.lineTo(484, 1035.5);
     ctx.stroke();
     const hidden = state.credits - tray.length;
     if (hidden > 0) {
@@ -1179,7 +1179,7 @@
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#374151';
-      ctx.fillText(`另有 ${hidden} 顆`, 484, 1111);
+      ctx.fillText(`另有 ${hidden} 顆`, 484, 1041);
     }
   }
 
