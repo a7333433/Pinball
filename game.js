@@ -1425,6 +1425,12 @@
     }
   });
   canvas.addEventListener('pointerup', release);
+  // 手機：檯面上連點不要觸發瀏覽器的雙擊放大、雙指縮放（操作改用上面的 pointer 事件）
+  const noZoom = e => { if (e.cancelable) e.preventDefault(); };
+  canvas.addEventListener('touchstart', noZoom, { passive: false });
+  canvas.addEventListener('touchend', noZoom, { passive: false });
+  document.addEventListener('dblclick', noZoom, { passive: false });
+  document.addEventListener('gesturestart', noZoom, { passive: false });   // iOS Safari 雙指縮放
   canvas.addEventListener('pointercancel', release);
   canvas.addEventListener('pointermove', e => {
     canvas.style.cursor = hitTarget(toLogical(e)) ? 'pointer' : 'default';
@@ -1469,7 +1475,7 @@
   const cabinetEl = document.querySelector('.cabinet');
   function fitLayout() {
     const vv = window.visualViewport;
-    const vh = Math.min(window.innerHeight, vv ? vv.height : Infinity);
+    const vh = Math.min(window.innerHeight, vv ? vv.height * vv.scale : Infinity);
     appEl.style.height = Math.floor(vh) + 'px';
     // 桌機有右側面板時，機台寬度 = 視窗寬 - 左右 padding - 間距 - 面板寬；手機版直接用機台區的寬
     const panel = document.querySelector('.panel');
@@ -1482,6 +1488,7 @@
   window.addEventListener('resize', fitLayout);
   window.addEventListener('orientationchange', () => setTimeout(fitLayout, 200));
   if (window.visualViewport) window.visualViewport.addEventListener('resize', fitLayout);
+  if ('ResizeObserver' in window) new ResizeObserver(fitLayout).observe(stageEl);
   fitLayout();
 
   if ('ResizeObserver' in window) new ResizeObserver(resize).observe(canvas);
