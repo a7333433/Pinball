@@ -1146,30 +1146,94 @@
   }
 
   // 每個階段閃爍下一步要按的地方；開始拉桿後就不提示
-  function hintRing(t, draw) {
+  // ---- 提示：粗亮框 + 往外擴散的波紋 + 會跳動的黃色對話框 ----
+  const HINT_COLOR = '#fff36b';
+
+  function hintStroke(t, draw, ripple) {
     const pulse = 0.5 + 0.5 * Math.sin(t * 7);
     ctx.save();
-    ctx.shadowColor = '#ffe066';
-    ctx.shadowBlur = 6 + pulse * 14;
-    ctx.strokeStyle = `rgba(255, 224, 102, ${0.35 + pulse * 0.65})`;
+    ctx.shadowColor = '#ffd400';
+    ctx.shadowBlur = 12 + pulse * 18;
+    ctx.strokeStyle = HINT_COLOR;
+    ctx.globalAlpha = 0.6 + pulse * 0.4;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    draw(0);
+    ctx.stroke();
+    // 波紋：每秒往外擴散一次
+    const ph = (t * 1.1) % 1;
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = (1 - ph) * 0.9;
     ctx.lineWidth = 3;
     ctx.beginPath();
-    draw();
+    draw(ph * ripple);
     ctx.stroke();
     ctx.restore();
   }
 
+  function hintCircle(t, x, y, r) {
+    hintStroke(t, grow => ctx.arc(x, y, r + grow, 0, Math.PI * 2), 18);
+  }
+
+  function hintRect(t, x, y, w, h) {
+    hintStroke(t, grow => roundRect(ctx, x - grow, y - grow, w + grow * 2, h + grow * 2, 8 + grow), 14);
+  }
+
+  // side：對話框在目標的哪一邊（below / above / left），箭頭指向目標
+  function hintBubble(t, tx, ty, side, text) {
+    const bounce = Math.abs(Math.sin(t * 5)) * 7;
+    ctx.save();
+    ctx.font = `900 19px ${SANS}`;
+    const w = ctx.measureText(text).width + 22, h = 32, a = 11;
+    let tipX = tx, tipY = ty, bx, by;
+    if (side === 'below') { tipY = ty + bounce; bx = tx - w / 2; by = tipY + a; }
+    else if (side === 'above') { tipY = ty - bounce; bx = tx - w / 2; by = tipY - a - h; }
+    else { tipX = tx - bounce; bx = tipX - a - w; by = ty - h / 2; }
+    bx = Math.max(4, Math.min(W - 4 - w, bx));
+    ctx.beginPath();
+    roundRect(ctx, bx, by, w, h, 8);
+    ctx.moveTo(tipX, tipY);
+    if (side === 'below') { ctx.lineTo(tipX - 10, tipY + a + 1); ctx.lineTo(tipX + 10, tipY + a + 1); }
+    else if (side === 'above') { ctx.lineTo(tipX - 10, tipY - a - 1); ctx.lineTo(tipX + 10, tipY - a - 1); }
+    else { ctx.lineTo(tipX - a - 1, tipY - 10); ctx.lineTo(tipX - a - 1, tipY + 10); }
+    ctx.closePath();
+    // 先描粗邊再填色，填色會蓋掉對話框和箭頭接縫的線，只留外框
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetY = 2;
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = '#ffd400';
+    ctx.fill();
+    ctx.fillStyle = '#1a1a1a';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, bx + w / 2, by + h / 2 + 1);
+    ctx.restore();
+  }
+
+  // 每個階段閃爍下一步要按的地方；開始拉桿後就不提示
   function drawHints(t) {
     if (state.charging || !state.started) return;
     if (round.phase === 'select') {
       const m = HOLES.mult;
-      hintRing(t, () => roundRect(ctx, m.x - 34, m.y - 34, 68, 50, 8));
-      hintRing(t, () => ctx.arc(BUTTON.x, BUTTON.y, BUTTON.r + 9, 0, Math.PI * 2));
+      if (state.credits >= MULT_COST && round.level < MULTS.length - 1) {
+        hintRect(t, m.x - 34, m.y - 34, 68, 50);
+        hintBubble(t, m.x, m.y + 22, 'below', '加倍');
+      }
+      hintCircle(t, BUTTON.x, BUTTON.y, BUTTON.r + 8);
+      hintBubble(t, BUTTON.x, BUTTON.y - BUTTON.r - 12, 'above', '定燈');
     } else if (round.phase === 'bet') {
       const b = HOLES.bet;
-      hintRing(t, () => ctx.arc(b.x, b.y, b.r + 6, 0, Math.PI * 2));
-      if (round.bet > 0 && ballAtShooter()) {
-        hintRing(t, () => ctx.arc(PLUNGER_X, KNOB_Y, 16, 0, Math.PI * 2));
+      if (state.credits > 0) hintCircle(t, b.x, b.y, b.r + 5);
+      if (round.bet === 0) {
+        hintBubble(t, b.x - b.r - 8, b.y, 'left', '投珠');
+      } else if (ballAtShooter()) {
+        hintCircle(t, PLUNGER_X, KNOB_Y, 15);
+        hintBubble(t, PLUNGER_X - 20, KNOB_Y, 'left', '拉桿發射');
       }
     }
   }
