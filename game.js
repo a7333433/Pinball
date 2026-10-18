@@ -31,13 +31,13 @@
   const SUBSTEPS = 8;
 
   const HOLES = {
-    bet: { x: 448, y: 80, label: '投珠' },
-    mult: { x: 448, y: 136, label: '倍率' },
+    bet: { x: 462, y: 980, r: 19, label: '投珠' },     // 拉桿下方，白邊黑心的圓孔
+    mult: { x: 448, y: 108, label: '倍率' },           // 上方金屬板
   };
   const KNOB_Y = 854;               // 前面板上的拉桿把手
   const CHUTE = { x: 92, y: 914 };
   // 托盤：從斜上方看的不鏽鋼盤，y 方向是盤子的深度（往前傾）
-  const TRAY = { left: 34, right: 486, back: 934, front: 1034 };
+  const TRAY = { left: 34, right: 400, back: 934, front: 1034 };   // 右邊讓給投珠孔
   const TRAY_TILT = 260;            // 盤子往前傾，珠子會滾到前緣
   const TRAY_CAP = 220;             // 托盤最多畫幾顆，超過只加數字
   const DISPLAY = { x: 272, y: 856, w: 110, h: 46 };
@@ -727,11 +727,12 @@
     c.strokeStyle = 'rgba(0,0,0,0.08)';
     for (let y = 34; y < 162; y += 3) { c.beginPath(); c.moveTo(404, y); c.lineTo(492, y); c.stroke(); }
     screw(c, 411, 39); screw(c, 485, 39); screw(c, 411, 155); screw(c, 485, 155);
-    for (const hole of Object.values(HOLES)) {
+    {
+      const hole = HOLES.mult;
       c.fillStyle = '#333';
-      c.font = `bold 12px ${SANS}`;
-      c.fillText(hole.label + '孔', hole.x, hole.y - 18);
-      roundRect(c, hole.x - 20, hole.y - 6, 40, 12, 6);
+      c.font = `bold 13px ${SANS}`;
+      c.fillText(hole.label + '孔', hole.x, hole.y - 20);
+      roundRect(c, hole.x - 22, hole.y - 7, 44, 14, 7);
       c.fillStyle = '#0d0d0d';
       c.fill();
       c.strokeStyle = '#7b828c';
@@ -879,11 +880,11 @@
     body.addColorStop(0, '#f3f4f6');
     body.addColorStop(0.5, '#9ca3af');
     body.addColorStop(1, '#d1d5db');
-    roundRect(c, 20, 920, 480, 130, 14);
+    roundRect(c, 20, 920, 394, 130, 14);
     c.fillStyle = body;
     c.fill();
     c.save();
-    roundRect(c, 30, 927, 460, 112, 10);
+    roundRect(c, 30, 927, 374, 112, 10);
     c.clip();
     const floor = c.createLinearGradient(0, 927, 0, 1038);
     floor.addColorStop(0, '#4b5058');
@@ -891,23 +892,23 @@
     floor.addColorStop(0.75, '#b9bec5');
     floor.addColorStop(1, '#d6dade');
     c.fillStyle = floor;
-    c.fillRect(30, 927, 460, 112);
+    c.fillRect(30, 927, 374, 112);
     const brush = mulberry32(5);
     for (let i = 0; i < 140; i++) {
       const y = 929 + brush() * 108;
       c.strokeStyle = brush() < 0.5 ? `rgba(255,255,255,${0.05 + brush() * 0.1})` : `rgba(0,0,0,${0.04 + brush() * 0.06})`;
       c.lineWidth = 0.6;
       const x0 = 30 + brush() * 200;
-      c.beginPath(); c.moveTo(x0, y); c.lineTo(x0 + 120 + brush() * 260, y); c.stroke();
+      c.beginPath(); c.moveTo(x0, y); c.lineTo(x0 + 100 + brush() * 200, y); c.stroke();
     }
     // 前面板在盤子後壁投下的陰影
     const back = c.createLinearGradient(0, 927, 0, 946);
     back.addColorStop(0, 'rgba(0,0,0,0.55)');
     back.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = back;
-    c.fillRect(30, 927, 460, 19);
+    c.fillRect(30, 927, 374, 19);
     // 左右側壁
-    for (const [x0, x1] of [[30, 48], [490, 472]]) {
+    for (const [x0, x1] of [[30, 48], [404, 386]]) {
       const side = c.createLinearGradient(x0, 0, x1, 0);
       side.addColorStop(0, 'rgba(0,0,0,0.35)');
       side.addColorStop(1, 'rgba(0,0,0,0)');
@@ -919,8 +920,36 @@
     sheen.addColorStop(0, 'rgba(255,255,255,0)');
     sheen.addColorStop(1, 'rgba(255,255,255,0.25)');
     c.fillStyle = sheen;
-    c.fillRect(30, 980, 460, 58);
+    c.fillRect(30, 980, 374, 58);
     c.restore();
+
+    // ---- 投珠孔：拉桿下方，白邊黑心的圓 ----
+    {
+      const hole = HOLES.bet;
+      c.beginPath();
+      c.arc(hole.x + 1, hole.y + 2, hole.r + 1, 0, Math.PI * 2);
+      c.fillStyle = 'rgba(0,0,0,0.35)';
+      c.fill();
+      const rim = c.createRadialGradient(hole.x - 5, hole.y - 6, 2, hole.x, hole.y, hole.r);
+      rim.addColorStop(0, '#ffffff');
+      rim.addColorStop(1, '#d9d6cc');
+      c.beginPath();
+      c.arc(hole.x, hole.y, hole.r, 0, Math.PI * 2);
+      c.fillStyle = rim;
+      c.fill();
+      const pit = c.createRadialGradient(hole.x - 2, hole.y - 2, 1, hole.x, hole.y, hole.r * 0.62);
+      pit.addColorStop(0, '#2a2a2a');
+      pit.addColorStop(1, '#000');
+      c.beginPath();
+      c.arc(hole.x, hole.y, hole.r * 0.62, 0, Math.PI * 2);
+      c.fillStyle = pit;
+      c.fill();
+      c.fillStyle = '#3b2412';
+      c.font = `bold 12px ${SANS}`;
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText(hole.label + '孔', hole.x, hole.y + hole.r + 14);
+    }
   }
 
   function drawGlass() {
@@ -1116,6 +1145,35 @@
     ctx.fill();
   }
 
+  // 每個階段閃爍下一步要按的地方；開始拉桿後就不提示
+  function hintRing(t, draw) {
+    const pulse = 0.5 + 0.5 * Math.sin(t * 7);
+    ctx.save();
+    ctx.shadowColor = '#ffe066';
+    ctx.shadowBlur = 6 + pulse * 14;
+    ctx.strokeStyle = `rgba(255, 224, 102, ${0.35 + pulse * 0.65})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    draw();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawHints(t) {
+    if (state.charging || !state.started) return;
+    if (round.phase === 'select') {
+      const m = HOLES.mult;
+      hintRing(t, () => roundRect(ctx, m.x - 34, m.y - 34, 68, 50, 8));
+      hintRing(t, () => ctx.arc(BUTTON.x, BUTTON.y, BUTTON.r + 9, 0, Math.PI * 2));
+    } else if (round.phase === 'bet') {
+      const b = HOLES.bet;
+      hintRing(t, () => ctx.arc(b.x, b.y, b.r + 6, 0, Math.PI * 2));
+      if (round.bet > 0 && ballAtShooter()) {
+        hintRing(t, () => ctx.arc(PLUNGER_X, KNOB_Y, 16, 0, Math.PI * 2));
+      }
+    }
+  }
+
   function drawButton(t) {
     const pressed = state.buttonT > 0;
     const r = BUTTON.r - (pressed ? 2 : 0);
@@ -1164,14 +1222,14 @@
     lip.addColorStop(0.3, '#f9fafb');
     lip.addColorStop(0.6, '#b6bcc4');
     lip.addColorStop(1, '#5b626b');
-    roundRect(ctx, 20, 1030, 480, 22, 11);
+    roundRect(ctx, 20, 1030, 394, 22, 11);
     ctx.fillStyle = lip;
     ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.85)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(36, 1035.5);
-    ctx.lineTo(484, 1035.5);
+    ctx.lineTo(398, 1035.5);
     ctx.stroke();
     const hidden = state.credits - tray.length;
     if (hidden > 0) {
@@ -1179,7 +1237,7 @@
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#374151';
-      ctx.fillText(`另有 ${hidden} 顆`, 484, 1041);
+      ctx.fillText(`另有 ${hidden} 顆`, 398, 1041);
     }
   }
 
@@ -1231,6 +1289,7 @@
     drawDisplay();
     drawTray();
     drawTweens();
+    drawHints(t);
   }
 
   // ===== 介面 =====
@@ -1282,7 +1341,9 @@
   }
   function hitTarget(p) {
     for (const [key, hole] of Object.entries(HOLES)) {
-      if (Math.abs(p.x - hole.x) < 34 && Math.abs(p.y - hole.y) < 26) return key;
+      const hit = hole.r ? Math.hypot(p.x - hole.x, p.y - hole.y) < hole.r + 14
+        : Math.abs(p.x - hole.x) < 34 && Math.abs(p.y - hole.y) < 28;
+      if (hit) return key;
     }
     if (Math.hypot(p.x - BUTTON.x, p.y - BUTTON.y) < 32) return 'button';
     return null;
