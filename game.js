@@ -2069,6 +2069,27 @@
     ctx.restore();
   }
 
+  // 像素盾牌（代表防禦）
+  const SHIELD = [
+    '.KKKKK.',
+    'KSSWSSK',
+    'KSSWSSK',
+    'KSWWWSK',
+    'KSSWSSK',
+    '.KSWSK.',
+    '..KSK..',
+    '...K...',
+  ];
+  const SHIELD_PAL = { K: '#1e3a8a', S: '#60a5fa', W: '#dbeafe' };
+  const SHIELD_PX = 2, SHIELD_W = 7 * SHIELD_PX, SHIELD_H = 8 * SHIELD_PX;
+  function drawShield(x, y) {
+    SHIELD.forEach((row, r) => [...row].forEach((ch, c) => {
+      if (ch === '.') return;
+      ctx.fillStyle = SHIELD_PAL[ch];
+      ctx.fillRect(Math.round(x) + c * SHIELD_PX, Math.round(y) + r * SHIELD_PX, SHIELD_PX, SHIELD_PX);
+    }));
+  }
+
   function drawMonster(m, x0, y0, flash, laughing = false) {
     const map = laughing ? m.laugh : m.map;
     for (let r = 0; r < map.length; r++) {
@@ -2149,15 +2170,8 @@
 
       // 左上：名字；右上：勝敗
       ctx.font = `bold 15px ${SANS}`;
-      const nameW = ctx.measureText(monsterName()).width;
-      const defText = `DEF ${monsterDef()}`;
-      ctx.font = `bold 13px ${PIXEL_FONT}`;
-      const defW = ctx.measureText(defText).width;
-      textBacking(S.x + 4, S.y + 4, nameW + defW + 22, 20);
+      textBacking(S.x + 4, S.y + 4, ctx.measureText(monsterName()).width + 12, 20);
       ctx.textAlign = 'left';
-      ctx.fillStyle = '#93c5fd';
-      ctx.fillText(defText, S.x + 10 + nameW + 8, S.y + 14);
-      ctx.font = `bold 15px ${SANS}`;
       ctx.fillStyle = '#c8f7c5';
       ctx.fillText(monsterName(), S.x + 10, S.y + 14);
       ctx.textAlign = 'right';
@@ -2169,13 +2183,19 @@
         else if (Math.floor(time * 4) % 2 === 0) { ctx.fillStyle = '#facc15'; ctx.fillText(label, S.x + S.w - 10, S.y + 14); }
       }
 
-      // 怪物下面：HP 血條
-      const bw = 200, bx = cx - bw / 2, by = S.y + 99, bh = 12;   // 往下一點，讓出影子的位置
+      // 怪物下面：HP 血條 + 盾牌（防禦）
+      ctx.font = `bold 15px ${PIXEL_FONT}`;
+      const hpText = `${adv.hp}/${adv.maxHp}`, defText = String(monsterDef());
+      const labelW = ctx.measureText('HP').width, hpW = ctx.measureText(hpText).width, defW = ctx.measureText(defText).width;
+      const bw = 200, bh = 12, by = S.y + 99;                       // 往下一點，讓出影子的位置
+      const groupW = labelW + 8 + bw + 8 + hpW + 12 + SHIELD_W + 4 + defW;
+      const gx = cx - groupW / 2;                                     // 整組置中
+      const bx = gx + labelW + 8;
       const segs = 20, gap = 2, sw = (bw - gap * (segs - 1)) / segs;
       const ratio = adv.hp / adv.maxHp;
       const filled = Math.ceil(ratio * segs);
       const barColor = ratio > 0.5 ? '#4ade80' : ratio > 0.25 ? '#facc15' : '#ef4444';
-      textBacking(bx - 36, by - 6, bw + 100, bh + 12);
+      textBacking(gx - 8, by - 6, groupW + 16, bh + 12);
       for (let i = 0; i < segs; i++) {
         ctx.fillStyle = i < filled ? barColor : 'rgba(255,255,255,0.12)';
         ctx.fillRect(Math.round(bx + i * (sw + gap)), by, Math.max(1, Math.floor(sw)), bh);
@@ -2188,7 +2208,11 @@
       ctx.textAlign = 'right';
       ctx.fillText('HP', bx - 8, by + bh / 2 + 1);
       ctx.textAlign = 'left';
-      ctx.fillText(`${adv.hp}/${adv.maxHp}`, bx + bw + 8, by + bh / 2 + 1);
+      ctx.fillText(hpText, bx + bw + 8, by + bh / 2 + 1);
+      const shx = bx + bw + 8 + hpW + 12;
+      drawShield(shx, by + bh / 2 - SHIELD_H / 2);
+      ctx.fillStyle = '#93c5fd';
+      ctx.fillText(defText, shx + SHIELD_W + 4, by + bh / 2 + 1);
     }
     // 掃描線
     ctx.fillStyle = 'rgba(0,0,0,0.18)';
@@ -2656,9 +2680,10 @@
     }
     overlay.classList.toggle('hidden', !show);
     overlay.classList.toggle('below-screen', mode === 'adv');
-    ovTitle.textContent = title;
-    ovText.textContent = text;
-    ovBtn.textContent = btn;
+    // 瀏覽器快取到舊版 index.html 時這些元素可能不存在，略過就好，不要讓遊戲壞掉
+    if (ovTitle) ovTitle.textContent = title;
+    if (ovText) ovText.textContent = text;
+    if (ovBtn) ovBtn.textContent = btn;
   }
 
   function overlayPrimary() {
