@@ -14,10 +14,11 @@
   const ADV_BALLS = 30;       // 每場冒險有幾顆彈珠
   const REFILL_MULT = 2;      // 補珠燈：中了得到 投珠數 × 2 顆彈珠
   // 12×12 像素圖：'.' 透明，其他字元對應 pal 的顏色
+  // 防禦越高的怪物 HP 越少；實際傷害 = 倍率 × 投珠數 − 防禦（最少 0）
   const MONSTERS = [
     {
       bg: 'forest',
-      name: { zh: '史萊姆', en: 'Slime' }, hp: 20,
+      name: { zh: '史萊姆', en: 'Slime' }, hp: 24, def: 0,
       pal: { K: '#0b1a0b', G: '#3ccf4e', L: '#a6f7ae', D: '#1f7a2b', W: '#ffffff', R: '#ff5d73' },
       map: [
         '............',
@@ -51,7 +52,7 @@
     },
     {
       bg: 'cave',
-      name: { zh: '蝙蝠', en: 'Bat' }, hp: 28,
+      name: { zh: '蝙蝠', en: 'Bat' }, hp: 22, def: 1,
       pal: { K: '#120818', P: '#8a4fd8', W: '#ffe66b', R: '#ff4d6d' },
       map: [
         '............',
@@ -85,7 +86,7 @@
     },
     {
       bg: 'graveyard',
-      name: { zh: '幽靈', en: 'Ghost' }, hp: 36,
+      name: { zh: '幽靈', en: 'Ghost' }, hp: 20, def: 2,
       pal: { K: '#1a1a2e', W: '#e8f0ff', R: '#ff6b81' },
       map: [
         '....KKKK....',
@@ -118,8 +119,42 @@
       ],
     },
     {
+      bg: 'graveyard',
+      name: { zh: '僵屍', en: 'Zombie' }, hp: 18, def: 3,
+      pal: { K: '#141a10', G: '#7fb069', D: '#4a6b3a', C: '#5b4b8a', W: '#f5f5f5', R: '#c0392b' },
+      map: [
+        '...KKKKKK...',
+        '..KGGGGDGK..',
+        '.KGGDGGGGGK.',
+        '.KGWKGGKWGK.',
+        '.KGGGGGGDGK.',
+        '.KGKKKKKKGK.',
+        '.KGDGKGDGGK.',
+        '..KGGGGGGK..',
+        '.KCCKGGKCCK.',
+        'KCCCCKKCCCCK',
+        'KCCDCCCCDCCK',
+        'KKKKKKKKKKKK',
+      ],
+      // 竊笑時的表情：眼睛瞇起來、嘴巴張開
+      laugh: [
+        '...KKKKKK...',
+        '..KGGGGDGK..',
+        '.KGGDGGGGGK.',
+        '.KGGKGGKGGK.',
+        '.KGKGKKGKGK.',
+        '.KGKKKKKKGK.',
+        '.KGKRRRRKGK.',
+        '..KGKKKKGK..',
+        '.KCCKGGKCCK.',
+        'KCCCCKKCCCCK',
+        'KCCDCCCCDCCK',
+        'KKKKKKKKKKKK',
+      ],
+    },
+    {
       bg: 'crypt',
-      name: { zh: '骷髏', en: 'Skeleton' }, hp: 44,
+      name: { zh: '骷髏', en: 'Skeleton' }, hp: 15, def: 4,
       pal: { K: '#111111', W: '#f2efe6', R: '#e0465a' },
       map: [
         '...KKKKKK...',
@@ -153,7 +188,7 @@
     },
     {
       bg: 'hell',
-      name: { zh: '小惡龍', en: 'Baby Dragon' }, hp: 55,
+      name: { zh: '小惡龍', en: 'Baby Dragon' }, hp: 13, def: 5,
       pal: { K: '#2a0505', R: '#e6392f', W: '#ffffff', Y: '#ffd166', T: '#ff8fa3' },
       map: [
         '..K......K..',
@@ -185,6 +220,40 @@
         '...KK...KK..',
       ],
     },
+    {
+      bg: 'ruins',
+      name: { zh: '石像怪', en: 'Gargoyle' }, hp: 10, def: 6,
+      pal: { K: '#1f1f24', S: '#8b8f99', D: '#5f636c', R: '#ff3b3b' },
+      map: [
+        'K.K......K.K',
+        'KSK.KKKK.KSK',
+        'KSSKSSSSKSSK',
+        'KSSSSSSSSSSK',
+        'KSSKRSSRKSSK',
+        'KSSSSSSSSSSK',
+        '.KSSKKKKSSK.',
+        '..KSSDDSSK..',
+        '.KSSSSSSSSK.',
+        'KSKSSSSSSKSK',
+        'KK.KSKKSK.KK',
+        '...KK..KK...',
+      ],
+      // 竊笑時的表情：眼睛瞇起來、嘴巴張開
+      laugh: [
+        'K.K......K.K',
+        'KSK.KKKK.KSK',
+        'KSSKSSSSKSSK',
+        'KSSSSSSSSSSK',
+        'KSSKKSSKKSSK',
+        'KSSSSSSSSSSK',
+        '.KSKKKKKKSK.',
+        '..KSKRRKSK..',
+        '.KSSSSSSSSK.',
+        'KSKSSSSSSKSK',
+        'KK.KSKKSK.KK',
+        '...KK..KK...',
+      ],
+    },
   ];
 
   // ===== 語言（中文 / English） =====
@@ -201,6 +270,7 @@
       inPlay: '鋼珠已發射，請等這一局結束',
       betInfo: '投珠 {bet} 顆 × {mult} 倍，中了得 {win} 顆',
       betInfoAdv: '投珠 {bet} 顆 × {mult} 倍，中了造成 {win} 點傷害',
+      betInfoAdvDef: '投珠 {bet} 顆 × {mult} 倍，扣掉防禦 {def}，中了造成 {win} 點傷害',
       multLocked: '燈已經定了，這一局不能再投倍率孔',
       multMax: '倍率最高 {max} 倍',
       multShort: '彈珠不足 {cost} 顆，不能提升倍率',
@@ -224,10 +294,12 @@
       langBtn: 'English', langShort: 'EN', close: '關閉',
       modeShort: '冒險', modeShortAdv: '經典', modeLong: '切換到大冒險', modeLongAdv: '切換到經典模式',
       advTitle: '彈珠台大冒險', advStart: '開始冒險',
-      advIntro: '打倒怪物！每場有 {n} 顆彈珠，鋼珠落進亮燈的那一排就能造成「倍率 × 投珠數」點傷害。',
+      advIntro: '打倒怪物！每場有 {n} 顆彈珠，鋼珠落進亮燈的那一排就能造成「倍率 × 投珠數 − 怪物防禦」點傷害。',
       advWinTitle: '勝利！', advWinText: '打倒了{name}，還剩 {left} 顆彈珠。', advAgain: '挑戰下一隻',
       advLoseTitle: '落敗…', advLoseText: '彈珠用完了，{name}還剩 {hp} HP。', advRetry: '再試一次',
-      advAppear: '野生的{name}出現了！HP {hp}',
+      advAppear: '野生的{name}出現了！HP {hp}，防禦 {def}',
+      hitMsgDef: '命中！{mult} 倍 × {bet} 顆 = {raw}，扣掉防禦 {def}，造成 {dmg} 點傷害',
+      blockMsg: '被擋下了！{raw} 點攻擊打不破防禦 {def}，造成 0 傷害', blockPop: '擋下！', blockScreen: '0',
       hitMsg: '命中！{mult} 倍 × {bet} 顆，造成 {dmg} 點傷害',
       lockedAdv: '定燈！亮 {lit} 顆紅燈，綠燈是補珠燈。往投珠孔投珠，再拉彈簧發射',
       refillMsg: '命中補珠燈！補回 {n} 顆彈珠', refillPop: '+{n} 顆',
@@ -248,6 +320,7 @@
       inPlay: 'Ball in play. Wait for the result',
       betInfo: 'Bet {bet} × {mult}: win pays {win}',
       betInfoAdv: 'Bet {bet} × {mult}: a hit deals {win} damage',
+      betInfoAdvDef: 'Bet {bet} × {mult} − DEF {def}: a hit deals {win} damage',
       multLocked: 'Locked. No more multiplier this round',
       multMax: 'Max multiplier is ×{max}',
       multShort: 'Need {cost} balls to raise the multiplier',
@@ -271,10 +344,12 @@
       langBtn: '中文', langShort: '中', close: 'Close',
       modeShort: 'Quest', modeShortAdv: 'Classic', modeLong: 'Pinball Quest', modeLongAdv: 'Classic mode',
       advTitle: 'Pinball Quest', advStart: 'Start',
-      advIntro: 'Defeat the monster! You get {n} balls. Land in a lit lane to deal multiplier × bet damage.',
+      advIntro: 'Defeat the monster! You get {n} balls. Land in a lit lane to deal multiplier × bet − DEF damage.',
       advWinTitle: 'Victory!', advWinText: 'You defeated the {name} with {left} balls left.', advAgain: 'Next monster',
       advLoseTitle: 'Defeated…', advLoseText: 'Out of balls. The {name} still has {hp} HP.', advRetry: 'Try again',
-      advAppear: 'A wild {name} appears! HP {hp}',
+      advAppear: 'A wild {name} appears! HP {hp}, DEF {def}',
+      hitMsgDef: 'Hit! ×{mult} × {bet} = {raw} − DEF {def} = {dmg} damage',
+      blockMsg: 'Blocked! {raw} attack can\'t break DEF {def}. 0 damage', blockPop: 'Blocked!', blockScreen: '0',
       hitMsg: 'Hit! ×{mult} × {bet} = {dmg} damage',
       lockedAdv: 'Locked! {lit} red lights. Green = refill. Bet, then shoot',
       refillMsg: 'Refill light! +{n} balls', refillPop: '+{n} balls',
@@ -567,15 +642,32 @@
     spills.length = 0;
     newRound();
     refreshOverlay();
-    say('advAppear', { name: monsterName(), hp: adv.hp });
+    say('advAppear', { name: monsterName(), hp: adv.hp, def: monsterDef() });
   }
 
-  function damageMonster(dmg, px) {
+  const monsterDef = () => adv.monster ? adv.monster.def : 0;
+  // 攻擊力扣掉防禦才是實際傷害
+  const dmgAfterDef = raw => Math.max(0, raw - monsterDef());
+
+  function damageMonster(raw, px) {
+    const def = monsterDef();
+    const dmg = dmgAfterDef(raw);
+    state.lastWin = dmg;
+    if (dmg === 0) {
+      // 攻擊沒打破防禦：0 傷害，怪物竊笑
+      adv.laughT = 1.3;
+      adv.pops.push({ text: t('blockScreen'), t: 0 });
+      popups.push({ x: px, y: SLOT_TOP - 16, text: t('blockPop'), t: 0, color: '#cbd5e1' });
+      say('blockMsg', { raw, def });
+      Sound.thud();
+      setTimeout(() => Sound.snicker(), 250);
+      return;
+    }
     adv.hp = Math.max(0, adv.hp - dmg);
     adv.hitT = 0.5;
     adv.pops.push({ text: '-' + dmg, t: 0 });
     popups.push({ x: px, y: SLOT_TOP - 16, text: t('dmgPop', { d: dmg }), t: 0, color: '#ff6b6b' });
-    say('hitMsg', { mult: mult(), bet: round.bet, dmg });
+    say(def > 0 ? 'hitMsgDef' : 'hitMsg', { mult: mult(), bet: round.bet, raw, def, dmg });
     Sound.hit();
     if (adv.hp === 0) {
       adv.status = 'won';
@@ -735,7 +827,12 @@
     takeBall(HOLES.bet);
     round.bet++;
     Sound.clunk();
-    say(mode === 'adv' ? 'betInfoAdv' : 'betInfo', { bet: round.bet, mult: mult(), win: round.bet * mult() });
+    const raw = round.bet * mult();
+    if (mode === 'adv') {
+      say(monsterDef() > 0 ? 'betInfoAdvDef' : 'betInfoAdv', { bet: round.bet, mult: mult(), win: dmgAfterDef(raw), def: monsterDef() });
+    } else {
+      say('betInfo', { bet: round.bet, mult: mult(), win: raw });
+    }
     return true;
   }
 
@@ -796,7 +893,6 @@
       const win = mult() * round.bet;
       round.phase = 'win';
       if (mode === 'adv') {
-        state.lastWin = win;
         damageMonster(win, px);
         return;
       }
@@ -1814,6 +1910,27 @@
         box(x, h - 18, P, P, '#ffd166');
         if (r() < 0.6) box(x + 4, h - 12, P, P, '#ff8a3d');
       }
+    } else if (kind === 'ruins') {
+      bands(['#f3d9a4', '#f0c98d', '#ebb877', '#e3a663', '#d99558'], 0, h - 24);
+      disc(Math.round(w * 0.82), 30, 14, '#fff1c1');                         // 夕陽
+      // 遠方的階梯神殿
+      const tx0 = Math.round(w * 0.12), tw = Math.round(w * 0.32);
+      for (let k = 0; k < 6; k++) box(tx0 + k * 8, h - 24 - (k + 1) * 8, tw - k * 16, 8, k % 2 ? '#c98a5a' : '#bf7f50');
+      // 斷掉的石柱
+      [[0.06, 60, true], [0.24, 38, false], [0.64, 52, true], [0.88, 30, false]].forEach(([f, ch, top]) => {
+        const x = Math.round(w * f);
+        box(x, h - 24 - ch, 16, ch, '#cdb892');
+        box(x + 4, h - 24 - ch, 4, ch, '#ad9870');
+        box(x + 12, h - 24 - ch, 4, ch, '#bba67e');
+        if (top) box(x - 4, h - 24 - ch - 6, 24, 6, '#b8a27a');
+        else box(x, h - 24 - ch - 4, 8, 4, '#cdb892');                       // 斷口
+        for (let y = h - 24 - ch + 6; y < h - 30; y += 12) if (r() < 0.6) box(x + (r() < 0.5 ? 0 : 12), y, P, 8, '#5f8f3e');
+      });
+      // 倒在地上的石塊
+      box(Math.round(w * 0.36), h - 32, 28, 8, '#b8a27a');
+      box(Math.round(w * 0.74), h - 30, 20, 6, '#b8a27a');
+      box(0, h - 24, w, 24, '#d8c08a');
+      for (let i = 0; i < 40; i++) box(r() * w, h - 22 + r() * 20, P, P, r() < 0.5 ? '#c4ab78' : '#e6d3a3');
     }
     return cv;
   }
@@ -1840,6 +1957,14 @@
         const x = (i * 53 + Math.sin(time + i) * 10 + S.w) % S.w;
         const y = S.h - 18 - ((time * (18 + (i % 4) * 8) + i * 37) % (S.h - 18));
         ctx.fillStyle = i % 2 ? '#ffb347' : '#ff7043';
+        ctx.fillRect(S.x + Math.floor(x / 2) * 2, S.y + Math.floor(y / 2) * 2, 2, 2);
+      }
+    } else if (kind === 'ruins') {
+      // 風吹起的沙塵往右飄
+      ctx.fillStyle = 'rgba(255, 241, 200, 0.7)';
+      for (let i = 0; i < 10; i++) {
+        const x = (i * 47 + time * (25 + (i % 3) * 12)) % S.w;
+        const y = S.h - 30 - (i % 5) * 9 + Math.sin(time * 2 + i) * 3;
         ctx.fillRect(S.x + Math.floor(x / 2) * 2, S.y + Math.floor(y / 2) * 2, 2, 2);
       }
     } else if (kind === 'graveyard') {
@@ -2024,8 +2149,15 @@
 
       // 左上：名字；右上：勝敗
       ctx.font = `bold 15px ${SANS}`;
-      textBacking(S.x + 4, S.y + 4, ctx.measureText(monsterName()).width + 12, 20);
+      const nameW = ctx.measureText(monsterName()).width;
+      const defText = `DEF ${monsterDef()}`;
+      ctx.font = `bold 13px ${PIXEL_FONT}`;
+      const defW = ctx.measureText(defText).width;
+      textBacking(S.x + 4, S.y + 4, nameW + defW + 22, 20);
       ctx.textAlign = 'left';
+      ctx.fillStyle = '#93c5fd';
+      ctx.fillText(defText, S.x + 10 + nameW + 8, S.y + 14);
+      ctx.font = `bold 15px ${SANS}`;
       ctx.fillStyle = '#c8f7c5';
       ctx.fillText(monsterName(), S.x + 10, S.y + 14);
       ctx.textAlign = 'right';
