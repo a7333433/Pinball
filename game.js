@@ -12,6 +12,7 @@
 
   // ===== 彈珠台大冒險：怪物 =====
   const ADV_BALLS = 30;       // 每場冒險有幾顆彈珠
+  const REFILL_MULT = 2;      // 補珠燈：中了得到 投珠數 × 2 顆彈珠
   // 12×12 像素圖：'.' 透明，其他字元對應 pal 的顏色
   const MONSTERS = [
     {
@@ -227,6 +228,8 @@
       advLoseTitle: '落敗…', advLoseText: '彈珠用完了，{name}還剩 {hp} HP。', advRetry: '再試一次',
       advAppear: '野生的{name}出現了！HP {hp}',
       hitMsg: '命中！{mult} 倍 × {bet} 顆，造成 {dmg} 點傷害',
+      lockedAdv: '定燈！亮 {lit} 顆紅燈，綠燈是補珠燈。往投珠孔投珠，再拉彈簧發射',
+      refillMsg: '命中補珠燈！補回 {n} 顆彈珠', refillPop: '+{n} 顆',
       advMissMsg: '沒打中！{name}在嘲笑你', advWinMsg: '打倒了{name}！', advLoseMsg: '彈珠用完了…',
       dmgPop: '-{d} HP', advNoCoin: '大冒險模式不能投幣',
       advPressStart: '按「開始冒險」', laugh: '嘻嘻嘻',
@@ -271,6 +274,8 @@
       advLoseTitle: 'Defeated…', advLoseText: 'Out of balls. The {name} still has {hp} HP.', advRetry: 'Try again',
       advAppear: 'A wild {name} appears! HP {hp}',
       hitMsg: 'Hit! ×{mult} × {bet} = {dmg} damage',
+      lockedAdv: 'Locked! {lit} red lights. Green = refill. Bet, then shoot',
+      refillMsg: 'Refill light! +{n} balls', refillPop: '+{n} balls',
       advMissMsg: 'Missed! The {name} laughs', advWinMsg: 'Defeated the {name}!', advLoseMsg: 'Out of balls…',
       dmgPop: '-{d} HP', advNoCoin: 'No coins in Quest mode',
       advPressStart: 'Press Start', laugh: 'hehehe',
@@ -498,6 +503,7 @@
     landSlot: -1,
     resetT: 0,
     flashT: 0,
+    refill: -1,           // 大冒險：補珠燈在哪一排（-1 = 沒有）
   };
   let ball = null;        // 機台內那顆發射用的鋼珠
   const tray = [];        // 托盤裡看得到的彈珠
@@ -653,6 +659,7 @@
     round.bet = 0;
     round.level = 0;
     round.landSlot = -1;
+    round.refill = -1;
     rollLit(litFor(0));
     if (!ball) ball = { x: PLUNGER_X, y: SHOOTER_FLOOR - BALL_R - 1, vx: 0, vy: 0, still: 0 };
     if (mode === 'adv') {
@@ -678,7 +685,15 @@
     rollLit(litFor(round.level));
     round.phase = 'bet';
     Sound.lock();
-    say('locked', { mult: mult(), lit: round.lit.size });
+    if (mode === 'adv') {
+      // 定燈後，在沒亮燈的排裡隨機挑一排當補珠燈
+      const free = [];
+      for (let i = 0; i < SLOT_COUNT; i++) if (!round.lit.has(i)) free.push(i);
+      round.refill = free[Math.floor(Math.random() * free.length)];
+      say('lockedAdv', { lit: round.lit.size });
+    } else {
+      say('locked', { mult: mult(), lit: round.lit.size });
+    }
   }
 
   let lastMsg = ['insertCoin', {}];
@@ -789,6 +804,15 @@
       }
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('winPop', { win }), t: 0, color: '#ffd166' });
       say('winMsg', { mult: mult(), bet: round.bet, win });
+      Sound.win();
+    } else if (mode === 'adv' && slot === round.refill) {
+      // 補珠燈：不造成傷害，改成補回 投珠數 × 2 顆彈珠
+      const n = round.bet * REFILL_MULT;
+      round.phase = 'win';
+      state.payoutQueue += n;
+      popups.push({ x: px, y: SLOT_TOP - 16, text: t('refillPop', { n }), t: 0, color: '#4ade80' });
+      say('refillMsg', { n });
+      Sound.coin();
       Sound.win();
     } else {
       round.phase = 'lose';
@@ -1116,15 +1140,20 @@
     c.fill();
   }
 
-  function led(c, x, y, r, on) {
+  const LED_COLORS = {
+    red: { glow: '#ff2a2a', c0: '#fff0f0', c1: '#ff3b3b', c2: '#b30000', halo: 'rgba(255, 40, 40, 0.18)' },
+    green: { glow: '#22e07a', c0: '#effff5', c1: '#34d399', c2: '#047857', halo: 'rgba(34, 224, 122, 0.22)' },
+  };
+  function led(c, x, y, r, on, color = 'red') {
     if (on) {
+      const L = LED_COLORS[color];
       c.save();
-      c.shadowColor = '#ff2a2a';
+      c.shadowColor = L.glow;
       c.shadowBlur = r * 4;
       const g = c.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r);
-      g.addColorStop(0, '#fff0f0');
-      g.addColorStop(0.35, '#ff3b3b');
-      g.addColorStop(1, '#b30000');
+      g.addColorStop(0, L.c0);
+      g.addColorStop(0.35, L.c1);
+      g.addColorStop(1, L.c2);
       c.beginPath();
       c.arc(x, y, r, 0, Math.PI * 2);
       c.fillStyle = g;
@@ -1132,7 +1161,7 @@
       c.restore();
       c.beginPath();
       c.arc(x, y, r * 3, 0, Math.PI * 2);
-      c.fillStyle = 'rgba(255, 40, 40, 0.18)';
+      c.fillStyle = L.halo;
       c.fill();
     } else {
       const g = c.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r);
@@ -1960,6 +1989,10 @@
     for (const i of round.lit) {
       const on = round.phase === 'win' && i === round.landSlot ? blink : true;
       led(ctx, B.left + (i + 0.5) * SLOT_W, LED_Y, 6, on);
+    }
+    if (round.refill >= 0) {
+      const on = round.phase === 'win' && round.refill === round.landSlot ? blink : true;
+      led(ctx, B.left + (round.refill + 0.5) * SLOT_W, LED_Y, 6, on, 'green');
     }
     if (round.phase === 'lose' && round.landSlot >= 0) {
       ctx.fillStyle = 'rgba(255,255,255,0.08)';
