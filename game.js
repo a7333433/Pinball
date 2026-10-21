@@ -524,7 +524,7 @@
     maxHp: 0,
     hitT: 0,              // 被打中時閃白、晃動
     laughT: 0,            // 沒打中時怪物竊笑一下（落敗時一直笑）
-    laughSoundT: 0,       // 落敗時隔一陣子笑一次
+    laughSoundT: 0,       // 落敗後多久竊笑一聲
     dieT: 0,              // 被打倒時閃爍消失
     endT: 0,              // 結束後多久跳出結果
     pops: [],             // 螢幕上的傷害數字
@@ -584,7 +584,7 @@
     adv.losses++;
     saveRecord('candy-pinball-adv-losses', adv.losses);
     say('advLoseMsg');
-    adv.laughSoundT = 0.7;      // 落敗音效之後開始一直竊笑
+    adv.laughSoundT = 0.7;      // 落敗音效之後竊笑一聲
     Sound.lose();
   }
 
@@ -977,12 +977,10 @@
     if (mode === 'adv') {
       adv.hitT = Math.max(0, adv.hitT - dt);
       adv.laughT = Math.max(0, adv.laughT - dt);
-      if (adv.status === 'lost') {
+      // 落敗：落敗音效之後竊笑一聲（畫面上會一直笑，聲音只出一次）
+      if (adv.status === 'lost' && adv.laughSoundT > 0) {
         adv.laughSoundT -= dt;
-        if (adv.laughSoundT <= 0) {
-          Sound.snicker();
-          adv.laughSoundT = 2.5;
-        }
+        if (adv.laughSoundT <= 0) Sound.snicker();
       }
       adv.dieT = Math.max(0, adv.dieT - dt);
       for (let i = adv.pops.length - 1; i >= 0; i--) {
