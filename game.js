@@ -661,7 +661,7 @@
   const SANS = '"Noto Sans TC", "Microsoft JhengHei", sans-serif';
   const MULT_COLS = ['貳倍', '肆倍', '陸倍', '捌倍', '拾倍'];
   const multColX = j => 122 + j * 62;
-  const BET_BOX = { x: 36, y: 74, w: 48, h: 40 };
+  const BET_BOX = { x: 33, y: 74, w: 53, h: 40 };   // 四位數也放得下
 
   function boardPath(c) {
     c.beginPath();
@@ -1215,7 +1215,7 @@
     const blink = Math.floor(t * 8) % 2 === 0;
     // 面板：投珠數、倍率
     ctx.save();
-    ctx.font = `bold ${round.bet > 999 ? 14 : round.bet > 99 ? 18 : 24}px "Consolas", "Courier New", monospace`;
+    ctx.font = `bold ${round.bet > 999 ? 16 : round.bet > 99 ? 19 : 24}px "Consolas", "Courier New", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.shadowColor = '#ff2a2a';
