@@ -25,6 +25,7 @@
       multLocked: '燈已經定了，這一局不能再投倍率孔',
       multMax: '倍率最高 {max} 倍',
       multShort: '彈珠不足 {cost} 顆，不能提升倍率',
+      betManyShort: '彈珠不足 {n} 顆，不能一次投 {n} 顆',
       multUp: '{mult} 倍！定燈後亮 {lit} 顆，按藍色按鈕定燈',
       winPop: '+{win} 顆',
       winMsg: '中了！{mult} 倍 × {bet} 顆 = {win} 顆',
@@ -36,12 +37,12 @@
       fired: '發射！',
       moreBalls: '另有 {n} 顆',
       hintMult: '加倍', hintLock: '定燈', hintBet: '投珠', hintPull: '拉桿發射',
-      cvBet: '投珠', cvBalls: '顆', cvLit: '亮{n}燈', cvMultHole: '倍率孔', cvBetHole: '投珠孔', cvCoinSlot: '投幣口',
+      cvBet: '投珠', cvBalls: '顆', cvLit: '亮{n}燈', cvMultHole: '倍率孔', cvBetHole: '投珠孔', cvBet10Hole: '投十顆', cvCoinSlot: '投幣口',
       cvLock: '定燈', cvPull: '拉桿', cvChute: '出珠口', cvDisplay: '持珠',
       coin: '投幣', overlayText: '投一枚硬幣，換 20 顆彈珠！', overlayCoin: '投幣開始', howTo: '玩法說明',
       sign: '柑仔店<br><span>彈珠台</span>', stCredits: '持有彈珠', stBet: '投珠數', stMult: '倍率',
       stWin: '上局得珠', stBestWin: '最高分', stBest: '最多持珠', power: '力道',
-      btnMult: '投倍率孔', btnLock: '定燈', btnBet: '投珠孔', btnFire: '按住拉彈簧',
+      btnMult: '投倍率孔', btnLock: '定燈', btnBet: '投珠孔', btnBet10: '投十顆', btnFire: '按住拉彈簧',
       langBtn: 'English', langShort: 'EN', close: '關閉',
     },
     en: {
@@ -58,6 +59,7 @@
       multLocked: 'Locked. No more multiplier this round',
       multMax: 'Max multiplier is ×{max}',
       multShort: 'Need {cost} balls to raise the multiplier',
+      betManyShort: 'Need {n} balls to bet {n} at once',
       multUp: '×{mult}! {lit} lit after locking',
       winPop: '+{win}',
       winMsg: 'Win! ×{mult} × {bet} = {win} balls',
@@ -69,12 +71,12 @@
       fired: 'Fire!',
       moreBalls: '+{n} more',
       hintMult: 'Multiply', hintLock: 'Lock', hintBet: 'Bet', hintPull: 'Pull to shoot',
-      cvBet: 'BET', cvBalls: 'balls', cvLit: '{n} lit', cvMultHole: 'MULTIPLY', cvBetHole: 'BET', cvCoinSlot: 'COIN',
+      cvBet: 'BET', cvBalls: 'balls', cvLit: '{n} lit', cvMultHole: 'MULTIPLY', cvBetHole: 'BET', cvBet10Hole: 'BET 10', cvCoinSlot: 'COIN',
       cvLock: 'LOCK', cvPull: 'PULL', cvChute: 'PAYOUT', cvDisplay: 'BALLS',
       coin: 'Coin', overlayText: 'Insert a coin for 20 balls!', overlayCoin: 'Insert coin', howTo: 'How to play',
       sign: 'Candy<br><span>Pinball</span>', stCredits: 'Balls', stBet: 'Bet', stMult: 'Multiplier',
       stWin: 'Last win', stBestWin: 'High score', stBest: 'Most balls', power: 'Power',
-      btnMult: 'Multiply', btnLock: 'Lock', btnBet: 'Bet', btnFire: 'Hold to pull',
+      btnMult: 'Multiply', btnLock: 'Lock', btnBet: 'Bet', btnBet10: 'Bet 10', btnFire: 'Hold to pull',
       langBtn: '中文', langShort: '中', close: 'Close',
     },
   };
@@ -111,7 +113,8 @@
   const SUBSTEPS = 8;
 
   const HOLES = {
-    bet: { x: 462, y: 980, r: 19 },     // 拉桿下方，白邊黑心的圓孔
+    bet: { x: 462, y: 940, r: 18 },     // 拉桿下方，白邊黑心的圓孔：一次投 1 顆
+    bet10: { x: 462, y: 1004, r: 23 },  // 投珠孔下方，比較大的圓孔：一次投 10 顆
     mult: { x: 222, y: 876, r: 17 },    // 定燈按鈕旁，白邊黑心的圓孔
   };
   const COIN_SLOT = { x: 448, y: 108 };   // 上方金屬板的投幣口（點了也能投幣）
@@ -368,13 +371,15 @@
     return false;
   }
 
-  function addBet() {
+  function addBet(n = 1) {
     Sound.init();
     if (round.phase === 'select') { say('betBeforeLock'); Sound.error(); return; }
     if (round.phase !== 'bet') { say('inPlay'); Sound.error(); return; }
     if (!hasCredits()) return;
-    takeBall(HOLES.bet);
-    round.bet++;
+    if (state.credits < n) { say('betManyShort', { n }); Sound.error(); return; }
+    const hole = n === 1 ? HOLES.bet : HOLES.bet10;
+    for (let i = 0; i < n; i++) takeBall(hole, i * 0.05);
+    round.bet += n;
     Sound.clunk();
     say('betInfo', { bet: round.bet, mult: mult(), win: round.bet * mult() });
   }
@@ -1047,7 +1052,7 @@
     c.restore();
 
     // ---- 投珠孔（拉桿下方）、倍率孔（定燈按鈕旁）：白邊黑心的圓 ----
-    for (const [hole, label] of [[HOLES.bet, t('cvBetHole')], [HOLES.mult, t('cvMultHole')]]) {
+    for (const [hole, label] of [[HOLES.bet, t('cvBetHole')], [HOLES.bet10, t('cvBet10Hole')], [HOLES.mult, t('cvMultHole')]]) {
       c.beginPath();
       c.arc(hole.x + 1, hole.y + 2, hole.r + 1, 0, Math.PI * 2);
       c.fillStyle = 'rgba(0,0,0,0.35)';
@@ -1070,7 +1075,7 @@
       c.font = `bold 12px ${SANS}`;
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      c.fillText(label, hole.x, hole.y + hole.r + 14);
+      c.fillText(label, hole.x, hole.y + hole.r + 12);
     }
   }
 
@@ -1353,6 +1358,7 @@
     } else if (round.phase === 'bet') {
       const b = HOLES.bet;
       if (state.credits > 0) hintCircle(time, b.x, b.y, b.r + 5);
+      if (state.credits >= 10) hintCircle(time, HOLES.bet10.x, HOLES.bet10.y, HOLES.bet10.r + 5);
       if (round.bet === 0) {
         hintBubble(time, b.x - b.r - 8, b.y, 'left', t('hintBet'));
       } else if (ballAtShooter()) {
@@ -1578,6 +1584,7 @@
     switch (e.code) {
       case 'Space': case 'ArrowDown': e.preventDefault(); startCharge(); break;
       case 'KeyB': addBet(); break;
+      case 'KeyT': addBet(10); break;
       case 'KeyX': addMult(); break;
       case 'KeyD': lockLights(); break;
       case 'KeyC': case 'Enter': e.preventDefault(); insertCoin(); break;
@@ -1596,7 +1603,7 @@
   }
   function hitTarget(p) {
     for (const [key, hole] of Object.entries(HOLES)) {
-      const hit = hole.r ? Math.hypot(p.x - hole.x, p.y - hole.y) < hole.r + 14
+      const hit = hole.r ? Math.hypot(p.x - hole.x, p.y - hole.y) < hole.r + 10
         : Math.abs(p.x - hole.x) < 34 && Math.abs(p.y - hole.y) < 28;
       if (hit) return key;
     }
@@ -1609,6 +1616,7 @@
     const target = hitTarget(toLogical(e));
     e.preventDefault();
     if (target === 'bet') addBet();
+    else if (target === 'bet10') addBet(10);
     else if (target === 'mult') addMult();
     else if (target === 'button') lockLights();
     else if (target === 'coin') insertCoin();
@@ -1673,7 +1681,8 @@
   for (const el of byAction('mute')) el.addEventListener('click', toggleMute);
   helpDlg.addEventListener('click', e => { if (e.target === helpDlg) helpDlg.close(); });   // 點背景關閉
   $('overlay-coin').addEventListener('click', insertCoin);
-  $('bet-btn').addEventListener('click', addBet);
+  $('bet-btn').addEventListener('click', () => addBet());
+  $('bet10-btn').addEventListener('click', () => addBet(10));
   $('mult-btn').addEventListener('click', addMult);
   $('lock-btn').addEventListener('click', lockLights);
   window.addEventListener('blur', release);
