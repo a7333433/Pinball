@@ -1861,12 +1861,20 @@
         ox += Math.floor(time * 11) % 2 ? 1 : -1;
       }
       const x0 = cx - size / 2 + ox, y0 = S.y + 8 + oy;
-      // 影子
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.beginPath();
-      ctx.ellipse(cx, S.y + 83, size * 0.38, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
       const visible = adv.status !== 'won' || (adv.dieT > 0 && Math.floor(adv.dieT * 12) % 2 === 0);
+      // 影子：腳下一塊圓形影子，怪物往上彈時變小、落下時變大
+      if (visible) {
+        const k = Math.max(0.75, 1 + oy / 30);
+        const sx = cx + ox, sy = S.y + 84;
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, size * 0.46 * k, 9 * k, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, size * 0.36 * k, 6 * k, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
       if (visible) drawMonster(m, x0, y0, adv.hitT > 0 && Math.floor(adv.hitT * 20) % 2 === 0, laughing);
       if (laughing && visible) {
         // 「嘻嘻嘻」在怪物頭的右邊
@@ -1906,7 +1914,7 @@
       }
 
       // 怪物下面：HP 血條
-      const bw = 200, bx = cx - bw / 2, by = S.y + 92, bh = 12;
+      const bw = 200, bx = cx - bw / 2, by = S.y + 99, bh = 12;   // 往下一點，讓出影子的位置
       const segs = 20, gap = 2, sw = (bw - gap * (segs - 1)) / segs;
       const ratio = adv.hp / adv.maxHp;
       const filled = Math.ceil(ratio * segs);
