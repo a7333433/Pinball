@@ -119,7 +119,7 @@
   // 托盤：從斜上方看的不鏽鋼盤，y 方向是盤子的深度（往前傾）
   const TRAY = { left: 34, right: 400, back: 934, front: 1034 };   // 右邊讓給投珠孔
   const TRAY_TILT = 260;            // 盤子往前傾，珠子會滾到前緣
-  const TRAY_CAP = 220;             // 托盤最多畫幾顆，超過只加數字
+  const TRAY_CAP = 190;             // 托盤裝得下的顆數；再多就從托盤滿出來、掉到機台外面（仍然計數）
   const DISPLAY = { x: 272, y: 856, w: 110, h: 46 };
   const BUTTON = { x: 196, y: 876, r: 20 };   // 藍色定燈按鈕
 
@@ -246,6 +246,15 @@
       this.tone(1980, 0.35, 'square', 0.08, 0.08);
     },
     thud() { this.tone(90, 0.2, 'sine', 0.25, 0, 50); },
+    floor() {
+      // 掉到地上：一聲悶響加一點金屬聲
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      if (now - (this.lastFloor || 0) < 0.05) return;
+      this.lastFloor = now;
+      this.tone(160 + Math.random() * 60, 0.12, 'triangle', 0.08, 0, 90);
+      this.tone(2600 + Math.random() * 900, 0.05, 'triangle', 0.04, 0.01);
+    },
     error() { this.tone(150, 0.15, 'square', 0.06); },
     lock() {
       this.tone(880, 0.1, 'square', 0.08);
@@ -557,6 +566,7 @@
     }
 
     for (let s = 0; s < 4; s++) stepTray(dt / 4);
+    updateSpills(dt);
 
     // 出珠口一顆一顆掉珠
     state.payoutTimer -= dt;
@@ -568,6 +578,8 @@
           x: CHUTE.x + (Math.random() - 0.5) * 8, y: TRAY.back + BALL_R + 2, z: 24, vz: 0,
           vx: 80 + Math.random() * 300, vy: 10 + Math.random() * 30,
         });
+      } else {
+        spawnSpill();
       }
       state.payoutTimer += 0.07;
     }
@@ -1434,6 +1446,70 @@
     ctx.globalAlpha = 1;
   }
 
+  // ===== 托盤滿了：珠子滿出來掉到機台外面 =====
+  // 畫在蓋住整個視窗的透明圖層上（pointer-events: none），才能真的掉出機台、掉出畫面
+  const spillCanvas = document.createElement('canvas');
+  spillCanvas.className = 'spill-layer';
+  spillCanvas.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(spillCanvas);
+  const spillCtx = spillCanvas.getContext('2d');
+  const spills = [];
+  let spillDirty = false;
+
+  function spawnSpill() {
+    const rect = canvas.getBoundingClientRect();
+    const k = rect.width / W;              // 頁面像素 / 邏輯座標
+    spills.push({
+      x: rect.left + (CHUTE.x + (Math.random() - 0.5) * 10) * k,
+      y: rect.top + CHUTE.y * k,
+      vx: (60 + Math.random() * 260) * k,
+      vy: (40 + Math.random() * 40) * k,
+      g: 1500 * k,
+      r: BALL_R * k,
+      lipY: rect.top + 1030 * k,           // 托盤前緣
+      bounced: false,
+    });
+  }
+
+  function updateSpills(dt) {
+    for (let i = spills.length - 1; i >= 0; i--) {
+      const s = spills[i];
+      s.vy += s.g * dt;
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      // 先在堆滿的珠子上彈一下，再翻過前緣掉下去
+      if (!s.bounced && s.y >= s.lipY - s.r) {
+        s.y = s.lipY - s.r;
+        s.vy = -Math.abs(s.vy) * 0.35;
+        s.vx *= 1.15;
+        s.bounced = true;
+        Sound.clink(300);
+      }
+      if (s.y - s.r > window.innerHeight || s.x + s.r < 0 || s.x - s.r > window.innerWidth) {
+        spills.splice(i, 1);
+        Sound.floor();
+      }
+    }
+  }
+
+  function drawSpills() {
+    if (!spills.length && !spillDirty) return;
+    const dpr = window.devicePixelRatio || 1;
+    const pw = Math.round(window.innerWidth * dpr), ph = Math.round(window.innerHeight * dpr);
+    if (spillCanvas.width !== pw || spillCanvas.height !== ph) {
+      spillCanvas.width = pw;
+      spillCanvas.height = ph;
+    }
+    spillCtx.setTransform(1, 0, 0, 1, 0, 0);
+    spillCtx.clearRect(0, 0, pw, ph);
+    spillCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (const s of spills) {
+      const S = s.r * (BALL_R + 1) / BALL_R;
+      spillCtx.drawImage(sprites.tray, s.x - S, s.y - S, S * 2, S * 2);
+    }
+    spillDirty = spills.length > 0;
+  }
+
   function render(t) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1455,6 +1531,7 @@
     drawTray();
     drawTweens();
     drawHints(t);
+    drawSpills();
   }
 
   // ===== 介面 =====

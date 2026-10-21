@@ -249,6 +249,16 @@ kbd {
   box-shadow: 0 2px 0 #999;
 }
 
+/* 托盤滿出來的珠子：蓋住整個視窗的透明圖層，不擋點擊 */
+.spill-layer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 20;
+}
+
 /* ---- 玩法說明視窗 ---- */
 .help {
   width: min(520px, calc(100vw - 32px));
