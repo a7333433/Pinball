@@ -1620,7 +1620,7 @@
 
 
   // ===== 大冒險：上方的像素螢幕 =====
-  const SCREEN = { x: 100, y: 38, w: 386, h: 118 };
+  const SCREEN = { x: 34, y: 38, w: 452, h: 118 };   // 大冒險：整條上方面板都是像素螢幕
   const PX = 6;               // 怪物每個像素的大小
 
   function drawAdvScreenFrame(c) {
@@ -1628,10 +1628,10 @@
     bez.addColorStop(0, '#e5e7eb');
     bez.addColorStop(0.5, '#9aa1a9');
     bez.addColorStop(1, '#d1d5db');
-    roundRect(c, 94, 30, 400, 134, 8);
+    roundRect(c, 26, 30, 468, 134, 8);
     c.fillStyle = bez;
     c.fill();
-    screw(c, 99, 35); screw(c, 489, 35); screw(c, 99, 159); screw(c, 489, 159);
+    screw(c, 30, 34); screw(c, 490, 34); screw(c, 30, 160); screw(c, 490, 160);
     roundRect(c, SCREEN.x - 3, SCREEN.y - 3, SCREEN.w + 6, SCREEN.h + 6, 6);
     c.fillStyle = '#0a0a0a';
     c.fill();
@@ -1734,14 +1734,15 @@
       }
       box(0, h - 20, w, 20, '#0f1429');
       // 墓碑
-      for (const x of [26, 74, 300, 344]) {
+      for (const x of [0.07, 0.19, 0.78, 0.89].map(f => Math.round(f * w))) {
         box(x, h - 40, 20, 26, '#5b6178');
         box(x + 4, h - 44, 12, 4, '#5b6178');
         box(x + 8, h - 36, 4, 14, '#3e4358');
         box(x + 4, h - 32, 12, 4, '#3e4358');
       }
       // 枯樹
-      box(132, h - 60, 6, 42, '#0a0e1e'); box(118, h - 56, 16, 4, '#0a0e1e'); box(136, h - 46, 16, 4, '#0a0e1e');
+      const tx = Math.round(w * 0.34);
+      box(tx, h - 60, 6, 42, '#0a0e1e'); box(tx - 14, h - 56, 16, 4, '#0a0e1e'); box(tx + 4, h - 46, 16, 4, '#0a0e1e');
       c.fillStyle = 'rgba(180, 200, 255, 0.10)';
       c.fillRect(0, h - 30, w, 12);
     } else if (kind === 'crypt') {
@@ -1942,7 +1943,8 @@
 
   function drawLeds(t) {
     const blink = Math.floor(t * 8) % 2 === 0;
-    // 面板：投珠數、倍率
+    // 面板：投珠數、倍率（大冒險沒有投珠數顯示）
+    if (mode === 'classic') {
     ctx.save();
     ctx.font = `bold ${round.bet > 999 ? 16 : round.bet > 99 ? 19 : 24}px "Consolas", "Courier New", monospace`;
     ctx.textAlign = 'center';
@@ -1952,6 +1954,7 @@
     ctx.fillStyle = '#ff3b3b';
     ctx.fillText(String(Math.min(9999, round.bet)), BET_BOX.x + BET_BOX.w / 2, BET_BOX.y + BET_BOX.h / 2 + 1);
     ctx.restore();
+    }
     if (mode === 'classic') led(ctx, multColX(round.level), 146, 5, true);
     // 檯面每一排的 LED
     for (const i of round.lit) {
