@@ -15,6 +15,7 @@
   // 12×12 像素圖：'.' 透明，其他字元對應 pal 的顏色
   const MONSTERS = [
     {
+      bg: 'forest',
       name: { zh: '史萊姆', en: 'Slime' }, hp: 20,
       pal: { K: '#0b1a0b', G: '#3ccf4e', L: '#a6f7ae', D: '#1f7a2b', W: '#ffffff', R: '#ff5d73' },
       map: [
@@ -48,6 +49,7 @@
       ],
     },
     {
+      bg: 'cave',
       name: { zh: '蝙蝠', en: 'Bat' }, hp: 28,
       pal: { K: '#120818', P: '#8a4fd8', W: '#ffe66b', R: '#ff4d6d' },
       map: [
@@ -81,6 +83,7 @@
       ],
     },
     {
+      bg: 'graveyard',
       name: { zh: '幽靈', en: 'Ghost' }, hp: 36,
       pal: { K: '#1a1a2e', W: '#e8f0ff', R: '#ff6b81' },
       map: [
@@ -114,6 +117,7 @@
       ],
     },
     {
+      bg: 'crypt',
       name: { zh: '骷髏', en: 'Skeleton' }, hp: 44,
       pal: { K: '#111111', W: '#f2efe6', R: '#e0465a' },
       map: [
@@ -147,6 +151,7 @@
       ],
     },
     {
+      bg: 'hell',
       name: { zh: '小惡龍', en: 'Baby Dragon' }, hp: 55,
       pal: { K: '#2a0505', R: '#e6392f', W: '#ffffff', Y: '#ffd166', T: '#ff8fa3' },
       map: [
@@ -1508,6 +1513,7 @@
     canvas.width = staticCanvas.width = glassCanvas.width = pw;
     canvas.height = staticCanvas.height = glassCanvas.height = ph;
     scale = pw / W;
+    for (const k in advBgCache) delete advBgCache[k];
     buildSprites();
     drawStatic();
     drawGlass();
@@ -1641,6 +1647,179 @@
     }
   }
 
+
+  // ===== 大冒險：怪物所在環境的像素背景 =====
+  // 史萊姆＝森林、蝙蝠＝洞窟、幽靈＝墓園、骷髏＝地下墓穴、小惡龍＝地獄
+  // 背景先畫到離屏畫布（依畫面大小重建），動態的火光、星星、火星每幀另外畫
+  const advBgCache = {};
+  const BG_PX = 4;            // 背景的像素格大小
+
+  function advBg(kind) {
+    if (!advBgCache[kind]) advBgCache[kind] = buildAdvBg(kind);
+    return advBgCache[kind];
+  }
+
+  function buildAdvBg(kind) {
+    const w = SCREEN.w, h = SCREEN.h, P = BG_PX;
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.ceil(w * scale));
+    cv.height = Math.max(1, Math.ceil(h * scale));
+    const c = cv.getContext('2d');
+    c.scale(scale, scale);
+    const r = mulberry32(kind.length * 977 + kind.charCodeAt(0));
+    const snap = v => Math.floor(v / P) * P;
+    const box = (x, y, bw, bh, color) => {
+      c.fillStyle = color;
+      c.fillRect(snap(x), snap(y), Math.max(P, Math.round(bw / P) * P), Math.max(P, Math.round(bh / P) * P));
+    };
+    const bands = (colors, y0, y1) => {
+      const step = (y1 - y0) / colors.length;
+      colors.forEach((col, i) => box(0, y0 + i * step, w, step + P, col));
+    };
+    const disc = (cx, cy, rad, color) => {
+      for (let dy = -rad; dy <= rad; dy += P) {
+        for (let dx = -rad; dx <= rad; dx += P) if (dx * dx + dy * dy <= rad * rad) box(cx + dx, cy + dy, P, P, color);
+      }
+    };
+
+    if (kind === 'forest') {
+      bands(['#6fb7e0', '#82c3e5', '#97cfe9', '#addbec', '#c6e9ea'], 0, 64);
+      box(30, 14, 36, 8, '#f4fbff'); box(38, 10, 20, 4, '#f4fbff');            // 雲
+      box(270, 22, 44, 8, '#eaf6fb'); box(282, 18, 20, 4, '#eaf6fb');
+      // 遠方的樹林
+      for (let x = 0; x < w; x += P) {
+        const th = 30 + Math.round((Math.sin(x * 0.05) + Math.sin(x * 0.13 + 1)) * 6 + r() * 4);
+        box(x, h - 22 - th, P, th, '#3f7f4a');
+      }
+      // 近處的大樹
+      for (let i = 0; i < 6; i++) {
+        const tx = 18 + i * 72 + r() * 16, base = h - 22;
+        box(tx - 2, base - 26, 8, 26, '#5b3a1e');
+        for (let k = 0; k < 4; k++) {
+          const rw = 40 - k * 9;
+          box(tx + 2 - rw / 2, base - 36 - k * 8, rw, 12, k % 2 ? '#2d6a35' : '#245a2c');
+        }
+      }
+      box(0, h - 24, w, 8, '#4caf50');
+      box(0, h - 16, w, 16, '#3a7d3c');
+      for (let x = 0; x < w; x += 8) if (r() < 0.5) box(x, h - 28, P, P, '#6fd16f');
+      for (let x = 4; x < w; x += 12) if (r() < 0.35) box(x, h - 10, P, P, '#2e6630');
+    } else if (kind === 'cave') {
+      box(0, 0, w, h, '#1c1828');
+      for (let i = 0; i < 260; i++) box(r() * w, r() * h, P, P, r() < 0.5 ? '#262039' : '#14111d');
+      // 鐘乳石
+      for (let x = 0; x < w; x += 16) {
+        const len = 8 + r() * 30;
+        for (let y = 0; y < len; y += P) box(x + 8 - Math.max(P, 14 * (1 - y / len)) / 2, y, Math.max(P, 14 * (1 - y / len)), P, '#3a3350');
+      }
+      // 石筍
+      for (let x = 6; x < w; x += 24) {
+        const len = 6 + r() * 24;
+        for (let y = 0; y < len; y += P) box(x + 8 - Math.max(P, 16 * (1 - y / len)) / 2, h - 12 - y, Math.max(P, 16 * (1 - y / len)), P, '#332d47');
+      }
+      box(0, h - 8, w, 8, '#2a2438');
+      // 發光的水晶
+      for (let i = 0; i < 6; i++) {
+        const x = r() * (w - 12), y = h - 22 - r() * 10;
+        box(x, y, P, 8, '#7dd3fc'); box(x + P, y + P, P, P, '#e0f2fe');
+      }
+    } else if (kind === 'graveyard') {
+      bands(['#080c24', '#0d1434', '#131c45', '#1a2554', '#212e60'], 0, h - 20);
+      for (let i = 0; i < 40; i++) box(r() * w, r() * 64, P, P, r() < 0.3 ? '#ffffff' : '#9aa6d8');
+      disc(w - 58, 30, 16, '#f5f3c1');                                       // 月亮
+      box(w - 64, 26, 8, 4, '#dcd8a0'); box(w - 52, 36, 4, 4, '#dcd8a0');
+      for (let x = 0; x < w; x += P) {
+        const hh = 10 + Math.round(Math.sin(x * 0.03) * 6 + Math.sin(x * 0.09) * 3);
+        box(x, h - 20 - hh, P, hh, '#141a33');
+      }
+      box(0, h - 20, w, 20, '#0f1429');
+      // 墓碑
+      for (const x of [26, 74, 300, 344]) {
+        box(x, h - 40, 20, 26, '#5b6178');
+        box(x + 4, h - 44, 12, 4, '#5b6178');
+        box(x + 8, h - 36, 4, 14, '#3e4358');
+        box(x + 4, h - 32, 12, 4, '#3e4358');
+      }
+      // 枯樹
+      box(132, h - 60, 6, 42, '#0a0e1e'); box(118, h - 56, 16, 4, '#0a0e1e'); box(136, h - 46, 16, 4, '#0a0e1e');
+      c.fillStyle = 'rgba(180, 200, 255, 0.10)';
+      c.fillRect(0, h - 30, w, 12);
+    } else if (kind === 'crypt') {
+      box(0, 0, w, h, '#24242c');
+      // 石磚牆
+      for (let row = 0; row * 12 < h; row++) {
+        for (let col = -1; col * 24 < w; col++) {
+          const x = col * 24 + (row % 2 ? 12 : 0);
+          box(x + 2, row * 12 + 2, 20, 8, ['#3b3b46', '#36363f', '#42424e'][Math.floor(r() * 3)]);
+        }
+      }
+      box(0, h - 16, w, 16, '#2e2a28');
+      for (let x = 0; x < w; x += 32) box(x, h - 16, P, 16, '#24201e');
+      // 火把架
+      for (const x of [56, w - 64]) {
+        box(x, 46, 8, 18, '#5b3a1e');
+        box(x - 4, 42, 16, 4, '#7a7a85');
+      }
+      // 蜘蛛網
+      for (let i = 0; i < 6; i++) { box(i * P, i * P, P, P, '#8a8a95'); box(w - P - i * P, i * P, P, P, '#8a8a95'); }
+      box(0, 12, 16, P, '#6b6b76'); box(12, 0, P, 16, '#6b6b76');
+      box(w - 16, 12, 16, P, '#6b6b76'); box(w - 16, 0, P, 16, '#6b6b76');
+    } else if (kind === 'hell') {
+      bands(['#1a0303', '#2b0606', '#430a07', '#5e1209', '#7a1e0b', '#93300d'], 0, h - 18);
+      // 黑色岩石尖刺
+      for (let x = 0; x < w; x += P) {
+        const hh = 8 + Math.round(Math.abs(Math.sin(x * 0.045)) * 28 + Math.abs(Math.sin(x * 0.11 + 2)) * 8 + r() * 4);
+        box(x, h - 18 - hh, P, hh, '#1a0505');
+      }
+      box(0, h - 18, w, 18, '#ff5a1f');
+      for (let x = 0; x < w; x += 8) {
+        box(x, h - 18, P, P, '#ffd166');
+        if (r() < 0.6) box(x + 4, h - 12, P, P, '#ff8a3d');
+      }
+    }
+    return cv;
+  }
+
+  // 背景上會動的小東西
+  function drawAdvBgFx(kind, time) {
+    const S = SCREEN;
+    if (kind === 'crypt') {
+      // 火把的火焰忽大忽小
+      for (const x of [56, S.w - 64]) {
+        const f = Math.floor(time * 10 + x) % 3;
+        const fx = S.x + x, fy = S.y + 30;
+        ctx.fillStyle = 'rgba(255, 170, 60, 0.12)';
+        ctx.fillRect(fx - 12, fy - 8, 32, 32);
+        ctx.fillStyle = '#ff7a1a'; ctx.fillRect(fx, fy + 4 - f, 8, 8 + f);
+        ctx.fillStyle = '#ffd166'; ctx.fillRect(fx + 2, fy + 8 - f, 4, 4 + f);
+      }
+    } else if (kind === 'hell') {
+      // 熔岩表面閃動、火星往上飄
+      const shift = Math.floor(time * 6) % 2 ? 4 : 0;
+      ctx.fillStyle = '#ffd166';
+      for (let x = shift; x < S.w; x += 16) ctx.fillRect(S.x + x, S.y + S.h - 14, 4, 4);
+      for (let i = 0; i < 14; i++) {
+        const x = (i * 53 + Math.sin(time + i) * 10 + S.w) % S.w;
+        const y = S.h - 18 - ((time * (18 + (i % 4) * 8) + i * 37) % (S.h - 18));
+        ctx.fillStyle = i % 2 ? '#ffb347' : '#ff7043';
+        ctx.fillRect(S.x + Math.floor(x / 2) * 2, S.y + Math.floor(y / 2) * 2, 2, 2);
+      }
+    } else if (kind === 'graveyard') {
+      // 幾顆星星一閃一閃
+      for (let i = 0; i < 6; i++) {
+        if (Math.floor(time * 2 + i * 0.7) % 3 !== 0) continue;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(S.x + 20 + i * 57, S.y + 8 + (i % 3) * 14, 2, 2);
+      }
+    }
+  }
+
+  // 文字底下墊一塊半透明黑底，背景再花也看得清楚
+  function textBacking(x, y, w, h) {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(x, y, w, h);
+  }
+
   function drawMonster(m, x0, y0, flash, laughing = false) {
     const map = laughing ? m.laugh : m.map;
     for (let r = 0; r < map.length; r++) {
@@ -1670,6 +1849,8 @@
       }
     } else {
       const m = adv.monster;
+      ctx.drawImage(advBg(m.bg), S.x, S.y, S.w, S.h);
+      drawAdvBgFx(m.bg, time);
       const size = m.map.length * PX;
       const cx = S.x + S.w / 2;                 // 怪物放在螢幕中間
       let ox = 0, oy = Math.round(Math.sin(time * 3) * 3);
@@ -1710,17 +1891,18 @@
       ctx.globalAlpha = 1;
 
       // 左上：名字；右上：勝敗
+      ctx.font = `bold 15px ${SANS}`;
+      textBacking(S.x + 4, S.y + 4, ctx.measureText(monsterName()).width + 12, 20);
       ctx.textAlign = 'left';
       ctx.fillStyle = '#c8f7c5';
-      ctx.font = `bold 15px ${SANS}`;
       ctx.fillText(monsterName(), S.x + 10, S.y + 14);
       ctx.textAlign = 'right';
       ctx.font = `bold 16px ${PIXEL_FONT}`;
-      if (adv.status === 'won') {
-        if (Math.floor(time * 4) % 2 === 0) { ctx.fillStyle = '#facc15'; ctx.fillText('VICTORY!', S.x + S.w - 10, S.y + 14); }
-      } else if (adv.status === 'lost') {
-        ctx.fillStyle = '#ef4444';
-        ctx.fillText('GAME OVER', S.x + S.w - 10, S.y + 14);
+      if (adv.status === 'won' || adv.status === 'lost') {
+        const label = adv.status === 'won' ? 'VICTORY!' : 'GAME OVER';
+        textBacking(S.x + S.w - ctx.measureText(label).width - 16, S.y + 4, ctx.measureText(label).width + 12, 20);
+        if (adv.status === 'lost') { ctx.fillStyle = '#ef4444'; ctx.fillText(label, S.x + S.w - 10, S.y + 14); }
+        else if (Math.floor(time * 4) % 2 === 0) { ctx.fillStyle = '#facc15'; ctx.fillText(label, S.x + S.w - 10, S.y + 14); }
       }
 
       // 怪物下面：HP 血條
@@ -1729,8 +1911,9 @@
       const ratio = adv.hp / adv.maxHp;
       const filled = Math.ceil(ratio * segs);
       const barColor = ratio > 0.5 ? '#4ade80' : ratio > 0.25 ? '#facc15' : '#ef4444';
+      textBacking(bx - 36, by - 6, bw + 100, bh + 12);
       for (let i = 0; i < segs; i++) {
-        ctx.fillStyle = i < filled ? barColor : 'rgba(255,255,255,0.08)';
+        ctx.fillStyle = i < filled ? barColor : 'rgba(255,255,255,0.12)';
         ctx.fillRect(Math.round(bx + i * (sw + gap)), by, Math.max(1, Math.floor(sw)), bh);
       }
       ctx.strokeStyle = 'rgba(200,247,197,0.5)';
