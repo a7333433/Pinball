@@ -295,8 +295,8 @@
       btnMult: '投倍率孔', btnLock: '定燈', btnBet: '投珠孔', btnFire: '按住拉彈簧',
       langBtn: 'English', langShort: 'EN', close: '關閉',
       modeShort: '冒險', modeShortAdv: '經典', modeLong: '切換到大冒險', modeLongAdv: '切換到經典模式',
-      advTitle: '彈珠台大冒險', advStart: '開始冒險',
-      advIntro: '打倒怪物！每場有 {n} 顆彈珠，鋼珠落進亮燈的那一排就能造成「倍率 × 投珠數 − 怪物防禦」點傷害。',
+      advTitle: '彈珠台大冒險', advStart: '開始冒險', advFight: '挑戰{name}', advCleared: '已擊敗',
+      advIntro: '選一隻怪物來挑戰！每場有 {n} 顆彈珠，鋼珠落進亮燈的那一排就能造成「倍率 × 投珠數 − 防禦」點傷害。',
       advWinTitle: '勝利！', advWinText: '打倒了{name}，還剩 {left} 顆彈珠。', advAgain: '挑戰下一隻',
       advLoseTitle: '落敗…', advLoseText: '彈珠用完了，{name}還剩 {hp} HP。', advRetry: '再試一次',
       advAppear: '野生的{name}出現了！HP {hp}，防禦 {def}',
@@ -345,8 +345,8 @@
       btnMult: 'Multiply', btnLock: 'Lock', btnBet: 'Bet', btnFire: 'Hold to pull',
       langBtn: '中文', langShort: '中', close: 'Close',
       modeShort: 'Quest', modeShortAdv: 'Classic', modeLong: 'Pinball Quest', modeLongAdv: 'Classic mode',
-      advTitle: 'Pinball Quest', advStart: 'Start',
-      advIntro: 'Defeat the monster! You get {n} balls. Land in a lit lane to deal multiplier × bet − DEF damage.',
+      advTitle: 'Pinball Quest', advStart: 'Start', advFight: 'Fight the {name}', advCleared: 'Defeated',
+      advIntro: 'Pick a monster to fight! You get {n} balls. Land in a lit lane to deal multiplier × bet − DEF damage.',
       advWinTitle: 'Victory!', advWinText: 'You defeated the {name} with {left} balls left.', advAgain: 'Next monster',
       advLoseTitle: 'Defeated…', advLoseText: 'Out of balls. The {name} still has {hp} HP.', advRetry: 'Try again',
       advAppear: 'A wild {name} appears! HP {hp}, DEF {def}',
@@ -626,11 +626,23 @@
   const advLocked = () => mode === 'adv' && adv.status !== 'playing';
   const monsterName = () => adv.monster ? adv.monster.name[lang] : '';
 
+  // 玩家自己選要挑戰的怪物；打倒過的怪物會打勾（存在瀏覽器）
+  let pickIdx = Math.min(MONSTERS.length - 1, loadRecord('candy-pinball-adv-pick'));
+  const cleared = new Set();
+  try { (JSON.parse(localStorage.getItem('candy-pinball-adv-cleared') || '[]')).forEach(i => cleared.add(i)); } catch (e) { /* 無痕模式 */ }
+  function setPick(i) {
+    pickIdx = Math.max(0, Math.min(MONSTERS.length - 1, i));
+    saveRecord('candy-pinball-adv-pick', pickIdx);
+  }
+  // 難度星等：1～5 顆
+  const monsterStars = i => 1 + Math.floor(i * 4 / (MONSTERS.length - 1));
+
   function startAdventure() {
     Sound.init();
     Sound.coin();
-    const m = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
+    const m = MONSTERS[pickIdx];
     adv.monster = m;
+    adv.monsterIdx = pickIdx;
     adv.maxHp = adv.hp = Math.max(1, Math.round(m.hp * (0.9 + Math.random() * 0.2)));
     adv.status = 'playing';
     adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = 0;
@@ -677,6 +689,9 @@
       adv.endT = 1.8;
       adv.wins++;
       saveRecord('candy-pinball-adv-wins', adv.wins);
+      cleared.add(adv.monsterIdx);
+      try { localStorage.setItem('candy-pinball-adv-cleared', JSON.stringify([...cleared])); } catch (e) { /* 無痕模式 */ }
+      setPick(adv.monsterIdx + 1);      // 下一場預設挑戰下一隻（比較強的）
       say('advWinMsg', { name: monsterName() });
       setTimeout(() => Sound.win(), 350);
     }
@@ -2665,6 +2680,47 @@
 
   // ---- 遊戲模式的畫面切換 ----
   const ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('overlay-coin');
+  const pickEl = $('monster-pick');
+
+  // 選怪物的按鈕：像素頭像、名字、HP、防禦、難度星等、已擊敗打勾
+  function renderPicker() {
+    pickEl.textContent = '';
+    const dpr = window.devicePixelRatio || 1, P = 4;
+    MONSTERS.forEach((m, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'mp-item' + (i === pickIdx ? ' selected' : '');
+      b.setAttribute('aria-pressed', String(i === pickIdx));
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = Math.round(12 * P * dpr);
+      const c = cv.getContext('2d');
+      c.scale(dpr, dpr);
+      m.map.forEach((row, r) => [...row].forEach((ch, col) => {
+        if (ch === '.') return;
+        c.fillStyle = m.pal[ch];
+        c.fillRect(col * P, r * P, P, P);
+      }));
+      const name = document.createElement('span');
+      name.className = 'mp-name';
+      name.textContent = m.name[lang];
+      const stats = document.createElement('span');
+      stats.className = 'mp-stats';
+      stats.textContent = `HP${m.hp} 🛡${m.def}`;
+      const stars = document.createElement('span');
+      stars.className = 'mp-stars';
+      stars.textContent = '★'.repeat(monsterStars(i));
+      b.append(cv, name, stats, stars);
+      if (cleared.has(i)) {
+        const done = document.createElement('span');
+        done.className = 'mp-done';
+        done.textContent = '✓';
+        done.title = t('advCleared');
+        b.append(done);
+      }
+      b.addEventListener('click', () => { Sound.init(); Sound.clunk(); setPick(i); refreshOverlay(); });
+      pickEl.append(b);
+    });
+  }
   function refreshOverlay() {
     let show = false, title = '', text = '', btn = '';
     if (mode === 'classic') {
@@ -2672,13 +2728,19 @@
       title = t('title'); text = t('overlayText'); btn = t('overlayCoin');
     } else if (adv.status === 'intro') {
       show = true;
-      title = t('advTitle'); text = t('advIntro', { n: ADV_BALLS }); btn = t('advStart');
+      title = t('advTitle'); text = t('advIntro', { n: ADV_BALLS });
     } else if (adv.status === 'won' && adv.endT <= 0) {
       show = true;
-      title = t('advWinTitle'); text = t('advWinText', { name: monsterName(), left: state.credits }); btn = t('advAgain');
+      title = t('advWinTitle'); text = t('advWinText', { name: monsterName(), left: state.credits });
     } else if (adv.status === 'lost' && adv.endT <= 0) {
       show = true;
-      title = t('advLoseTitle'); text = t('advLoseText', { name: monsterName(), hp: adv.hp }); btn = t('advRetry');
+      title = t('advLoseTitle'); text = t('advLoseText', { name: monsterName(), hp: adv.hp });
+    }
+    const picking = show && mode === 'adv';
+    if (picking) btn = t('advFight', { name: MONSTERS[pickIdx].name[lang] });
+    if (pickEl) {
+      pickEl.hidden = !picking;
+      if (picking) renderPicker();
     }
     overlay.classList.toggle('hidden', !show);
     overlay.classList.toggle('below-screen', mode === 'adv');

@@ -25,6 +25,7 @@
           <div class="overlay-card">
             <h2 id="ov-title">柑仔店彈珠台</h2>
             <p id="ov-text">投一枚硬幣，換 20 顆彈珠！</p>
+            <div id="monster-pick" class="monster-pick" hidden></div>
             <button id="overlay-coin" class="btn coin">投幣開始</button>
             <button class="link" data-action="mode" data-i18n="modeLong" data-i18n-adv="modeLongAdv">切換到大冒險</button>
             <button class="link" data-action="help" data-i18n="howTo">玩法說明</button>
@@ -83,7 +84,7 @@
       <h3>彈珠台大冒險</h3>
       <ol>
         <li>按「冒險」（或 <kbd>Q</kbd>）切換到大冒險模式，隨時都能切回經典模式，兩邊的彈珠分開保留。</li>
-        <li>每場出現一隻像素怪物，上方的倍率欄變成怪物螢幕，怪物下方顯示牠的 HP；落獎區下方則變成訊息螢幕，顯示目前的狀況。</li>
+        <li>開始前自己選要挑戰哪一隻怪物（星星越多越難，打倒過的會打勾）。上方的倍率欄變成怪物螢幕，怪物下方顯示牠的 HP；落獎區下方則變成訊息螢幕，顯示目前的狀況。</li>
         <li>每場有 30 顆彈珠，不能投幣。玩法和經典模式一樣，但中獎不出珠，改成對怪物造成傷害。</li>
         <li>每隻怪物都有<strong>防禦</strong>（顯示在 HP 旁邊的盾牌數字）：實際傷害 = 倍率 × 投珠數 − 防禦。打不破防禦就是 0 傷害，怪物還會竊笑。防禦越高的怪物 HP 越少。</li>
         <li>定燈後，沒亮燈的排裡會隨機多亮一顆<strong>綠色的補珠燈</strong>。鋼珠落進補珠燈不會造成傷害，但會補回「投珠數 × 2」顆彈珠。</li>
@@ -109,7 +110,7 @@
       <h3>Pinball Quest</h3>
       <ol>
         <li>Press <strong>Quest</strong> (or <kbd>Q</kbd>) to switch to Pinball Quest. You can switch back to Classic at any time; each mode keeps its own balls.</li>
-        <li>Each game a pixel monster appears. The multiplier columns at the top become a monster screen, with its HP shown below it, and the area under the prize lanes becomes a message screen.</li>
+        <li>Before each game, pick which monster to fight (more stars = harder; ones you've beaten get a check mark). The multiplier columns at the top become a monster screen, with its HP shown below it, and the area under the prize lanes becomes a message screen.</li>
         <li>You get 30 balls per game and can't insert coins. Play works the same as Classic, but a win pays no balls: it damages the monster instead.</li>
         <li>Every monster has <strong>defense</strong> (the shield number next to its HP): damage = multiplier × bet − DEF. If your attack doesn't beat its defense it deals 0 and the monster snickers. Monsters with higher defense have less HP.</li>
         <li>After locking, one unlit lane also gets a <strong>green refill light</strong>. Landing there deals no damage but gives you bet × 2 balls back.</li>
