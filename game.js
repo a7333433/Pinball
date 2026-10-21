@@ -121,6 +121,7 @@
   const TRAY_TILT = 260;            // 盤子往前傾，珠子會滾到前緣
   const TRAY_CAP = 190;             // 托盤裝得下的顆數；再多就從托盤滿出來、掉到機台外面（仍然計數）
   const DISPLAY = { x: 272, y: 856, w: 110, h: 46 };
+  const DISPLAY_MAX = 9999;         // 持珠顯示器四位數的上限
   const BUTTON = { x: 196, y: 876, r: 20 };   // 藍色定燈按鈕
 
   function mulberry32(a) {
@@ -1383,7 +1384,7 @@
     ctx.shadowColor = '#ff2a2a';
     ctx.shadowBlur = 8;
     ctx.fillStyle = '#ff3b3b';
-    ctx.fillText(String(Math.min(9999, state.credits)), DISPLAY.x + DISPLAY.w - 8, DISPLAY.y + 27);
+    ctx.fillText(String(Math.min(DISPLAY_MAX, state.credits)), DISPLAY.x + DISPLAY.w - 8, DISPLAY.y + 27);
     ctx.restore();
   }
 
@@ -1408,7 +1409,8 @@
     ctx.moveTo(36, 1035.5);
     ctx.lineTo(398, 1035.5);
     ctx.stroke();
-    const hidden = state.credits - tray.length;
+    // 持珠顯示器最多到 DISPLAY_MAX，超過的部分才在右下角另外顯示
+    const hidden = state.credits - DISPLAY_MAX;
     if (hidden > 0) {
       ctx.font = `bold 12px ${SANS}`;
       ctx.textAlign = 'right';
