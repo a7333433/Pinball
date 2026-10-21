@@ -36,7 +36,7 @@
       fired: '發射！',
       moreBalls: '另有 {n} 顆',
       hintMult: '加倍', hintLock: '定燈', hintBet: '投珠', hintPull: '拉桿發射',
-      cvBet: '投珠', cvBalls: '顆', cvLit: '亮{n}燈', cvMultHole: '倍率孔', cvBetHole: '投珠孔',
+      cvBet: '投珠', cvBalls: '顆', cvLit: '亮{n}燈', cvMultHole: '倍率孔', cvBetHole: '投珠孔', cvCoinSlot: '投幣口',
       cvLock: '定燈', cvPull: '拉桿', cvChute: '出珠口', cvDisplay: '持珠',
       coin: '投幣', overlayText: '投一枚硬幣，換 20 顆彈珠！', overlayCoin: '投幣開始', howTo: '玩法說明',
       sign: '柑仔店<br><span>彈珠台</span>', stCredits: '持有彈珠', stBet: '投珠數', stMult: '倍率',
@@ -69,7 +69,7 @@
       fired: 'Fire!',
       moreBalls: '+{n} more',
       hintMult: 'Multiply', hintLock: 'Lock', hintBet: 'Bet', hintPull: 'Pull to shoot',
-      cvBet: 'BET', cvBalls: 'balls', cvLit: '{n} lit', cvMultHole: 'MULTIPLY', cvBetHole: 'BET',
+      cvBet: 'BET', cvBalls: 'balls', cvLit: '{n} lit', cvMultHole: 'MULTIPLY', cvBetHole: 'BET', cvCoinSlot: 'COIN',
       cvLock: 'LOCK', cvPull: 'PULL', cvChute: 'PAYOUT', cvDisplay: 'BALLS',
       coin: 'Coin', overlayText: 'Insert a coin for 20 balls!', overlayCoin: 'Insert coin', howTo: 'How to play',
       sign: 'Candy<br><span>Pinball</span>', stCredits: 'Balls', stBet: 'Bet', stMult: 'Multiplier',
@@ -112,17 +112,18 @@
 
   const HOLES = {
     bet: { x: 462, y: 980, r: 19 },     // 拉桿下方，白邊黑心的圓孔
-    mult: { x: 448, y: 108 },           // 上方金屬板
+    mult: { x: 186, y: 876, r: 17 },    // 定燈按鈕旁，白邊黑心的圓孔
   };
+  const COIN_SLOT = { x: 448, y: 108 };   // 上方金屬板的投幣口（點了也能投幣）
   const KNOB_Y = 854;               // 前面板上的拉桿把手
-  const CHUTE = { x: 92, y: 914 };
+  const CHUTE = { x: 52, y: 914 };
   // 托盤：從斜上方看的不鏽鋼盤，y 方向是盤子的深度（往前傾）
   const TRAY = { left: 34, right: 400, back: 934, front: 1034 };   // 右邊讓給投珠孔
   const TRAY_TILT = 260;            // 盤子往前傾，珠子會滾到前緣
   const TRAY_CAP = 190;             // 托盤裝得下的顆數；再多就從托盤滿出來、掉到機台外面（仍然計數）
   const DISPLAY = { x: 272, y: 856, w: 110, h: 46 };
   const DISPLAY_MAX = 9999;         // 持珠顯示器四位數的上限
-  const BUTTON = { x: 196, y: 876, r: 20 };   // 藍色定燈按鈕
+  const BUTTON = { x: 120, y: 876, r: 20 };   // 藍色定燈按鈕
 
   function mulberry32(a) {
     return function () {
@@ -834,16 +835,23 @@
     for (let y = 34; y < 162; y += 3) { c.beginPath(); c.moveTo(404, y); c.lineTo(492, y); c.stroke(); }
     screw(c, 411, 39); screw(c, 485, 39); screw(c, 411, 155); screw(c, 485, 155);
     {
-      const hole = HOLES.mult;
+      const s = COIN_SLOT;
       c.fillStyle = '#333';
       c.font = `bold 13px ${SANS}`;
-      c.fillText(t('cvMultHole'), hole.x, hole.y - 20);
-      roundRect(c, hole.x - 22, hole.y - 7, 44, 14, 7);
+      c.fillText(t('cvCoinSlot'), s.x, s.y - 42);
+      const bezel = c.createLinearGradient(s.x - 14, 0, s.x + 14, 0);
+      bezel.addColorStop(0, '#8f969f');
+      bezel.addColorStop(0.5, '#f4f5f7');
+      bezel.addColorStop(1, '#7b828c');
+      roundRect(c, s.x - 14, s.y - 30, 28, 62, 8);
+      c.fillStyle = bezel;
+      c.fill();
+      c.strokeStyle = '#5b626b';
+      c.lineWidth = 1.5;
+      c.stroke();
+      roundRect(c, s.x - 3.5, s.y - 22, 7, 46, 3.5);
       c.fillStyle = '#0d0d0d';
       c.fill();
-      c.strokeStyle = '#7b828c';
-      c.lineWidth = 2;
-      c.stroke();
     }
 
     // ---- 遊戲檯面 ----
@@ -1037,9 +1045,8 @@
     c.fillRect(30, 980, 374, 58);
     c.restore();
 
-    // ---- 投珠孔：拉桿下方，白邊黑心的圓 ----
-    {
-      const hole = HOLES.bet;
+    // ---- 投珠孔（拉桿下方）、倍率孔（定燈按鈕旁）：白邊黑心的圓 ----
+    for (const [hole, label] of [[HOLES.bet, t('cvBetHole')], [HOLES.mult, t('cvMultHole')]]) {
       c.beginPath();
       c.arc(hole.x + 1, hole.y + 2, hole.r + 1, 0, Math.PI * 2);
       c.fillStyle = 'rgba(0,0,0,0.35)';
@@ -1062,7 +1069,7 @@
       c.font = `bold 12px ${SANS}`;
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      c.fillText(t('cvBetHole'), hole.x, hole.y + hole.r + 14);
+      c.fillText(label, hole.x, hole.y + hole.r + 14);
     }
   }
 
@@ -1294,14 +1301,16 @@
   }
 
   // side：對話框在目標的哪一邊（below / above / left），箭頭指向目標
-  function hintBubble(t, tx, ty, side, text) {
+  // align（只用在 above / below）：center 置中、start 往右延伸、end 往左延伸，箭頭都指著目標
+  function hintBubble(t, tx, ty, side, text, align = 'center') {
     const bounce = Math.abs(Math.sin(t * 5)) * 7;
     ctx.save();
     ctx.font = `900 19px ${SANS}`;
     const w = ctx.measureText(text).width + 22, h = 32, a = 11;
     let tipX = tx, tipY = ty, bx, by;
-    if (side === 'below') { tipY = ty + bounce; bx = tx - w / 2; by = tipY + a; }
-    else if (side === 'above') { tipY = ty - bounce; bx = tx - w / 2; by = tipY - a - h; }
+    const ax = align === 'start' ? tx - 16 : align === 'end' ? tx + 16 - w : tx - w / 2;
+    if (side === 'below') { tipY = ty + bounce; bx = ax; by = tipY + a; }
+    else if (side === 'above') { tipY = ty - bounce; bx = ax; by = tipY - a - h; }
     else { tipX = tx - bounce; bx = tipX - a - w; by = ty - h / 2; }
     bx = Math.max(4, Math.min(W - 4 - w, bx));
     ctx.beginPath();
@@ -1335,11 +1344,11 @@
     if (round.phase === 'select') {
       const m = HOLES.mult;
       if (state.credits >= MULT_COST && round.level < MULTS.length - 1) {
-        hintRect(time, m.x - 34, m.y - 34, 68, 50);
-        hintBubble(time, m.x, m.y + 22, 'below', t('hintMult'));
+        hintCircle(time, m.x, m.y, m.r + 5);
+        hintBubble(time, m.x, m.y - m.r - 10, 'above', t('hintMult'), 'start');
       }
       hintCircle(time, BUTTON.x, BUTTON.y, BUTTON.r + 8);
-      hintBubble(time, BUTTON.x, BUTTON.y - BUTTON.r - 12, 'above', t('hintLock'));
+      hintBubble(time, BUTTON.x, BUTTON.y - BUTTON.r - 12, 'above', t('hintLock'), 'end');
     } else if (round.phase === 'bet') {
       const b = HOLES.bet;
       if (state.credits > 0) hintCircle(time, b.x, b.y, b.r + 5);
@@ -1591,6 +1600,7 @@
       if (hit) return key;
     }
     if (Math.hypot(p.x - BUTTON.x, p.y - BUTTON.y) < 32) return 'button';
+    if (Math.abs(p.x - COIN_SLOT.x) < 34 && Math.abs(p.y - COIN_SLOT.y) < 50) return 'coin';
     return null;
   }
 
@@ -1600,6 +1610,7 @@
     if (target === 'bet') addBet();
     else if (target === 'mult') addMult();
     else if (target === 'button') lockLights();
+    else if (target === 'coin') insertCoin();
     else {
       try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 指標已失效時不影響蓄力 */ }
       startCharge();
