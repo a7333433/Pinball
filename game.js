@@ -697,10 +697,12 @@
   }
 
   let lastMsg = ['insertCoin', {}];
+  let msgText = '', msgT = 0;
   function say(key, vars = {}) {
     lastMsg = [key, vars];
     const text = t(key, vars);
     for (const el of msgEls) el.textContent = text;
+    if (text !== msgText) { msgText = text; msgT = performance.now(); }
   }
 
   function takeBall(hole, delay = 0) {
@@ -1351,6 +1353,9 @@
     // ---- 下方回珠區：白色斜板 + 三角板 ----
     c.fillStyle = '#231b17';
     c.fillRect(34, B.bottom, 452, 116);
+    if (mode === 'adv') {
+      drawMsgScreenFrame(c);
+    } else {
     c.fillStyle = '#efede7';
     c.beginPath();
     c.moveTo(34, 742); c.lineTo(452, 768); c.lineTo(452, 788); c.lineTo(34, 762);
@@ -1366,6 +1371,7 @@
     c.moveTo(372, 762); c.lineTo(452, 728); c.lineTo(452, 767);
     c.closePath();
     c.fill();
+    }
     // 發射軌道延伸到下方，裡面是長彈簧
     c.fillStyle = '#17100c';
     c.fillRect(LANE_X, B.bottom, B.right - LANE_X, LANE_BOTTOM - B.bottom);
@@ -1850,6 +1856,92 @@
     ctx.fillRect(x, y, w, h);
   }
 
+
+  // ===== 大冒險：落獎區下方的訊息螢幕 =====
+  const MSG_SCREEN = { x: 44, y: 730, w: 400, h: 96 };
+
+  function drawMsgScreenFrame(c) {
+    const M = MSG_SCREEN;
+    const bez = c.createLinearGradient(0, M.y - 6, 0, M.y + M.h + 6);
+    bez.addColorStop(0, '#e5e7eb');
+    bez.addColorStop(0.5, '#9aa1a9');
+    bez.addColorStop(1, '#d1d5db');
+    roundRect(c, M.x - 6, M.y - 6, M.w + 12, M.h + 12, 8);
+    c.fillStyle = bez;
+    c.fill();
+    roundRect(c, M.x - 2, M.y - 2, M.w + 4, M.h + 4, 5);
+    c.fillStyle = '#0a0a0a';
+    c.fill();
+    const bg = c.createLinearGradient(0, M.y, 0, M.y + M.h);
+    bg.addColorStop(0, '#17351d');
+    bg.addColorStop(1, '#0a1a0e');
+    roundRect(c, M.x, M.y, M.w, M.h, 4);
+    c.fillStyle = bg;
+    c.fill();
+    c.fillStyle = 'rgba(140, 255, 160, 0.06)';
+    for (let x = M.x + 2; x < M.x + M.w; x += 4) {
+      for (let y = M.y + 2; y < M.y + M.h; y += 4) c.fillRect(x, y, 1, 1);
+    }
+  }
+
+  // 依寬度斷行：中文逐字斷，英文盡量在空白處斷
+  function wrapText(text, maxW) {
+    const lines = [];
+    let line = '';
+    for (const ch of text) {
+      const test = line + ch;
+      if (line && ctx.measureText(test).width > maxW) {
+        const sp = line.lastIndexOf(' ');
+        if (sp > 0 && /\S/.test(ch) && /[A-Za-z0-9]/.test(ch)) {
+          lines.push(line.slice(0, sp));
+          line = line.slice(sp + 1) + ch;
+        } else {
+          lines.push(line);
+          line = ch === ' ' ? '' : ch;
+        }
+      } else {
+        line = test;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  function drawAdvMessage(time) {
+    const M = MSG_SCREEN;
+    ctx.save();
+    roundRect(ctx, M.x, M.y, M.w, M.h, 4);
+    ctx.clip();
+    ctx.font = `bold 18px ${SANS}`;
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    const lines = wrapText(msgText, M.w - 28).slice(0, 3);
+    const lh = 26;
+    const top = M.y + (M.h - lines.length * lh) / 2 + lh / 2;
+    // 打字機效果：一個字一個字跑出來
+    let left = Math.floor((performance.now() - msgT) / 1000 * 45);
+    let cursor = null;
+    lines.forEach((ln, i) => {
+      const chars = [...ln];
+      const part = chars.slice(0, Math.max(0, left)).join('');
+      left -= chars.length;
+      ctx.fillStyle = '#c8f7c5';
+      ctx.fillText(part, M.x + 14, top + i * lh);
+      if (left <= 0 && cursor === null) cursor = { x: M.x + 14 + ctx.measureText(part).width + 3, y: top + i * lh };
+    });
+    if (!cursor && lines.length) {
+      const i = lines.length - 1;
+      cursor = { x: M.x + 14 + ctx.measureText(lines[i]).width + 3, y: top + i * lh };
+    }
+    if (cursor && Math.floor(time * 2.5) % 2 === 0) {
+      ctx.fillStyle = '#c8f7c5';
+      ctx.fillRect(cursor.x, cursor.y - 8, 9, 16);
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    for (let y = M.y; y < M.y + M.h; y += 3) ctx.fillRect(M.x, y, M.w, 1);
+    ctx.restore();
+  }
+
   function drawMonster(m, x0, y0, flash, laughing = false) {
     const map = laughing ? m.laugh : m.map;
     for (let r = 0; r < map.length; r++) {
@@ -2299,6 +2391,7 @@
       drawBall(ball.x, ball.y, sprites.board);
     }
     drawPopups();
+    if (mode === 'adv') drawAdvMessage(t);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(glassCanvas, 0, 0);
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
