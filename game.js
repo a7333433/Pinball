@@ -15,10 +15,12 @@
   const REFILL_MULT = 2;      // 補珠燈：中了得到 投珠數 × 2 顆彈珠
   // 12×12 像素圖：'.' 透明，其他字元對應 pal 的顏色
   // 防禦越高的怪物 HP 越少；實際傷害 = 倍率 × 投珠數 − 防禦（最少 0）
+  // 數值依「30 顆彈珠、最佳打法」的勝率由易到難排：約 95% → 53%（落點平均的估算）
+  // 後面幾隻一擊所需的攻擊超過 ×2 全押（60），一定要用倍率孔才打得倒
   const MONSTERS = [
     {
       bg: 'forest',
-      name: { zh: '史萊姆', en: 'Slime' }, hp: 24, def: 0,
+      name: { zh: '史萊姆', en: 'Slime' }, hp: 25, def: 0,
       pal: { K: '#0b1a0b', G: '#3ccf4e', L: '#a6f7ae', D: '#1f7a2b', W: '#ffffff', R: '#ff5d73' },
       map: [
         '............',
@@ -52,7 +54,7 @@
     },
     {
       bg: 'cave',
-      name: { zh: '蝙蝠', en: 'Bat' }, hp: 22, def: 1,
+      name: { zh: '蝙蝠', en: 'Bat' }, hp: 24, def: 1,
       pal: { K: '#120818', P: '#8a4fd8', W: '#ffe66b', R: '#ff4d6d' },
       map: [
         '............',
@@ -86,7 +88,7 @@
     },
     {
       bg: 'graveyard',
-      name: { zh: '幽靈', en: 'Ghost' }, hp: 20, def: 2,
+      name: { zh: '幽靈', en: 'Ghost' }, hp: 23, def: 5,
       pal: { K: '#1a1a2e', W: '#e8f0ff', R: '#ff6b81' },
       map: [
         '....KKKK....',
@@ -120,7 +122,7 @@
     },
     {
       bg: 'graveyard',
-      name: { zh: '僵屍', en: 'Zombie' }, hp: 18, def: 3,
+      name: { zh: '僵屍', en: 'Zombie' }, hp: 22, def: 12,
       pal: { K: '#141a10', G: '#7fb069', D: '#4a6b3a', C: '#5b4b8a', W: '#f5f5f5', R: '#c0392b' },
       map: [
         '...KKKKKK...',
@@ -154,7 +156,7 @@
     },
     {
       bg: 'crypt',
-      name: { zh: '骷髏', en: 'Skeleton' }, hp: 15, def: 4,
+      name: { zh: '骷髏', en: 'Skeleton' }, hp: 21, def: 22,
       pal: { K: '#111111', W: '#f2efe6', R: '#e0465a' },
       map: [
         '...KKKKKK...',
@@ -188,7 +190,7 @@
     },
     {
       bg: 'hell',
-      name: { zh: '小惡龍', en: 'Baby Dragon' }, hp: 13, def: 5,
+      name: { zh: '小惡龍', en: 'Baby Dragon' }, hp: 20, def: 33,
       pal: { K: '#2a0505', R: '#e6392f', W: '#ffffff', Y: '#ffd166', T: '#ff8fa3' },
       map: [
         '..K......K..',
@@ -222,7 +224,7 @@
     },
     {
       bg: 'ruins',
-      name: { zh: '石像怪', en: 'Gargoyle' }, hp: 10, def: 6,
+      name: { zh: '石像怪', en: 'Gargoyle' }, hp: 19, def: 44,
       pal: { K: '#1f1f24', S: '#8b8f99', D: '#5f636c', R: '#ff3b3b' },
       map: [
         'K.K......K.K',
