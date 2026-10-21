@@ -16,7 +16,7 @@
   const MONSTERS = [
     {
       name: { zh: '史萊姆', en: 'Slime' }, hp: 20,
-      pal: { K: '#0b1a0b', G: '#3ccf4e', L: '#a6f7ae', D: '#1f7a2b', W: '#ffffff' },
+      pal: { K: '#0b1a0b', G: '#3ccf4e', L: '#a6f7ae', D: '#1f7a2b', W: '#ffffff', R: '#ff5d73' },
       map: [
         '............',
         '....KKKK....',
@@ -29,6 +29,21 @@
         'KGGGGGGGGGGK',
         'KGGGDDDDGGGK',
         '.KGGGGGGGGK.',
+        '..KKKKKKKK..',
+      ],
+      // 竊笑時的表情：眼睛瞇起來、嘴巴張開
+      laugh: [
+        '............',
+        '....KKKK....',
+        '..KKGGGGKK..',
+        '.KGGLLGGGGK.',
+        '.KGLLGGGGGK.',
+        'KGGGGGGGGGGK',
+        'KGGGKGGGKGGK',
+        'KGGKGKGKGKGK',
+        'KGKKKKKKKKGK',
+        'KGGKRRRRKGGK',
+        '.KGGKKKKGGK.',
         '..KKKKKKKK..',
       ],
     },
@@ -49,10 +64,25 @@
         '............',
         '............',
       ],
+      // 竊笑時的表情：眼睛瞇起來、嘴巴張開
+      laugh: [
+        '............',
+        'K..........K',
+        'KK..K..K..KK',
+        'KPK.KKKK.KPK',
+        'KPPKPPPPKPPK',
+        'KPPPKPKPKPPK',
+        '.KPPPPPPPPK.',
+        '..KPKKKKPK..',
+        '...KRRRRK...',
+        '....KKKK....',
+        '............',
+        '............',
+      ],
     },
     {
       name: { zh: '幽靈', en: 'Ghost' }, hp: 36,
-      pal: { K: '#1a1a2e', W: '#e8f0ff' },
+      pal: { K: '#1a1a2e', W: '#e8f0ff', R: '#ff6b81' },
       map: [
         '....KKKK....',
         '..KKWWWWKK..',
@@ -67,10 +97,25 @@
         'KWKWWKKWWKWK',
         '.K.KK..KK.K.',
       ],
+      // 竊笑時的表情：眼睛瞇起來、嘴巴張開
+      laugh: [
+        '....KKKK....',
+        '..KKWWWWKK..',
+        '.KWWWWWWWWK.',
+        '.KWWWWWWWWK.',
+        'KWWWKWWWKWWK',
+        'KWWKWKWKWKWK',
+        'KWWWWWWWWWWK',
+        'KWWWKKKKWWWK',
+        'KWWWKRRKWWWK',
+        'KWWWWKKWWWWK',
+        'KWKWWKKWWKWK',
+        '.K.KK..KK.K.',
+      ],
     },
     {
       name: { zh: '骷髏', en: 'Skeleton' }, hp: 44,
-      pal: { K: '#111111', W: '#f2efe6' },
+      pal: { K: '#111111', W: '#f2efe6', R: '#e0465a' },
       map: [
         '...KKKKKK...',
         '..KWWWWWWK..',
@@ -85,10 +130,25 @@
         '...KWKKWK...',
         '...K....K...',
       ],
+      // 竊笑時的表情：眼睛瞇起來、嘴巴張開
+      laugh: [
+        '...KKKKKK...',
+        '..KWWWWWWK..',
+        '.KWWWWWWWWK.',
+        '.KWWWWWWWWK.',
+        '.KWKKWWKKWK.',
+        '.KWWWKKWWWK.',
+        '..KWWWWWWK..',
+        '...KWKWKWK..',
+        '...KRRRRRK..',
+        '...KWKWKWK..',
+        '....KKKKK...',
+        '....KWWK....',
+      ],
     },
     {
       name: { zh: '小惡龍', en: 'Baby Dragon' }, hp: 55,
-      pal: { K: '#2a0505', R: '#e6392f', W: '#ffffff', Y: '#ffd166' },
+      pal: { K: '#2a0505', R: '#e6392f', W: '#ffffff', Y: '#ffd166', T: '#ff8fa3' },
       map: [
         '..K......K..',
         '.KRK....KRK.',
@@ -99,6 +159,21 @@
         '.KRRYYYYRRK.',
         '..KRYKKYRK..',
         '.KRRRRRRRRK.',
+        'KRKRRRRRRKRK',
+        'K..KRK.KRK.K',
+        '...KK...KK..',
+      ],
+      // 竊笑時的表情：眼睛瞇起來、嘴巴張開
+      laugh: [
+        '..K......K..',
+        '.KRK....KRK.',
+        '.KRRKKKKRRK.',
+        'KRRRRRRRRRRK',
+        'KRKKRRRRKKRK',
+        'KRRRRRRRRRRK',
+        '.KRKKKKKKRK.',
+        '..KKWTTWKK..',
+        '.KRRKKKKRRK.',
         'KRKRRRRRRKRK',
         'K..KRK.KRK.K',
         '...KK...KK..',
@@ -1568,9 +1643,10 @@
     }
   }
 
-  function drawMonster(m, x0, y0, flash) {
-    for (let r = 0; r < m.map.length; r++) {
-      const row = m.map[r];
+  function drawMonster(m, x0, y0, flash, laughing = false) {
+    const map = laughing ? m.laugh : m.map;
+    for (let r = 0; r < map.length; r++) {
+      const row = map[r];
       for (let col = 0; col < row.length; col++) {
         const ch = row[col];
         if (ch === '.') continue;
@@ -1611,7 +1687,7 @@
       ctx.ellipse(S.x + 22 + size / 2, S.y + S.h - 10, size * 0.4, 5, 0, 0, Math.PI * 2);
       ctx.fill();
       const visible = adv.status !== 'won' || (adv.dieT > 0 && Math.floor(adv.dieT * 12) % 2 === 0);
-      if (visible) drawMonster(m, x0, y0, adv.hitT > 0 && Math.floor(adv.hitT * 20) % 2 === 0);
+      if (visible) drawMonster(m, x0, y0, adv.hitT > 0 && Math.floor(adv.hitT * 20) % 2 === 0, laughing);
       if (laughing && visible) {
         const word = t('laugh');
         ctx.font = `bold 15px ${SANS}`;
