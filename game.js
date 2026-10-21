@@ -578,6 +578,11 @@
     }
   }
 
+  // 出珠速度：剩不多時一顆一顆（0.07 秒），一次要掉很多時依剩下的數量加速，掉完前會慢慢回到原速
+  function payoutInterval() {
+    return Math.max(0.006, Math.min(0.07, 1.2 / Math.max(1, state.payoutQueue)));
+  }
+
   function update(dt) {
     if (state.charging) state.power = Math.min(1, state.power + dt / 1.1);
     state.floorY = SHOOTER_FLOOR + state.power * SPRING_TRAVEL;
@@ -611,7 +616,7 @@
       } else {
         spawnSpill();
       }
-      state.payoutTimer += 0.07;
+      state.payoutTimer += payoutInterval();
     }
     if (state.payoutQueue === 0) state.payoutTimer = Math.max(state.payoutTimer, 0);
     if (state.credits > state.best) {
