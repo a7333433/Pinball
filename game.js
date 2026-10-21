@@ -1207,13 +1207,13 @@
     const blink = Math.floor(t * 8) % 2 === 0;
     // 面板：投珠數、倍率
     ctx.save();
-    ctx.font = `bold ${round.bet > 99 ? 18 : 24}px "Consolas", "Courier New", monospace`;
+    ctx.font = `bold ${round.bet > 999 ? 14 : round.bet > 99 ? 18 : 24}px "Consolas", "Courier New", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.shadowColor = '#ff2a2a';
     ctx.shadowBlur = 8;
     ctx.fillStyle = '#ff3b3b';
-    ctx.fillText(String(Math.min(999, round.bet)), BET_BOX.x + BET_BOX.w / 2, BET_BOX.y + BET_BOX.h / 2 + 1);
+    ctx.fillText(String(Math.min(9999, round.bet)), BET_BOX.x + BET_BOX.w / 2, BET_BOX.y + BET_BOX.h / 2 + 1);
     ctx.restore();
     led(ctx, multColX(round.level), 146, 5, true);
     // 檯面每一排的 LED
@@ -1379,11 +1379,11 @@
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = 'rgba(255, 40, 40, 0.12)';
-    ctx.fillText('888', DISPLAY.x + DISPLAY.w - 8, DISPLAY.y + 27);
+    ctx.fillText('8888', DISPLAY.x + DISPLAY.w - 8, DISPLAY.y + 27);   // 七段顯示器沒亮的底紋，四位數
     ctx.shadowColor = '#ff2a2a';
     ctx.shadowBlur = 8;
     ctx.fillStyle = '#ff3b3b';
-    ctx.fillText(String(Math.min(999, state.credits)), DISPLAY.x + DISPLAY.w - 8, DISPLAY.y + 27);
+    ctx.fillText(String(Math.min(9999, state.credits)), DISPLAY.x + DISPLAY.w - 8, DISPLAY.y + 27);
     ctx.restore();
   }
 
