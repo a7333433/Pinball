@@ -223,8 +223,8 @@
       advAppear: '野生的{name}出現了！HP {hp}',
       hitMsg: '命中！{mult} 倍 × {bet} 顆，造成 {dmg} 點傷害',
       advMissMsg: '沒打中！{name}在嘲笑你', advWinMsg: '打倒了{name}！', advLoseMsg: '彈珠用完了…',
-      dmgPop: '-{d} HP', advNoCoin: '大冒險模式不能投幣', advMultLine: '倍率 ×{mult}　亮 {lit} 燈',
-      advTip: '命中亮燈排造成傷害', advPressStart: '按「開始冒險」', laugh: '嘻嘻嘻',
+      dmgPop: '-{d} HP', advNoCoin: '大冒險模式不能投幣',
+      advPressStart: '按「開始冒險」', laugh: '嘻嘻嘻',
       stWinAdv: '上次傷害', stBestWinAdv: '勝場', stBestAdv: '敗場',
     },
     en: {
@@ -267,8 +267,8 @@
       advAppear: 'A wild {name} appears! HP {hp}',
       hitMsg: 'Hit! ×{mult} × {bet} = {dmg} damage',
       advMissMsg: 'Missed! The {name} laughs', advWinMsg: 'Defeated the {name}!', advLoseMsg: 'Out of balls…',
-      dmgPop: '-{d} HP', advNoCoin: 'No coins in Quest mode', advMultLine: '×{mult}   {lit} lit',
-      advTip: 'Hit a lit lane to deal damage', advPressStart: 'Press Start', laugh: 'hehehe',
+      dmgPop: '-{d} HP', advNoCoin: 'No coins in Quest mode',
+      advPressStart: 'Press Start', laugh: 'hehehe',
       stWinAdv: 'Last hit', stBestWinAdv: 'Wins', stBestAdv: 'Losses',
     },
   };
@@ -1615,7 +1615,7 @@
 
   // ===== 大冒險：上方的像素螢幕 =====
   const SCREEN = { x: 100, y: 38, w: 386, h: 118 };
-  const PX = 7;               // 怪物每個像素的大小
+  const PX = 6;               // 怪物每個像素的大小
 
   function drawAdvScreenFrame(c) {
     const bez = c.createLinearGradient(0, 30, 0, 164);
@@ -1671,6 +1671,7 @@
     } else {
       const m = adv.monster;
       const size = m.map.length * PX;
+      const cx = S.x + S.w / 2;                 // 怪物放在螢幕中間
       let ox = 0, oy = Math.round(Math.sin(time * 3) * 3);
       if (adv.hitT > 0) ox = Math.round((Math.random() - 0.5) * 10 * (adv.hitT / 0.5));
       const laughing = adv.monster && (adv.laughT > 0 || adv.status === 'lost');
@@ -1678,21 +1679,21 @@
         oy += Math.floor(time * 16) % 2 ? -3 : 0;
         ox += Math.floor(time * 11) % 2 ? 1 : -1;
       }
-      const x0 = S.x + 22 + ox, y0 = S.y + (S.h - size) / 2 + oy;
+      const x0 = cx - size / 2 + ox, y0 = S.y + 8 + oy;
       // 影子
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
       ctx.beginPath();
-      ctx.ellipse(S.x + 22 + size / 2, S.y + S.h - 10, size * 0.4, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, S.y + 83, size * 0.38, 4, 0, 0, Math.PI * 2);
       ctx.fill();
       const visible = adv.status !== 'won' || (adv.dieT > 0 && Math.floor(adv.dieT * 12) % 2 === 0);
       if (visible) drawMonster(m, x0, y0, adv.hitT > 0 && Math.floor(adv.hitT * 20) % 2 === 0, laughing);
       if (laughing && visible) {
+        // 「嘻嘻嘻」在怪物頭的右邊
         const word = t('laugh');
         ctx.font = `bold 15px ${SANS}`;
         ctx.textAlign = 'left';
         ctx.fillStyle = '#ffd166';
-        // 放在怪物頭上，不要蓋到右邊的名字
-        const lx = S.x + 22 + size / 2 - ctx.measureText(word).width / 2, ly = S.y + 9;
+        const lx = x0 + size + 6, ly = S.y + 20;
         for (let i = 0; i < word.length; i++) {
           const w = ctx.measureText(word.slice(0, i)).width;
           ctx.fillText(word[i], lx + w, ly + Math.sin(time * 14 + i * 1.3) * 3);
@@ -1704,49 +1705,43 @@
       for (const p of adv.pops) {
         ctx.globalAlpha = Math.max(0, 1 - p.t / 1.2);
         ctx.fillStyle = '#ff5c5c';
-        ctx.fillText(p.text, S.x + 22 + size / 2, S.y + 30 - p.t * 30);
+        ctx.fillText(p.text, cx, S.y + 32 - p.t * 26);
       }
       ctx.globalAlpha = 1;
 
-      // 右側資訊
-      const ix = S.x + 128, iw = S.w - 140;
+      // 左上：名字；右上：勝敗
       ctx.textAlign = 'left';
       ctx.fillStyle = '#c8f7c5';
-      ctx.font = `bold 17px ${SANS}`;
-      ctx.fillText(monsterName(), ix, S.y + 18);
+      ctx.font = `bold 15px ${SANS}`;
+      ctx.fillText(monsterName(), S.x + 10, S.y + 14);
       ctx.textAlign = 'right';
-      ctx.font = `bold 15px ${PIXEL_FONT}`;
-      ctx.fillText(`HP ${adv.hp}/${adv.maxHp}`, ix + iw, S.y + 18);
-      // 像素血條
-      const segs = 20, gap = 2, sw = (iw - gap * (segs - 1)) / segs;
+      ctx.font = `bold 16px ${PIXEL_FONT}`;
+      if (adv.status === 'won') {
+        if (Math.floor(time * 4) % 2 === 0) { ctx.fillStyle = '#facc15'; ctx.fillText('VICTORY!', S.x + S.w - 10, S.y + 14); }
+      } else if (adv.status === 'lost') {
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText('GAME OVER', S.x + S.w - 10, S.y + 14);
+      }
+
+      // 怪物下面：HP 血條
+      const bw = 200, bx = cx - bw / 2, by = S.y + 92, bh = 12;
+      const segs = 20, gap = 2, sw = (bw - gap * (segs - 1)) / segs;
       const ratio = adv.hp / adv.maxHp;
       const filled = Math.ceil(ratio * segs);
       const barColor = ratio > 0.5 ? '#4ade80' : ratio > 0.25 ? '#facc15' : '#ef4444';
       for (let i = 0; i < segs; i++) {
         ctx.fillStyle = i < filled ? barColor : 'rgba(255,255,255,0.08)';
-        ctx.fillRect(Math.round(ix + i * (sw + gap)), S.y + 34, Math.max(1, Math.floor(sw)), 12);
+        ctx.fillRect(Math.round(bx + i * (sw + gap)), by, Math.max(1, Math.floor(sw)), bh);
       }
       ctx.strokeStyle = 'rgba(200,247,197,0.5)';
       ctx.lineWidth = 1;
-      ctx.strokeRect(ix - 2.5, S.y + 31.5, iw + 5, 17);
-      // 倍率與亮燈數（原本的倍率欄改顯示在這裡）
+      ctx.strokeRect(bx - 2.5, by - 2.5, bw + 5, bh + 5);
+      ctx.fillStyle = '#c8f7c5';
+      ctx.font = `bold 15px ${PIXEL_FONT}`;
+      ctx.textAlign = 'right';
+      ctx.fillText('HP', bx - 8, by + bh / 2 + 1);
       ctx.textAlign = 'left';
-      ctx.fillStyle = '#ffd166';
-      ctx.font = `bold 16px ${SANS}`;
-      const lit = round.phase === 'select' ? litFor(round.level) : round.lit.size;
-      ctx.fillText(t('advMultLine', { mult: mult(), lit }), ix, S.y + 70);
-      // 狀態
-      ctx.font = `bold 18px ${PIXEL_FONT}`;
-      if (adv.status === 'won') {
-        if (Math.floor(time * 4) % 2 === 0) { ctx.fillStyle = '#facc15'; ctx.fillText('VICTORY!', ix, S.y + 98); }
-      } else if (adv.status === 'lost') {
-        ctx.fillStyle = '#ef4444';
-        ctx.fillText('GAME OVER', ix, S.y + 98);
-      } else {
-        ctx.fillStyle = '#9cf5a6';
-        ctx.font = `bold 13px ${SANS}`;
-        ctx.fillText(t('advTip'), ix, S.y + 98);
-      }
+      ctx.fillText(`${adv.hp}/${adv.maxHp}`, bx + bw + 8, by + bh / 2 + 1);
     }
     // 掃描線
     ctx.fillStyle = 'rgba(0,0,0,0.18)';
