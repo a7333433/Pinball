@@ -200,6 +200,7 @@
       betBeforeLock: '燈還在閃，先按藍色按鈕定燈才能投珠',
       inPlay: '鋼珠已發射，請等這一局結束',
       betInfo: '投珠 {bet} 顆 × {mult} 倍，中了得 {win} 顆',
+      betInfoAdv: '投珠 {bet} 顆 × {mult} 倍，中了造成 {win} 點傷害',
       multLocked: '燈已經定了，這一局不能再投倍率孔',
       multMax: '倍率最高 {max} 倍',
       multShort: '彈珠不足 {cost} 顆，不能提升倍率',
@@ -246,6 +247,7 @@
       betBeforeLock: 'Press blue to lock before betting',
       inPlay: 'Ball in play. Wait for the result',
       betInfo: 'Bet {bet} × {mult}: win pays {win}',
+      betInfoAdv: 'Bet {bet} × {mult}: a hit deals {win} damage',
       multLocked: 'Locked. No more multiplier this round',
       multMax: 'Max multiplier is ×{max}',
       multShort: 'Need {cost} balls to raise the multiplier',
@@ -733,7 +735,7 @@
     takeBall(HOLES.bet);
     round.bet++;
     Sound.clunk();
-    say('betInfo', { bet: round.bet, mult: mult(), win: round.bet * mult() });
+    say(mode === 'adv' ? 'betInfoAdv' : 'betInfo', { bet: round.bet, mult: mult(), win: round.bet * mult() });
     return true;
   }
 
