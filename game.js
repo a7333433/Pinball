@@ -236,6 +236,10 @@
       this.tone(2000 + Math.random() * 1400, 0.07, 'triangle', Math.min(0.12, speed / 5000));
     },
     clunk() {
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      if (now - (this.lastClunk || 0) < 0.035) return;
+      this.lastClunk = now;
       this.tone(520, 0.08, 'square', 0.06);
       this.tone(260, 0.12, 'triangle', 0.1, 0.05);
     },
@@ -373,15 +377,38 @@
 
   function addBet(n = 1) {
     Sound.init();
-    if (round.phase === 'select') { say('betBeforeLock'); Sound.error(); return; }
-    if (round.phase !== 'bet') { say('inPlay'); Sound.error(); return; }
-    if (!hasCredits()) return;
-    if (state.credits < n) { say('betManyShort', { n }); Sound.error(); return; }
+    if (round.phase === 'select') { say('betBeforeLock'); Sound.error(); return false; }
+    if (round.phase !== 'bet') { say('inPlay'); Sound.error(); return false; }
+    if (!hasCredits()) return false;
+    if (state.credits < n) { say('betManyShort', { n }); Sound.error(); return false; }
     const hole = n === 1 ? HOLES.bet : HOLES.bet10;
     for (let i = 0; i < n; i++) takeBall(hole, i * 0.05);
     round.bet += n;
     Sound.clunk();
     say('betInfo', { bet: round.bet, mult: mult(), win: round.bet * mult() });
+    return true;
+  }
+
+  // 按住投珠孔：先投 1 顆，停一下後開始自動投，按越久投越快（約 4 顆/秒 → 25 顆/秒）
+  const BET_HOLD_DELAY = 0.35;
+  const betHold = { active: false, t: 0, next: 0 };
+  function startBetHold() {
+    if (betHold.active) return;
+    if (!addBet()) return;
+    betHold.active = true;
+    betHold.t = 0;
+    betHold.next = BET_HOLD_DELAY;
+  }
+  function stopBetHold() { betHold.active = false; }
+  function updateBetHold(dt) {
+    if (!betHold.active) return;
+    betHold.t += dt;
+    betHold.next -= dt;
+    while (betHold.active && betHold.next <= 0) {
+      if (!addBet()) { stopBetHold(); break; }
+      const held = Math.max(0, betHold.t - BET_HOLD_DELAY);
+      betHold.next += Math.max(0.04, 0.25 * Math.pow(0.45, held));
+    }
   }
 
   function addMult() {
@@ -603,6 +630,7 @@
     }
 
     state.buttonT = Math.max(0, state.buttonT - dt);
+    updateBetHold(dt);
     if (round.phase === 'select') {
       round.flashT -= dt;
       if (round.flashT <= 0) {
@@ -1583,7 +1611,7 @@
     if (e.repeat) return;
     switch (e.code) {
       case 'Space': case 'ArrowDown': e.preventDefault(); startCharge(); break;
-      case 'KeyB': addBet(); break;
+      case 'KeyB': startBetHold(); break;
       case 'KeyT': addBet(10); break;
       case 'KeyX': addMult(); break;
       case 'KeyD': lockLights(); break;
@@ -1595,6 +1623,7 @@
   });
   window.addEventListener('keyup', e => {
     if (e.code === 'Space' || e.code === 'ArrowDown') release();
+    if (e.code === 'KeyB') stopBetHold();
   });
 
   function toLogical(e) {
@@ -1615,7 +1644,10 @@
   canvas.addEventListener('pointerdown', e => {
     const target = hitTarget(toLogical(e));
     e.preventDefault();
-    if (target === 'bet') addBet();
+    if (target === 'bet') {
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 同下 */ }
+      startBetHold();
+    }
     else if (target === 'bet10') addBet(10);
     else if (target === 'mult') addMult();
     else if (target === 'button') lockLights();
@@ -1625,14 +1657,14 @@
       startCharge();
     }
   });
-  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointerup', () => { stopBetHold(); release(); });
   // 手機：檯面上連點不要觸發瀏覽器的雙擊放大、雙指縮放（操作改用上面的 pointer 事件）
   const noZoom = e => { if (e.cancelable) e.preventDefault(); };
   canvas.addEventListener('touchstart', noZoom, { passive: false });
   canvas.addEventListener('touchend', noZoom, { passive: false });
   document.addEventListener('dblclick', noZoom, { passive: false });
   document.addEventListener('gesturestart', noZoom, { passive: false });   // iOS Safari 雙指縮放
-  canvas.addEventListener('pointercancel', release);
+  canvas.addEventListener('pointercancel', () => { stopBetHold(); release(); });
   canvas.addEventListener('pointermove', e => {
     canvas.style.cursor = hitTarget(toLogical(e)) ? 'pointer' : 'default';
   });
@@ -1681,11 +1713,22 @@
   for (const el of byAction('mute')) el.addEventListener('click', toggleMute);
   helpDlg.addEventListener('click', e => { if (e.target === helpDlg) helpDlg.close(); });   // 點背景關閉
   $('overlay-coin').addEventListener('click', insertCoin);
-  $('bet-btn').addEventListener('click', () => addBet());
+  {
+    const btn = $('bet-btn');
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      try { btn.setPointerCapture(e.pointerId); } catch (err) { /* 同上 */ }
+      btn.classList.add('pressed');
+      startBetHold();
+    });
+    const end = () => { btn.classList.remove('pressed'); stopBetHold(); };
+    btn.addEventListener('pointerup', end);
+    btn.addEventListener('pointercancel', end);
+  }
   $('bet10-btn').addEventListener('click', () => addBet(10));
   $('mult-btn').addEventListener('click', addMult);
   $('lock-btn').addEventListener('click', lockLights);
-  window.addEventListener('blur', release);
+  window.addEventListener('blur', () => { stopBetHold(); release(); });
 
   // 依「實際看得到的範圍」縮放機台：手機瀏覽器的網址列、工具列會吃掉高度，
   // 單靠 CSS 的 100vh / 100dvh 在部分瀏覽器會把機台底部切掉
