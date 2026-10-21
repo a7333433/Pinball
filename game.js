@@ -1,6 +1,9 @@
 (() => {
   'use strict';
 
+  // 版本號：每次推送前要跟著 CHANGELOG.md 一起更新（index.html 的 ?v= 也要改）
+  const VERSION = '1.1.0';
+
   // ===== 規則 =====
   const MULTS = [2, 4, 6, 8, 10];          // 倍率段數
   const MULT_COST = 2;        // 倍率孔每升一段要扣幾顆
@@ -2843,6 +2846,7 @@
   resize();
   newRound();
   applyMode();
+  for (const el of document.querySelectorAll('[data-version]')) el.textContent = VERSION;
 
   let last = performance.now();
   function frame(now) {

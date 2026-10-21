@@ -1,5 +1,7 @@
 # 柑仔店彈珠台
 
+目前版本：**v1.1.0**（各版異動見 [CHANGELOG.md](CHANGELOG.md)）
+
 網頁版的台灣古早味糖果彈珠台，用純 HTML / CSS / JavaScript（Canvas）寫成，不需要套件或建置。
 
 ## 執行

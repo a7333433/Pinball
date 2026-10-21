@@ -341,7 +341,8 @@ kbd {
 .help strong, .help b { color: var(--gold); }
 .help p { margin: 0; }
 .help .keys { line-height: 2.1; }
-.help form { margin-top: 16px; text-align: center; }
+.help form { margin-top: 12px; text-align: center; }
+.help .version { margin-top: 14px; text-align: center; font-size: 12px; opacity: 0.6; }
 .help form .btn { min-width: 120px; }
 
 /* ---- 手機版：上方精簡列 + 機台佔滿剩下的高度 ---- */
