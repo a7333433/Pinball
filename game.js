@@ -149,7 +149,7 @@
       hitMsg: '命中！{mult} 倍 × {bet} 顆，造成 {dmg} 點傷害',
       advMissMsg: '沒打中！{name}在嘲笑你', advWinMsg: '打倒了{name}！', advLoseMsg: '彈珠用完了…',
       dmgPop: '-{d} HP', advNoCoin: '大冒險模式不能投幣', advMultLine: '倍率 ×{mult}　亮 {lit} 燈',
-      advTip: '命中亮燈排造成傷害', advPressStart: '按「開始冒險」',
+      advTip: '命中亮燈排造成傷害', advPressStart: '按「開始冒險」', laugh: '嘻嘻嘻',
       stWinAdv: '上次傷害', stBestWinAdv: '勝場', stBestAdv: '敗場',
     },
     en: {
@@ -193,7 +193,7 @@
       hitMsg: 'Hit! ×{mult} × {bet} = {dmg} damage',
       advMissMsg: 'Missed! The {name} laughs', advWinMsg: 'Defeated the {name}!', advLoseMsg: 'Out of balls…',
       dmgPop: '-{d} HP', advNoCoin: 'No coins in Quest mode', advMultLine: '×{mult}   {lit} lit',
-      advTip: 'Hit a lit lane to deal damage', advPressStart: 'Press Start',
+      advTip: 'Hit a lit lane to deal damage', advPressStart: 'Press Start', laugh: 'hehehe',
       stWinAdv: 'Last hit', stBestWinAdv: 'Wins', stBestAdv: 'Losses',
     },
   };
@@ -372,6 +372,10 @@
       this.tone(1980, 0.35, 'square', 0.08, 0.08);
     },
     thud() { this.tone(90, 0.2, 'sine', 0.25, 0, 50); },
+    snicker() {
+      // 嘻嘻嘻：三聲短促的高音
+      [1180, 1320, 1120].forEach((f, i) => this.tone(f, 0.07, 'square', 0.045, i * 0.09, f * 0.8));
+    },
     hit() {
       this.noise(0.15, 0.3);
       this.tone(420, 0.25, 'square', 0.08, 0, 70);
@@ -444,7 +448,8 @@
     hp: 0,
     maxHp: 0,
     hitT: 0,              // 被打中時閃白、晃動
-    hopT: 0,              // 沒打中時怪物跳一下嘲笑
+    laughT: 0,            // 沒打中時怪物竊笑一下（落敗時一直笑）
+    laughSoundT: 0,       // 落敗時隔一陣子笑一次
     dieT: 0,              // 被打倒時閃爍消失
     endT: 0,              // 結束後多久跳出結果
     pops: [],             // 螢幕上的傷害數字
@@ -463,7 +468,7 @@
     adv.monster = m;
     adv.maxHp = adv.hp = Math.max(1, Math.round(m.hp * (0.9 + Math.random() * 0.2)));
     adv.status = 'playing';
-    adv.hitT = adv.hopT = adv.dieT = adv.endT = 0;
+    adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = 0;
     adv.pops.length = 0;
     // 每場重新發彈珠
     state.credits = 0;
@@ -504,6 +509,7 @@
     adv.losses++;
     saveRecord('candy-pinball-adv-losses', adv.losses);
     say('advLoseMsg');
+    adv.laughSoundT = 0.7;      // 落敗音效之後開始一直竊笑
     Sound.lose();
   }
 
@@ -709,7 +715,8 @@
       state.lastWin = 0;
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('losePop'), t: 0, color: '#cbd5e1' });
       if (mode === 'adv') {
-        adv.hopT = 0.5;
+        adv.laughT = 1.3;
+        setTimeout(() => Sound.snicker(), 250);
         say('advMissMsg', { name: monsterName() });
       } else {
         say('loseMsg');
@@ -894,7 +901,14 @@
     state.buttonT = Math.max(0, state.buttonT - dt);
     if (mode === 'adv') {
       adv.hitT = Math.max(0, adv.hitT - dt);
-      adv.hopT = Math.max(0, adv.hopT - dt);
+      adv.laughT = Math.max(0, adv.laughT - dt);
+      if (adv.status === 'lost') {
+        adv.laughSoundT -= dt;
+        if (adv.laughSoundT <= 0) {
+          Sound.snicker();
+          adv.laughSoundT = 2.5;
+        }
+      }
       adv.dieT = Math.max(0, adv.dieT - dt);
       for (let i = adv.pops.length - 1; i >= 0; i--) {
         adv.pops[i].t += dt;
@@ -1585,7 +1599,11 @@
       const size = m.map.length * PX;
       let ox = 0, oy = Math.round(Math.sin(time * 3) * 3);
       if (adv.hitT > 0) ox = Math.round((Math.random() - 0.5) * 10 * (adv.hitT / 0.5));
-      if (adv.hopT > 0) oy -= Math.round(Math.sin((1 - adv.hopT / 0.5) * Math.PI) * 12);
+      const laughing = adv.monster && (adv.laughT > 0 || adv.status === 'lost');
+      if (laughing) {
+        oy += Math.floor(time * 16) % 2 ? -3 : 0;
+        ox += Math.floor(time * 11) % 2 ? 1 : -1;
+      }
       const x0 = S.x + 22 + ox, y0 = S.y + (S.h - size) / 2 + oy;
       // 影子
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
@@ -1594,6 +1612,18 @@
       ctx.fill();
       const visible = adv.status !== 'won' || (adv.dieT > 0 && Math.floor(adv.dieT * 12) % 2 === 0);
       if (visible) drawMonster(m, x0, y0, adv.hitT > 0 && Math.floor(adv.hitT * 20) % 2 === 0);
+      if (laughing && visible) {
+        const word = t('laugh');
+        ctx.font = `bold 15px ${SANS}`;
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#ffd166';
+        // 放在怪物頭上，不要蓋到右邊的名字
+        const lx = S.x + 22 + size / 2 - ctx.measureText(word).width / 2, ly = S.y + 9;
+        for (let i = 0; i < word.length; i++) {
+          const w = ctx.measureText(word.slice(0, i)).width;
+          ctx.fillText(word[i], lx + w, ly + Math.sin(time * 14 + i * 1.3) * 3);
+        }
+      }
       // 傷害數字
       ctx.font = `bold 22px ${PIXEL_FONT}`;
       ctx.textAlign = 'center';
@@ -2102,6 +2132,7 @@
       title = t('advLoseTitle'); text = t('advLoseText', { name: monsterName(), hp: adv.hp }); btn = t('advRetry');
     }
     overlay.classList.toggle('hidden', !show);
+    overlay.classList.toggle('below-screen', mode === 'adv');
     ovTitle.textContent = title;
     ovText.textContent = text;
     ovBtn.textContent = btn;

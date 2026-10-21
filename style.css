@@ -78,6 +78,12 @@ body {
 
 .overlay.hidden { display: none; }
 
+/* 大冒險：卡片放在怪物螢幕下面，才看得到怪物（上方面板約佔機台高度的 16%） */
+.overlay.below-screen {
+  top: 16.2%;
+  border-radius: 0 0 12px 12px;
+}
+
 .overlay-card {
   display: flex;
   flex-direction: column;
