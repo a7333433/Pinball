@@ -226,6 +226,10 @@ body {
 .btn.coin { background: #c99a1c; color: #2a0f08; box-shadow: 0 4px 0 #7a5a08; }
 .btn.fire { background: #c1121f; box-shadow: 0 4px 0 #6a0a10; touch-action: none; }
 .btn.lock { background: #2550f0; box-shadow: 0 4px 0 #0b1f7a; }
+.btn.mode { background: #6d28d9; box-shadow: 0 4px 0 #3b1580; }
+
+/* 大冒險模式不能投幣 */
+body[data-mode="adv"] [data-action="coin"] { display: none; }
 .btn kbd { margin-left: 4px; vertical-align: 1px; }
 
 .msg {

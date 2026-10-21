@@ -12,6 +12,7 @@
     <header class="topbar">
       <button class="btn coin" data-action="coin" data-i18n="coin">投幣</button>
       <p class="msg" data-msg aria-live="polite">請投幣換彈珠</p>
+      <button class="btn icon mode" data-action="mode" data-i18n="modeShort" data-i18n-adv="modeShortAdv" aria-label="切換遊戲模式 / Game mode">冒險</button>
       <button class="btn icon" data-action="lang" data-i18n="langShort" aria-label="切換語言 / Language">EN</button>
       <button class="btn icon" data-action="help" aria-label="玩法說明 / How to play">?</button>
       <button class="btn icon" data-action="mute" aria-label="切換音效 / Sound">🔊</button>
@@ -22,9 +23,10 @@
         <canvas id="board" aria-label="糖果彈珠台 / Candy pinball"></canvas>
         <div id="overlay" class="overlay">
           <div class="overlay-card">
-            <h2 data-i18n="title">柑仔店彈珠台</h2>
-            <p data-i18n="overlayText">投一枚硬幣，換 20 顆彈珠！</p>
-            <button id="overlay-coin" class="btn coin" data-i18n="overlayCoin">投幣開始</button>
+            <h2 id="ov-title">柑仔店彈珠台</h2>
+            <p id="ov-text">投一枚硬幣，換 20 顆彈珠！</p>
+            <button id="overlay-coin" class="btn coin">投幣開始</button>
+            <button class="link" data-action="mode" data-i18n="modeLong" data-i18n-adv="modeLongAdv">切換到大冒險</button>
             <button class="link" data-action="help" data-i18n="howTo">玩法說明</button>
             <button class="link" data-action="lang" data-i18n="langBtn">English</button>
           </div>
@@ -40,9 +42,9 @@
         <div class="stat"><span class="label" data-i18n="stCredits">持有彈珠</span><span id="credits" class="value">0</span></div>
         <div class="stat"><span class="label" data-i18n="stBet">投珠數</span><span id="bet" class="value">0</span></div>
         <div class="stat"><span class="label" data-i18n="stMult">倍率</span><span id="mult" class="value">×2</span></div>
-        <div class="stat"><span class="label" data-i18n="stWin">上局得珠</span><span id="win" class="value">-</span></div>
-        <div class="stat"><span class="label" data-i18n="stBestWin">最高分</span><span id="best-win" class="value">0</span></div>
-        <div class="stat"><span class="label" data-i18n="stBest">最多持珠</span><span id="best" class="value">0</span></div>
+        <div class="stat"><span class="label" data-i18n="stWin" data-i18n-adv="stWinAdv">上局得珠</span><span id="win" class="value">-</span></div>
+        <div class="stat"><span class="label" data-i18n="stBestWin" data-i18n-adv="stBestWinAdv">最高分</span><span id="best-win" class="value">0</span></div>
+        <div class="stat"><span class="label" data-i18n="stBest" data-i18n-adv="stBestAdv">最多持珠</span><span id="best" class="value">0</span></div>
       </div>
 
       <p class="msg" data-msg aria-live="polite">請投幣換彈珠</p>
@@ -61,6 +63,7 @@
         <button class="btn" data-action="help"><span data-i18n="howTo">玩法說明</span> <kbd>H</kbd></button>
         <button class="btn" data-action="lang"><span data-i18n="langBtn">English</span> <kbd>L</kbd></button>
         <button class="btn" data-action="mute" aria-label="切換音效 / Sound">🔊</button>
+        <button class="btn mode wide" data-action="mode"><span data-i18n="modeLong" data-i18n-adv="modeLongAdv">切換到大冒險</span> <kbd>Q</kbd></button>
       </div>
     </aside>
   </div>
@@ -77,10 +80,18 @@
         <li>鋼珠落進<strong>有亮燈的那一排</strong>才算中，得珠 = 倍率 × 投珠數，從出珠口掉出來。</li>
         <li>不知道下一步要做什麼時，看機台上<strong>閃爍黃框</strong>的地方。</li>
       </ol>
+      <h3>彈珠台大冒險</h3>
+      <ol>
+        <li>按「冒險」（或 <kbd>Q</kbd>）切換到大冒險模式，隨時都能切回經典模式，兩邊的彈珠分開保留。</li>
+        <li>每場出現一隻像素怪物，上方的倍率欄變成怪物螢幕，顯示怪物的 HP、目前倍率和亮燈數。</li>
+        <li>每場有 30 顆彈珠，不能投幣。玩法和經典模式一樣，但中獎不出珠，改成對怪物造成「倍率 × 投珠數」點傷害。</li>
+        <li>把怪物 HP 打到 0 就勝利；彈珠用完怪物還活著就落敗。</li>
+      </ol>
       <h3>鍵盤</h3>
-      <p class="keys"><kbd>X</kbd> 倍率孔　<kbd>D</kbd> 定燈　<kbd>B</kbd> 投珠孔　<kbd>Space</kbd> 拉彈簧　<kbd>C</kbd> 投幣　<kbd>L</kbd> 語言　<kbd>M</kbd> 靜音　<kbd>H</kbd> 說明</p>
+      <p class="keys"><kbd>X</kbd> 倍率孔　<kbd>D</kbd> 定燈　<kbd>B</kbd> 投珠孔　<kbd>Space</kbd> 拉彈簧　<kbd>C</kbd> 投幣　<kbd>Q</kbd> 切換模式　<kbd>L</kbd> 語言　<kbd>M</kbd> 靜音　<kbd>H</kbd> 說明</p>
       <h3>我的紀錄</h3>
       <p class="records">最高分（單局最高得珠）<b data-record="bestWin">0</b>　最多持珠 <b data-record="best">0</b></p>
+      <p class="records">大冒險：勝 <b data-record="advWins">0</b> 場　敗 <b data-record="advLosses">0</b> 場</p>
     </div>
     <div data-lang="en" hidden>
       <h2>How to play</h2>
@@ -93,10 +104,18 @@
         <li>The ball only wins if it lands in a <strong>lit lane</strong>. A win pays multiplier × bet, dropped from the payout chute.</li>
         <li>Not sure what to do next? Look for the <strong>flashing yellow frame</strong> on the machine.</li>
       </ol>
+      <h3>Pinball Quest</h3>
+      <ol>
+        <li>Press <strong>Quest</strong> (or <kbd>Q</kbd>) to switch to Pinball Quest. You can switch back to Classic at any time; each mode keeps its own balls.</li>
+        <li>Each game a pixel monster appears. The multiplier columns at the top become a monster screen showing its HP, your multiplier and how many lights are lit.</li>
+        <li>You get 30 balls per game and can't insert coins. Play works the same as Classic, but a win pays no balls: it deals multiplier × bet damage to the monster instead.</li>
+        <li>Bring the monster's HP to 0 to win. Run out of balls while it's still alive and you lose.</li>
+      </ol>
       <h3>Keyboard</h3>
-      <p class="keys"><kbd>X</kbd> Multiply　<kbd>D</kbd> Lock　<kbd>B</kbd> Bet　<kbd>Space</kbd> Pull　<kbd>C</kbd> Coin　<kbd>L</kbd> Language　<kbd>M</kbd> Mute　<kbd>H</kbd> Help</p>
+      <p class="keys"><kbd>X</kbd> Multiply　<kbd>D</kbd> Lock　<kbd>B</kbd> Bet　<kbd>Space</kbd> Pull　<kbd>C</kbd> Coin　<kbd>Q</kbd> Switch mode　<kbd>L</kbd> Language　<kbd>M</kbd> Mute　<kbd>H</kbd> Help</p>
       <h3>My records</h3>
       <p class="records">High score (best single win) <b data-record="bestWin">0</b>　Most balls held <b data-record="best">0</b></p>
+      <p class="records">Pinball Quest: <b data-record="advWins">0</b> wins　<b data-record="advLosses">0</b> losses</p>
     </div>
     <form method="dialog"><button class="btn coin" data-i18n="close">關閉</button></form>
   </dialog>

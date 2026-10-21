@@ -9,6 +9,103 @@
   const SLOT_COUNT = 11;      // 底部落點數，每一排一顆 LED
 
 
+
+  // ===== 彈珠台大冒險：怪物 =====
+  const ADV_BALLS = 30;       // 每場冒險有幾顆彈珠
+  // 12×12 像素圖：'.' 透明，其他字元對應 pal 的顏色
+  const MONSTERS = [
+    {
+      name: { zh: '史萊姆', en: 'Slime' }, hp: 20,
+      pal: { K: '#0b1a0b', G: '#3ccf4e', L: '#a6f7ae', D: '#1f7a2b', W: '#ffffff' },
+      map: [
+        '............',
+        '....KKKK....',
+        '..KKGGGGKK..',
+        '.KGGLLGGGGK.',
+        '.KGLLGGGGGK.',
+        'KGGGGGGGGGGK',
+        'KGGWKGGWKGGK',
+        'KGGWKGGWKGGK',
+        'KGGGGGGGGGGK',
+        'KGGGDDDDGGGK',
+        '.KGGGGGGGGK.',
+        '..KKKKKKKK..',
+      ],
+    },
+    {
+      name: { zh: '蝙蝠', en: 'Bat' }, hp: 28,
+      pal: { K: '#120818', P: '#8a4fd8', W: '#ffe66b', R: '#ff4d6d' },
+      map: [
+        '............',
+        'K..........K',
+        'KK..K..K..KK',
+        'KPK.KKKK.KPK',
+        'KPPKPPPPKPPK',
+        'KPPPPWPWPPPK',
+        '.KPPPPPPPPK.',
+        '..KPPRRPPK..',
+        '...KPPPPK...',
+        '....K..K....',
+        '............',
+        '............',
+      ],
+    },
+    {
+      name: { zh: '幽靈', en: 'Ghost' }, hp: 36,
+      pal: { K: '#1a1a2e', W: '#e8f0ff' },
+      map: [
+        '....KKKK....',
+        '..KKWWWWKK..',
+        '.KWWWWWWWWK.',
+        '.KWWWWWWWWK.',
+        'KWWKKWWKKWWK',
+        'KWWKKWWKKWWK',
+        'KWWWWWWWWWWK',
+        'KWWWWKKWWWWK',
+        'KWWWWWWWWWWK',
+        'KWWWWWWWWWWK',
+        'KWKWWKKWWKWK',
+        '.K.KK..KK.K.',
+      ],
+    },
+    {
+      name: { zh: '骷髏', en: 'Skeleton' }, hp: 44,
+      pal: { K: '#111111', W: '#f2efe6' },
+      map: [
+        '...KKKKKK...',
+        '..KWWWWWWK..',
+        '.KWWWWWWWWK.',
+        '.KWKKWWKKWK.',
+        '.KWKKWWKKWK.',
+        '.KWWWKKWWWK.',
+        '..KWWWWWWK..',
+        '...KWKWKWK..',
+        '...KKKKKKK..',
+        '....KWWK....',
+        '...KWKKWK...',
+        '...K....K...',
+      ],
+    },
+    {
+      name: { zh: '小惡龍', en: 'Baby Dragon' }, hp: 55,
+      pal: { K: '#2a0505', R: '#e6392f', W: '#ffffff', Y: '#ffd166' },
+      map: [
+        '..K......K..',
+        '.KRK....KRK.',
+        '.KRRKKKKRRK.',
+        'KRRRRRRRRRRK',
+        'KRWKRRRRWKRK',
+        'KRRRRRRRRRRK',
+        '.KRRYYYYRRK.',
+        '..KRYKKYRK..',
+        '.KRRRRRRRRK.',
+        'KRKRRRRRRKRK',
+        'K..KRK.KRK.K',
+        '...KK...KK..',
+      ],
+    },
+  ];
+
   // ===== 語言（中文 / English） =====
   const I18N = {
     zh: {
@@ -43,6 +140,17 @@
       stWin: '上局得珠', stBestWin: '最高分', stBest: '最多持珠', power: '力道',
       btnMult: '投倍率孔', btnLock: '定燈', btnBet: '投珠孔', btnFire: '按住拉彈簧',
       langBtn: 'English', langShort: 'EN', close: '關閉',
+      modeShort: '冒險', modeShortAdv: '經典', modeLong: '切換到大冒險', modeLongAdv: '切換到經典模式',
+      advTitle: '彈珠台大冒險', advStart: '開始冒險',
+      advIntro: '打倒怪物！每場有 {n} 顆彈珠，鋼珠落進亮燈的那一排就能造成「倍率 × 投珠數」點傷害。',
+      advWinTitle: '勝利！', advWinText: '打倒了{name}，還剩 {left} 顆彈珠。', advAgain: '挑戰下一隻',
+      advLoseTitle: '落敗…', advLoseText: '彈珠用完了，{name}還剩 {hp} HP。', advRetry: '再試一次',
+      advAppear: '野生的{name}出現了！HP {hp}',
+      hitMsg: '命中！{mult} 倍 × {bet} 顆，造成 {dmg} 點傷害',
+      advMissMsg: '沒打中！{name}在嘲笑你', advWinMsg: '打倒了{name}！', advLoseMsg: '彈珠用完了…',
+      dmgPop: '-{d} HP', advNoCoin: '大冒險模式不能投幣', advMultLine: '倍率 ×{mult}　亮 {lit} 燈',
+      advTip: '命中亮燈排造成傷害', advPressStart: '按「開始冒險」',
+      stWinAdv: '上次傷害', stBestWinAdv: '勝場', stBestAdv: '敗場',
     },
     en: {
       title: 'Candy Pinball',
@@ -76,6 +184,17 @@
       stWin: 'Last win', stBestWin: 'High score', stBest: 'Most balls', power: 'Power',
       btnMult: 'Multiply', btnLock: 'Lock', btnBet: 'Bet', btnFire: 'Hold to pull',
       langBtn: '中文', langShort: '中', close: 'Close',
+      modeShort: 'Quest', modeShortAdv: 'Classic', modeLong: 'Pinball Quest', modeLongAdv: 'Classic mode',
+      advTitle: 'Pinball Quest', advStart: 'Start',
+      advIntro: 'Defeat the monster! You get {n} balls. Land in a lit lane to deal multiplier × bet damage.',
+      advWinTitle: 'Victory!', advWinText: 'You defeated the {name} with {left} balls left.', advAgain: 'Next monster',
+      advLoseTitle: 'Defeated…', advLoseText: 'Out of balls. The {name} still has {hp} HP.', advRetry: 'Try again',
+      advAppear: 'A wild {name} appears! HP {hp}',
+      hitMsg: 'Hit! ×{mult} × {bet} = {dmg} damage',
+      advMissMsg: 'Missed! The {name} laughs', advWinMsg: 'Defeated the {name}!', advLoseMsg: 'Out of balls…',
+      dmgPop: '-{d} HP', advNoCoin: 'No coins in Quest mode', advMultLine: '×{mult}   {lit} lit',
+      advTip: 'Hit a lit lane to deal damage', advPressStart: 'Press Start',
+      stWinAdv: 'Last hit', stBestWinAdv: 'Wins', stBestAdv: 'Losses',
     },
   };
   let lang = 'zh';
@@ -253,6 +372,10 @@
       this.tone(1980, 0.35, 'square', 0.08, 0.08);
     },
     thud() { this.tone(90, 0.2, 'sine', 0.25, 0, 50); },
+    hit() {
+      this.noise(0.15, 0.3);
+      this.tone(420, 0.25, 'square', 0.08, 0, 70);
+    },
     floor() {
       // 掉到地上：一聲悶響加一點金屬聲
       if (!this.ctx) return;
@@ -306,6 +429,124 @@
   state.best = loadRecord('candy-pinball-best');
   state.bestWin = loadRecord('candy-pinball-best-win');
 
+
+  // ===== 遊戲模式：經典 / 彈珠台大冒險 =====
+  let mode = 'classic';
+  try { if (localStorage.getItem('candy-pinball-mode') === 'adv') mode = 'adv'; } catch (e) { /* 無痕模式 */ }
+  // 兩個模式各自保留自己的持珠，切換時存起來、切回來再拿出來
+  const store = {
+    classic: { credits: 0, lastWin: null, started: false },
+    adv: { credits: 0, lastWin: null, started: false },
+  };
+  const adv = {
+    status: 'intro',      // intro | playing | won | lost
+    monster: null,
+    hp: 0,
+    maxHp: 0,
+    hitT: 0,              // 被打中時閃白、晃動
+    hopT: 0,              // 沒打中時怪物跳一下嘲笑
+    dieT: 0,              // 被打倒時閃爍消失
+    endT: 0,              // 結束後多久跳出結果
+    pops: [],             // 螢幕上的傷害數字
+    wins: loadRecord('candy-pinball-adv-wins'),
+    losses: loadRecord('candy-pinball-adv-losses'),
+  };
+  const advActive = () => mode === 'adv' && adv.status === 'playing';
+  // 大冒險還沒開始或已經結束時，機台不能操作
+  const advLocked = () => mode === 'adv' && adv.status !== 'playing';
+  const monsterName = () => adv.monster ? adv.monster.name[lang] : '';
+
+  function startAdventure() {
+    Sound.init();
+    Sound.coin();
+    const m = MONSTERS[Math.floor(Math.random() * MONSTERS.length)];
+    adv.monster = m;
+    adv.maxHp = adv.hp = Math.max(1, Math.round(m.hp * (0.9 + Math.random() * 0.2)));
+    adv.status = 'playing';
+    adv.hitT = adv.hopT = adv.dieT = adv.endT = 0;
+    adv.pops.length = 0;
+    // 每場重新發彈珠
+    state.credits = 0;
+    state.lastWin = null;
+    state.payoutQueue = ADV_BALLS;
+    state.started = true;
+    tray.length = 0;
+    spills.length = 0;
+    newRound();
+    refreshOverlay();
+    say('advAppear', { name: monsterName(), hp: adv.hp });
+  }
+
+  function damageMonster(dmg, px) {
+    adv.hp = Math.max(0, adv.hp - dmg);
+    adv.hitT = 0.5;
+    adv.pops.push({ text: '-' + dmg, t: 0 });
+    popups.push({ x: px, y: SLOT_TOP - 16, text: t('dmgPop', { d: dmg }), t: 0, color: '#ff6b6b' });
+    say('hitMsg', { mult: mult(), bet: round.bet, dmg });
+    Sound.hit();
+    if (adv.hp === 0) {
+      adv.status = 'won';
+      adv.dieT = 1.4;
+      adv.endT = 1.8;
+      adv.wins++;
+      saveRecord('candy-pinball-adv-wins', adv.wins);
+      say('advWinMsg', { name: monsterName() });
+      setTimeout(() => Sound.win(), 350);
+    }
+  }
+
+  // 每局開始時檢查：彈珠用完、怪物還活著就落敗
+  function checkAdvDefeat() {
+    if (!advActive() || round.phase !== 'select') return;
+    if (state.credits > 0 || state.payoutQueue > 0) return;
+    adv.status = 'lost';
+    adv.endT = 0.8;
+    adv.losses++;
+    saveRecord('candy-pinball-adv-losses', adv.losses);
+    say('advLoseMsg');
+    Sound.lose();
+  }
+
+  // 把托盤裡的珠子直接排好（切換模式時用，不用重新掉一次）
+  function rebuildTray() {
+    tray.length = 0;
+    const n = Math.min(state.credits, TRAY_CAP);
+    const perRow = Math.floor((TRAY.right - TRAY.left - BALL_R * 2) / (BALL_R * 2));
+    for (let i = 0; i < n; i++) {
+      const row = Math.floor(i / perRow), col = i % perRow;
+      tray.push({
+        x: Math.min(TRAY.right - BALL_R, TRAY.left + BALL_R + col * BALL_R * 2 + (row % 2 ? BALL_R : 0)),
+        y: TRAY.front - BALL_R - row * BALL_R * 1.75,
+        z: 0, vz: 0, vx: 0, vy: 0,
+      });
+    }
+  }
+
+  function switchMode() {
+    Sound.init();
+    stopBetHold();
+    state.charging = false;
+    state.power = 0;
+    state.floorY = SHOOTER_FLOOR;
+    // 這一局還沒結算就切換：投下去的珠和倍率孔的珠都退回
+    if (round.phase === 'select' || round.phase === 'bet' || round.phase === 'flying') {
+      state.credits += round.bet + round.level * MULT_COST;
+    }
+    state.credits += state.payoutQueue;
+    state.payoutQueue = 0;
+    store[mode] = { credits: state.credits, lastWin: state.lastWin, started: state.started };
+    mode = mode === 'classic' ? 'adv' : 'classic';
+    try { localStorage.setItem('candy-pinball-mode', mode); } catch (e) { /* 無痕模式 */ }
+    ({ credits: state.credits, lastWin: state.lastWin, started: state.started } = store[mode]);
+    tweens.length = 0;
+    spills.length = 0;
+    popups.length = 0;
+    rebuildTray();
+    ball = null;
+    newRound();
+    applyMode();
+  }
+
   const mult = () => MULTS[round.level];
 
   function ballAtShooter() {
@@ -328,12 +569,20 @@
     round.landSlot = -1;
     rollLit(litFor(0));
     if (!ball) ball = { x: PLUNGER_X, y: SHOOTER_FLOOR - BALL_R - 1, vx: 0, vy: 0, still: 0 };
-    say(state.credits > 0 || state.payoutQueue > 0 ? 'selectHint' : 'insertCoin');
+    if (mode === 'adv') {
+      if (adv.status === 'playing') {
+        say(state.credits > 0 || state.payoutQueue > 0 ? 'selectHint' : 'advLoseMsg');
+        checkAdvDefeat();
+      } else if (adv.status === 'intro') say('advPressStart');
+    } else {
+      say(state.credits > 0 || state.payoutQueue > 0 ? 'selectHint' : 'insertCoin');
+    }
   }
 
   // 藍色按鈕：停止閃燈，決定這一局的落獎點
   function lockLights() {
     Sound.init();
+    if (advLocked()) return;
     state.buttonT = 0.15;
     if (round.phase !== 'select') {
       say(round.phase === 'bet' ? 'lockedAlready' : 'roundNotOver');
@@ -374,6 +623,7 @@
 
   function addBet() {
     Sound.init();
+    if (advLocked()) return false;
     if (round.phase === 'select') { say('betBeforeLock'); Sound.error(); return false; }
     if (round.phase !== 'bet') { say('inPlay'); Sound.error(); return false; }
     if (!hasCredits()) return false;
@@ -408,6 +658,7 @@
 
   function addMult() {
     Sound.init();
+    if (advLocked()) return;
     if (round.phase !== 'select') { say('multLocked'); Sound.error(); return; }
     if (round.level >= MULTS.length - 1) { say('multMax', { max: MULTS[MULTS.length - 1] }); Sound.error(); return; }
     if (state.credits < MULT_COST) {
@@ -423,6 +674,7 @@
 
   function insertCoin() {
     Sound.init();
+    if (mode === 'adv') { say('advNoCoin'); Sound.error(); return; }
     Sound.coin();
     state.payoutQueue += COIN_BALLS;
     state.started = true;
@@ -438,6 +690,11 @@
     if (round.lit.has(slot)) {
       const win = mult() * round.bet;
       round.phase = 'win';
+      if (mode === 'adv') {
+        state.lastWin = win;
+        damageMonster(win, px);
+        return;
+      }
       state.payoutQueue += win;
       state.lastWin = win;
       if (win > state.bestWin) {
@@ -451,7 +708,12 @@
       round.phase = 'lose';
       state.lastWin = 0;
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('losePop'), t: 0, color: '#cbd5e1' });
-      say('loseMsg');
+      if (mode === 'adv') {
+        adv.hopT = 0.5;
+        say('advMissMsg', { name: monsterName() });
+      } else {
+        say('loseMsg');
+      }
       Sound.lose();
     }
   }
@@ -619,7 +881,7 @@
       state.payoutTimer += payoutInterval();
     }
     if (state.payoutQueue === 0) state.payoutTimer = Math.max(state.payoutTimer, 0);
-    if (state.credits > state.best) {
+    if (mode === 'classic' && state.credits > state.best) {
       state.best = state.credits;
       saveRecord('candy-pinball-best', state.best);
     }
@@ -630,6 +892,19 @@
     }
 
     state.buttonT = Math.max(0, state.buttonT - dt);
+    if (mode === 'adv') {
+      adv.hitT = Math.max(0, adv.hitT - dt);
+      adv.hopT = Math.max(0, adv.hopT - dt);
+      adv.dieT = Math.max(0, adv.dieT - dt);
+      for (let i = adv.pops.length - 1; i >= 0; i--) {
+        adv.pops[i].t += dt;
+        if (adv.pops[i].t > 1.2) adv.pops.splice(i, 1);
+      }
+      if (adv.endT > 0) {
+        adv.endT -= dt;
+        if (adv.endT <= 0) refreshOverlay();
+      }
+    }
     updateBetHold(dt);
     if (round.phase === 'select') {
       round.flashT -= dt;
@@ -653,6 +928,7 @@
   // ===== 操作 =====
   function startCharge() {
     Sound.init();
+    if (advLocked()) return;
     if (!ballAtShooter()) return;
     if (round.phase === 'select') {
       say('lockFirst');
@@ -841,6 +1117,9 @@
     c.fillText(t('cvBalls'), 60, 132);
     c.strokeStyle = 'rgba(0,0,0,0.25)';
     c.beginPath(); c.moveTo(88, 40); c.lineTo(88, 154); c.stroke();
+    if (mode === 'adv') {
+      drawAdvScreenFrame(c);
+    } else {
     // 右邊：倍率欄（毛筆字）
     for (let j = 0; j < MULTS.length; j++) {
       const x = multColX(j);
@@ -886,6 +1165,7 @@
       roundRect(c, s.x - 3.5, s.y - 22, 7, 46, 3.5);
       c.fillStyle = '#0d0d0d';
       c.fill();
+    }
     }
 
     // ---- 遊戲檯面 ----
@@ -1245,6 +1525,131 @@
     ctx.globalAlpha = 1;
   }
 
+
+  // ===== 大冒險：上方的像素螢幕 =====
+  const SCREEN = { x: 100, y: 38, w: 386, h: 118 };
+  const PX = 7;               // 怪物每個像素的大小
+
+  function drawAdvScreenFrame(c) {
+    const bez = c.createLinearGradient(0, 30, 0, 164);
+    bez.addColorStop(0, '#e5e7eb');
+    bez.addColorStop(0.5, '#9aa1a9');
+    bez.addColorStop(1, '#d1d5db');
+    roundRect(c, 94, 30, 400, 134, 8);
+    c.fillStyle = bez;
+    c.fill();
+    screw(c, 99, 35); screw(c, 489, 35); screw(c, 99, 159); screw(c, 489, 159);
+    roundRect(c, SCREEN.x - 3, SCREEN.y - 3, SCREEN.w + 6, SCREEN.h + 6, 6);
+    c.fillStyle = '#0a0a0a';
+    c.fill();
+    const bg = c.createLinearGradient(0, SCREEN.y, 0, SCREEN.y + SCREEN.h);
+    bg.addColorStop(0, '#17351d');
+    bg.addColorStop(1, '#0a1a0e');
+    roundRect(c, SCREEN.x, SCREEN.y, SCREEN.w, SCREEN.h, 4);
+    c.fillStyle = bg;
+    c.fill();
+    c.fillStyle = 'rgba(140, 255, 160, 0.06)';
+    for (let x = SCREEN.x + 2; x < SCREEN.x + SCREEN.w; x += 4) {
+      for (let y = SCREEN.y + 2; y < SCREEN.y + SCREEN.h; y += 4) c.fillRect(x, y, 1, 1);
+    }
+  }
+
+  function drawMonster(m, x0, y0, flash) {
+    for (let r = 0; r < m.map.length; r++) {
+      const row = m.map[r];
+      for (let col = 0; col < row.length; col++) {
+        const ch = row[col];
+        if (ch === '.') continue;
+        ctx.fillStyle = flash ? '#ffffff' : m.pal[ch];
+        ctx.fillRect(x0 + col * PX, y0 + r * PX, PX, PX);
+      }
+    }
+  }
+
+  function drawAdvScreen(time) {
+    const S = SCREEN;
+    const PIXEL_FONT = '"Courier New", Consolas, monospace';
+    ctx.save();
+    roundRect(ctx, S.x, S.y, S.w, S.h, 4);
+    ctx.clip();
+    ctx.textBaseline = 'middle';
+    if (!adv.monster) {
+      if (Math.floor(time * 2) % 2 === 0) {
+        ctx.fillStyle = '#9cf5a6';
+        ctx.font = `bold 22px ${PIXEL_FONT}`;
+        ctx.textAlign = 'center';
+        ctx.fillText('PRESS START', S.x + S.w / 2, S.y + S.h / 2);
+      }
+    } else {
+      const m = adv.monster;
+      const size = m.map.length * PX;
+      let ox = 0, oy = Math.round(Math.sin(time * 3) * 3);
+      if (adv.hitT > 0) ox = Math.round((Math.random() - 0.5) * 10 * (adv.hitT / 0.5));
+      if (adv.hopT > 0) oy -= Math.round(Math.sin((1 - adv.hopT / 0.5) * Math.PI) * 12);
+      const x0 = S.x + 22 + ox, y0 = S.y + (S.h - size) / 2 + oy;
+      // 影子
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(S.x + 22 + size / 2, S.y + S.h - 10, size * 0.4, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      const visible = adv.status !== 'won' || (adv.dieT > 0 && Math.floor(adv.dieT * 12) % 2 === 0);
+      if (visible) drawMonster(m, x0, y0, adv.hitT > 0 && Math.floor(adv.hitT * 20) % 2 === 0);
+      // 傷害數字
+      ctx.font = `bold 22px ${PIXEL_FONT}`;
+      ctx.textAlign = 'center';
+      for (const p of adv.pops) {
+        ctx.globalAlpha = Math.max(0, 1 - p.t / 1.2);
+        ctx.fillStyle = '#ff5c5c';
+        ctx.fillText(p.text, S.x + 22 + size / 2, S.y + 30 - p.t * 30);
+      }
+      ctx.globalAlpha = 1;
+
+      // 右側資訊
+      const ix = S.x + 128, iw = S.w - 140;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#c8f7c5';
+      ctx.font = `bold 17px ${SANS}`;
+      ctx.fillText(monsterName(), ix, S.y + 18);
+      ctx.textAlign = 'right';
+      ctx.font = `bold 15px ${PIXEL_FONT}`;
+      ctx.fillText(`HP ${adv.hp}/${adv.maxHp}`, ix + iw, S.y + 18);
+      // 像素血條
+      const segs = 20, gap = 2, sw = (iw - gap * (segs - 1)) / segs;
+      const ratio = adv.hp / adv.maxHp;
+      const filled = Math.ceil(ratio * segs);
+      const barColor = ratio > 0.5 ? '#4ade80' : ratio > 0.25 ? '#facc15' : '#ef4444';
+      for (let i = 0; i < segs; i++) {
+        ctx.fillStyle = i < filled ? barColor : 'rgba(255,255,255,0.08)';
+        ctx.fillRect(Math.round(ix + i * (sw + gap)), S.y + 34, Math.max(1, Math.floor(sw)), 12);
+      }
+      ctx.strokeStyle = 'rgba(200,247,197,0.5)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(ix - 2.5, S.y + 31.5, iw + 5, 17);
+      // 倍率與亮燈數（原本的倍率欄改顯示在這裡）
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ffd166';
+      ctx.font = `bold 16px ${SANS}`;
+      const lit = round.phase === 'select' ? litFor(round.level) : round.lit.size;
+      ctx.fillText(t('advMultLine', { mult: mult(), lit }), ix, S.y + 70);
+      // 狀態
+      ctx.font = `bold 18px ${PIXEL_FONT}`;
+      if (adv.status === 'won') {
+        if (Math.floor(time * 4) % 2 === 0) { ctx.fillStyle = '#facc15'; ctx.fillText('VICTORY!', ix, S.y + 98); }
+      } else if (adv.status === 'lost') {
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText('GAME OVER', ix, S.y + 98);
+      } else {
+        ctx.fillStyle = '#9cf5a6';
+        ctx.font = `bold 13px ${SANS}`;
+        ctx.fillText(t('advTip'), ix, S.y + 98);
+      }
+    }
+    // 掃描線
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    for (let y = S.y; y < S.y + S.h; y += 3) ctx.fillRect(S.x, y, S.w, 1);
+    ctx.restore();
+  }
+
   function drawLeds(t) {
     const blink = Math.floor(t * 8) % 2 === 0;
     // 面板：投珠數、倍率
@@ -1257,7 +1662,7 @@
     ctx.fillStyle = '#ff3b3b';
     ctx.fillText(String(Math.min(9999, round.bet)), BET_BOX.x + BET_BOX.w / 2, BET_BOX.y + BET_BOX.h / 2 + 1);
     ctx.restore();
-    led(ctx, multColX(round.level), 146, 5, true);
+    if (mode === 'classic') led(ctx, multColX(round.level), 146, 5, true);
     // 檯面每一排的 LED
     for (const i of round.lit) {
       const on = round.phase === 'win' && i === round.landSlot ? blink : true;
@@ -1374,7 +1779,7 @@
 
   // 每個階段閃爍下一步要按的地方；開始拉桿後就不提示
   function drawHints(time) {
-    if (state.charging || !state.started) return;
+    if (state.charging || !state.started || advLocked()) return;
     if (round.phase === 'select') {
       const m = HOLES.mult;
       if (state.credits >= MULT_COST && round.level < MULTS.length - 1) {
@@ -1561,6 +1966,7 @@
     ctx.drawImage(staticCanvas, 0, 0);
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     drawLeds(t);
+    if (mode === 'adv') drawAdvScreen(t);
     drawShooter();
     if (ball) {
       drawShadow(ball.x + 2.5, ball.y + 3.5, 0.9);
@@ -1599,8 +2005,8 @@
     setText(betEl, 'bet', round.bet);
     setText(multEl, 'mult', '×' + mult());
     setText(winEl, 'win', state.lastWin === null ? '-' : state.lastWin);
-    setText(bestEl, 'best', state.best);
-    setText(bestWinEl, 'bestWin', state.bestWin);
+    setText(bestEl, 'best', mode === 'adv' ? adv.losses : state.best);
+    setText(bestWinEl, 'bestWin', mode === 'adv' ? adv.wins : state.bestWin);
     powerEl.style.width = (state.power * 100).toFixed(1) + '%';
   }
 
@@ -1617,6 +2023,7 @@
       case 'KeyM': toggleMute(); break;
       case 'KeyH': openHelp(); break;
       case 'KeyL': toggleLang(); break;
+      case 'KeyQ': switchMode(); break;
     }
   });
   window.addEventListener('keyup', e => {
@@ -1635,7 +2042,7 @@
       if (hit) return key;
     }
     if (Math.hypot(p.x - BUTTON.x, p.y - BUTTON.y) < 32) return 'button';
-    if (Math.abs(p.x - COIN_SLOT.x) < 34 && Math.abs(p.y - COIN_SLOT.y) < 50) return 'coin';
+    if (mode === 'classic' && Math.abs(p.x - COIN_SLOT.x) < 34 && Math.abs(p.y - COIN_SLOT.y) < 50) return 'coin';
     return null;
   }
 
@@ -1676,6 +2083,40 @@
   fireBtn.addEventListener('pointerup', endFire);
   fireBtn.addEventListener('pointercancel', endFire);
 
+
+  // ---- 遊戲模式的畫面切換 ----
+  const ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('overlay-coin');
+  function refreshOverlay() {
+    let show = false, title = '', text = '', btn = '';
+    if (mode === 'classic') {
+      show = !state.started;
+      title = t('title'); text = t('overlayText'); btn = t('overlayCoin');
+    } else if (adv.status === 'intro') {
+      show = true;
+      title = t('advTitle'); text = t('advIntro', { n: ADV_BALLS }); btn = t('advStart');
+    } else if (adv.status === 'won' && adv.endT <= 0) {
+      show = true;
+      title = t('advWinTitle'); text = t('advWinText', { name: monsterName(), left: state.credits }); btn = t('advAgain');
+    } else if (adv.status === 'lost' && adv.endT <= 0) {
+      show = true;
+      title = t('advLoseTitle'); text = t('advLoseText', { name: monsterName(), hp: adv.hp }); btn = t('advRetry');
+    }
+    overlay.classList.toggle('hidden', !show);
+    ovTitle.textContent = title;
+    ovText.textContent = text;
+    ovBtn.textContent = btn;
+  }
+
+  function overlayPrimary() {
+    if (mode === 'classic') insertCoin();
+    else startAdventure();
+  }
+
+  function applyMode() {
+    document.body.dataset.mode = mode;
+    applyLang();
+  }
+
   function toggleMute() {
     Sound.muted = !Sound.muted;
     for (const el of byAction('mute')) el.textContent = Sound.muted ? '🔇' : '🔊';
@@ -1685,10 +2126,13 @@
   function applyLang() {
     document.documentElement.lang = lang === 'zh' ? 'zh-Hant-TW' : 'en';
     document.title = t('title');
-    for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
+    for (const el of document.querySelectorAll('[data-i18n]')) {
+      el.textContent = t(mode === 'adv' && el.dataset.i18nAdv ? el.dataset.i18nAdv : el.dataset.i18n);
+    }
     for (const el of document.querySelectorAll('[data-i18n-html]')) el.innerHTML = t(el.dataset.i18nHtml);
     for (const el of document.querySelectorAll('[data-lang]')) el.hidden = el.dataset.lang !== lang;
     drawStatic();
+    refreshOverlay();
     say(...lastMsg);
   }
 
@@ -1700,7 +2144,8 @@
 
   function openHelp() {
     release();
-    for (const el of document.querySelectorAll('[data-record]')) el.textContent = state[el.dataset.record];
+    const records = { bestWin: state.bestWin, best: state.best, advWins: adv.wins, advLosses: adv.losses };
+    for (const el of document.querySelectorAll('[data-record]')) el.textContent = records[el.dataset.record];
     helpDlg.showModal();
   }
 
@@ -1709,7 +2154,8 @@
   for (const el of byAction('lang')) el.addEventListener('click', toggleLang);
   for (const el of byAction('mute')) el.addEventListener('click', toggleMute);
   helpDlg.addEventListener('click', e => { if (e.target === helpDlg) helpDlg.close(); });   // 點背景關閉
-  $('overlay-coin').addEventListener('click', insertCoin);
+  $('overlay-coin').addEventListener('click', overlayPrimary);
+  for (const el of byAction('mode')) el.addEventListener('click', switchMode);
   {
     const btn = $('bet-btn');
     btn.addEventListener('pointerdown', e => {
@@ -1753,7 +2199,7 @@
   window.addEventListener('resize', resize);
   resize();
   newRound();
-  applyLang();
+  applyMode();
 
   let last = performance.now();
   function frame(now) {
