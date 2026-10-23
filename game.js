@@ -12,8 +12,8 @@
     classic: { mults: [2, 4, 6, 8, 10], cost: 2 },
     adv: { mults: [1, 2, 3, 4, 5, 6, 7], cost: 1 },
   };
-  // 寶箱關卡：倍率孔每投 1 顆升一級寶箱（最多 3 顆），燈全亮，不加倍
-  const CHEST_RULE = { mults: [1, 1, 1, 1], cost: 1 };
+  // 寶箱關卡：燈全亮、不加倍，也不能投倍率孔
+  const CHEST_RULE = { mults: [1], cost: 1 };
   const multRule = () => chestStage() ? CHEST_RULE : MULT_RULES[mode];
   const litFor = level => multRule().mults.length - level;
   const COIN_BALLS = 20;      // 投一次幣換幾顆彈珠
@@ -33,7 +33,7 @@
     { name: { zh: '史詩', en: 'Epic' }, color: '#c084fc', led: 'purple' },
     { name: { zh: '傳說', en: 'Legendary' }, color: '#fb923c', led: 'orange' },
   ];
-  // 寶箱投 1 / 2 / 3 顆倍率珠時，累加幾排藍 / 紫 / 橘燈
+  // 寶箱關卡固定有幾排白 / 藍 / 紫 / 橘燈（其餘都是白燈）
   const CHEST_LANES = [0, 3, 2, 1];
   // when：pre = 定燈前、post = 定燈後（發射前）、both = 兩者都可
   const ITEMS = {
@@ -622,10 +622,8 @@
       stWinAdv: '上次傷害', stBestWinAdv: '勝場', stBestAdv: '敗場',
       hitMsgHeavy: '命中！沉重彈珠 {raw} 點攻擊，扣掉防禦 {def}，造成 {dmg} 點傷害',
       chestName: '寶箱', chestGo: '前往寶箱關',
-      chestAppear: '寶箱出現了！投倍率孔提升寶箱等級（最多 3 顆），定燈後投 1 顆珠打開它',
-      chestTierUp: '寶箱升級！{desc}。按藍色按鈕定燈',
-      chestDesc1: '藍燈 3 顆', chestDesc2: '藍燈 3 顆、紫燈 2 顆', chestDesc3: '藍燈 3 顆、紫燈 2 顆、橘燈 1 顆',
-      chestMultMax: '寶箱最多投 3 顆倍率珠',
+      chestAppear: '寶箱出現了！有 3 排藍燈、2 排紫燈、1 排橘燈，按藍色按鈕定燈，再投 1 顆珠打開它',
+      chestNoMult: '寶箱關卡不用投倍率孔，直接按藍色按鈕定燈',
       lockedChest: '定燈！投 1 顆珠，再拉彈簧打開寶箱',
       chestBetOne: '寶箱關卡只能投 1 顆珠', chestBetMsg: '投珠 1 顆，拉彈簧發射打開寶箱！',
       chestOpenMsg: '打開寶箱！獲得{tier}道具「{item}」',
@@ -718,10 +716,8 @@
       stWinAdv: 'Last hit', stBestWinAdv: 'Wins', stBestAdv: 'Losses',
       hitMsgHeavy: 'Hit! Heavy marbles: {raw} attack − DEF {def} = {dmg} damage',
       chestName: 'Treasure Chest', chestGo: 'Go to the chest',
-      chestAppear: 'A treasure chest! Use the multiplier hole to upgrade it (up to 3 balls), lock, then bet 1 ball to open it',
-      chestTierUp: 'Chest upgraded! {desc}. Press blue to lock',
-      chestDesc1: '3 blue', chestDesc2: '3 blue, 2 purple', chestDesc3: '3 blue, 2 purple, 1 orange',
-      chestMultMax: 'The chest takes at most 3 multiplier balls',
+      chestAppear: 'A treasure chest! 3 blue, 2 purple and 1 orange lane. Press blue to lock, then bet 1 ball to open it',
+      chestNoMult: 'No multiplier on the chest. Just press blue to lock',
       lockedChest: 'Locked! Bet 1 ball, then shoot to open the chest',
       chestBetOne: 'Only 1 ball can be bet on the chest', chestBetMsg: 'Bet 1 ball. Shoot to open the chest!',
       chestOpenMsg: 'Chest opened! Got a {tier} item: {item}',
@@ -1418,11 +1414,11 @@
       [slots[i], slots[j]] = [slots[j], slots[i]];
     }
     round.lit = new Set(slots.slice(0, n));
-    // 寶箱：燈全亮，倍率珠依序把幾排換成藍、紫、橘燈（等級累加）
+    // 寶箱：燈全亮，隨機挑 3 排藍燈、2 排紫燈、1 排橘燈
     round.tiers.fill(0);
     if (chestStage()) {
       let k = 0;
-      for (let tier = 1; tier <= round.level; tier++) {
+      for (let tier = 1; tier < CHEST_LANES.length; tier++) {
         for (let j = 0; j < CHEST_LANES[tier]; j++) round.tiers[slots[k++]] = tier;
       }
     }
@@ -1566,7 +1562,7 @@
     if (advLocked()) return;
     if (round.phase !== 'select') { say('multLocked'); Sound.error(); return; }
     if (round.level >= multRule().mults.length - 1) {
-      if (chestStage()) say('chestMultMax');
+      if (chestStage()) say('chestNoMult');
       else say('multMax', { max: multRule().mults[multRule().mults.length - 1] });
       Sound.error();
       return;
@@ -1581,8 +1577,7 @@
     Sound.clunk();
     round.level++;
     round.multPaid += multRule().cost;
-    if (chestStage()) say('chestTierUp', { desc: t('chestDesc' + round.level) });
-    else say('multUp', { mult: mult(), lit: litCount() });
+    say('multUp', { mult: mult(), lit: litCount() });
   }
 
   function insertCoin() {
