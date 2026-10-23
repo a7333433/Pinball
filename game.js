@@ -2,7 +2,7 @@
   'use strict';
 
   // 版本號：每次推送前要跟著 CHANGELOG.md 一起更新（index.html 的 ?v= 也要改）
-  const VERSION = '1.1.0';
+  const VERSION = '1.2.0';
 
   // ===== 規則 =====
   // 倍率規則依模式不同（倍率越高，亮的燈越少）：
