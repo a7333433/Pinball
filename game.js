@@ -12,7 +12,9 @@
     classic: { mults: [2, 4, 6, 8, 10], cost: 2 },
     adv: { mults: [1, 2, 3, 4, 5, 6, 7], cost: 1 },
   };
-  const multRule = () => MULT_RULES[mode];
+  // 寶箱關卡：倍率孔每投 1 顆升一級寶箱（最多 3 顆），燈全亮，不加倍
+  const CHEST_RULE = { mults: [1, 1, 1, 1], cost: 1 };
+  const multRule = () => chestStage() ? CHEST_RULE : MULT_RULES[mode];
   const litFor = level => multRule().mults.length - level;
   const COIN_BALLS = 20;      // 投一次幣換幾顆彈珠
   const SLOT_COUNT = 11;      // 底部落點數，每一排一顆 LED
@@ -23,6 +25,122 @@
   const ADV_BALLS = 30;       // 每場冒險有幾顆彈珠
   const REFILL_MULT = 2;      // 補珠燈：中了退回倍率孔的珠，再得到 投珠數 × 2 顆彈珠
   const CAMPAIGN_BONUS = 20;  // 連續闖關：每過一關額外補幾顆彈珠（剩下的彈珠也會帶到下一關）
+  // ===== 寶箱與道具 =====
+  // 道具等級：白燈一般、藍燈稀有、紫燈史詩、橘燈傳說
+  const TIERS = [
+    { name: { zh: '一般', en: 'Common' }, color: '#e5e7eb', led: 'white' },
+    { name: { zh: '稀有', en: 'Rare' }, color: '#60a5fa', led: 'blue' },
+    { name: { zh: '史詩', en: 'Epic' }, color: '#c084fc', led: 'purple' },
+    { name: { zh: '傳說', en: 'Legendary' }, color: '#fb923c', led: 'orange' },
+  ];
+  // 寶箱投 1 / 2 / 3 顆倍率珠時，累加幾排藍 / 紫 / 橘燈
+  const CHEST_LANES = [0, 3, 2, 1];
+  // when：pre = 定燈前、post = 定燈後（發射前）、both = 兩者都可
+  const ITEMS = {
+    coin: {
+      tier: 0, when: 'both',
+      name: { zh: '銀幣', en: 'Silver Coin' },
+      quote: { zh: '「我要十圓。」── 小屁孩', en: '"I want ten bucks." — Some brat' },
+      effect: { zh: '持珠數增加 10 顆', en: '+10 balls' },
+    },
+    laserRed: {
+      tier: 0, when: 'pre',
+      name: { zh: '雷射筆（紅）', en: 'Red Laser Pointer' },
+      quote: { zh: '請勿對眼睛照射。', en: 'Do not shine into eyes.' },
+      effect: { zh: '這回合攻擊燈數增加 1', en: '+1 attack light this round' },
+    },
+    fake: {
+      tier: 0, when: 'both',
+      name: { zh: '假彈珠', en: 'Fake Marble' },
+      quote: { zh: '「這人怎麼彈珠打不完？」── 柑仔店老闆', en: '"How does this kid never run out of marbles?" — The shopkeeper' },
+      effect: { zh: '這回合倍率或投珠數隨機增加 1（定燈後只會加投珠數）', en: 'This round: randomly +1 multiplier or +1 bet (only +1 bet after locking)' },
+    },
+    laserGreen: {
+      tier: 0, when: 'pre',
+      name: { zh: '雷射筆（綠）', en: 'Green Laser Pointer' },
+      quote: { zh: '請勿對眼睛照射，即使他是有益色。', en: 'Do not shine into eyes, even if green is good for them.' },
+      effect: { zh: '這回合補珠燈數增加 1', en: '+1 refill light this round' },
+    },
+    stone: {
+      tier: 0, when: 'both',
+      name: { zh: '石頭', en: 'Stone' },
+      quote: { zh: '一顆手感不錯的石頭。', en: 'A stone that feels nice in the hand.' },
+      effect: { zh: '對怪物造成 1 點無視防禦的傷害', en: 'Deals 1 damage that ignores DEF' },
+    },
+    acid: {
+      tier: 1, when: 'both',
+      name: { zh: '鹽酸', en: 'Hydrochloric Acid' },
+      quote: { zh: '掃廁所必備。', en: 'A must for cleaning toilets.' },
+      effect: { zh: '怪物的防禦減少 1', en: 'Monster DEF −1' },
+    },
+    heavy: {
+      tier: 1, when: 'both',
+      name: { zh: '沉重彈珠', en: 'Heavy Marble' },
+      quote: { zh: '造成拉桿彈簧疲勞的兇手。', en: 'The reason the plunger spring wore out.' },
+      effect: { zh: '這回合每顆彈珠的基本傷害增加 1', en: 'Base damage per ball +1 this round' },
+    },
+    hourglass: {
+      tier: 2, when: 'both',
+      name: { zh: '沙漏', en: 'Hourglass' },
+      quote: { zh: '現在放的是正的還是反的？', en: 'Is it right side up or upside down right now?' },
+      effect: { zh: '這回合鋼珠落下後，可以選擇保留結果或返回上回合', en: 'After the ball lands this round, keep the result or rewind the round' },
+    },
+    drink: {
+      tier: 2, when: 'post',
+      name: { zh: '鋁箔包飲料', en: 'Juice Box' },
+      quote: { zh: '「嘶～～～～」', en: '"Slurrrrp~"' },
+      effect: { zh: '把亮著的紅燈全部變成補珠燈', en: 'Turns every lit red light into a refill light' },
+    },
+    key: {
+      tier: 3, when: 'both',
+      name: { zh: '柑仔店老闆的鑰匙', en: 'The Shopkeeper\'s Key' },
+      quote: { zh: '好像可以開啟某個重要的鎖。', en: 'Looks like it opens something important.' },
+      effect: { zh: '拿回這次闖關已失去的彈珠（目前 {n} 顆）', en: 'Get back the balls lost this run (now {n})' },
+    },
+    shake: {
+      tier: 3, when: 'post',
+      name: { zh: '搖晃機台', en: 'Shake the Machine' },
+      quote: { zh: '「你不能那樣做！」── 柑仔店老闆', en: '"You can\'t do that!" — The shopkeeper' },
+      effect: { zh: '把彈珠直接放在檯面上任何地方，讓它從那裡落下', en: 'Drop the ball anywhere on the board' },
+    },
+  };
+  const ITEM_IDS = Object.keys(ITEMS);
+  const CHEST = {
+    bg: 'treasure',
+    name: { zh: '寶箱', en: 'Treasure Chest' }, hp: 1, def: 0,
+    pal: { K: '#2a1405', W: '#c98a4b', B: '#8b4a1c', G: '#d4a017', Y: '#ffe08a', R: '#ff5d73' },
+    map: [
+      '............',
+      '............',
+      '..KKKKKKKK..',
+      '.KWWWWWWWWK.',
+      'KWBBBBBBBBWK',
+      'KBBBBBBBBBBK',
+      'KGGGGYYGGGGK',
+      'KBBBBYYBBBBK',
+      'KBBBBKKBBBBK',
+      'KBBBBBBBBBBK',
+      'KGGGGGGGGGGK',
+      '.KKKKKKKKKK.',
+    ],
+    // 打開後：蓋子往後掀，露出裡面的寶物
+    open: [
+      '.KKKKKKKKKK.',
+      'KBBBBBBBBBBK',
+      'KWWWWWWWWWWK',
+      'KKKKKKKKKKKK',
+      'KYYGYRYGYYYK',
+      'KGGGGGGGGGGK',
+      'KBBBBYYBBBBK',
+      'KBBBBKKBBBBK',
+      'KBBBBBBBBBBK',
+      'KBBBBBBBBBBK',
+      'KGGGGGGGGGGK',
+      '.KKKKKKKKKK.',
+    ],
+  };
+  CHEST.laugh = CHEST.map;
+
   // 12×12 像素圖：'.' 透明，其他字元對應 pal 的顏色
   // 防禦越高的怪物 HP 越少；實際傷害 = 倍率 × 投珠數 − 防禦（最少 0）
   // 數值依「30 顆彈珠、最佳打法」的勝率由易到難排：約 95% → 53%（落點平均的估算）
@@ -307,7 +425,7 @@
       langBtn: 'English', langShort: 'EN', close: '關閉',
       modeShort: '冒險', modeShortAdv: '經典', modeLong: '切換到大冒險', modeLongAdv: '切換到經典模式',
       planFree: '自由挑戰', planCampaign: '連續闖關',
-      campaignIntro: '從第 1 關{first}一路打到第 {total} 關{last}。一開始有 {n} 顆彈珠，打倒怪物後剩下的彈珠會帶到下一關，每過一關再補 {bonus} 顆；失敗就要從第 1 關重來。最佳紀錄：打倒 {best} 隻。',
+      campaignIntro: '從第 1 關{first}一路打到第 {total} 關{last}。一開始有 {n} 顆彈珠，打倒怪物後剩下的彈珠會帶到下一關，每過一關再補 {bonus} 顆；每兩關之間有寶箱，可以拿到道具。失敗就要從第 1 關重來、道具也會清空。最佳紀錄：打倒 {best} 隻。',
       campaignStart: '開始闖關',
       campaignWinTitle: '第 {stage} 關過關！', campaignWinText: '打倒了{name}！剩下 {left} 顆彈珠，再補 {bonus} 顆帶到下一關。下一關：{next}。',
       campaignNext: '前往第 {stage} 關',
@@ -330,6 +448,41 @@
       dmgPop: '-{d} HP', advNoCoin: '大冒險模式不能投幣',
       advPressStart: '按「開始冒險」', laugh: '嘻嘻嘻',
       stWinAdv: '上次傷害', stBestWinAdv: '勝場', stBestAdv: '敗場',
+      hitMsgHeavy: '命中！沉重彈珠 {raw} 點攻擊，扣掉防禦 {def}，造成 {dmg} 點傷害',
+      chestName: '寶箱', chestGo: '前往寶箱關',
+      chestAppear: '寶箱出現了！投倍率孔提升寶箱等級（最多 3 顆），定燈後投 1 顆珠打開它',
+      chestTierUp: '寶箱升級！{desc}。按藍色按鈕定燈',
+      chestDesc1: '藍燈 3 顆', chestDesc2: '藍燈 3 顆、紫燈 2 顆', chestDesc3: '藍燈 3 顆、紫燈 2 顆、橘燈 1 顆',
+      chestMultMax: '寶箱最多投 3 顆倍率珠',
+      lockedChest: '定燈！投 1 顆珠，再拉彈簧打開寶箱',
+      chestBetOne: '寶箱關卡只能投 1 顆珠', chestBetMsg: '投珠 1 顆，拉彈簧發射打開寶箱！',
+      chestOpenMsg: '打開寶箱！獲得{tier}道具「{item}」',
+      chestWinTitle: '獲得道具！',
+      chestWinText: '打開寶箱，拿到{tier}道具「{item}」：{effect}。道具放在背包裡（托盤右邊的背包按鈕）。下一關：{next}。',
+      cvBag: '道具', btnBag: '背包', bagTitle: '背包', bagUse: '使用',
+      bagEmpty: '背包是空的。連續闖關時打開寶箱就能拿到道具。',
+      bagNowSelect: '現在：定燈前', bagNowBet: '現在：定燈後、發射前',
+      whenPre: '定燈前使用', whenPost: '定燈後、發射前使用', whenBoth: '定燈前或發射前使用',
+      itemCampaignOnly: '道具只能在連續闖關的怪物關卡使用', itemNoChest: '寶箱關卡不能使用道具',
+      itemNotNow: '鋼珠發射後不能使用道具', itemPreOnly: '只能在定燈前使用', itemPostOnly: '只能在定燈後、發射前使用',
+      itemMaxLights: '燈已經亮滿了', itemNoDef: '怪物已經沒有防禦了', itemActive: '這回合已經用過了',
+      itemNoLit: '沒有亮著的紅燈', itemKeyEmpty: '還沒有失去任何彈珠', itemNeedBet: '先往投珠孔投珠再使用',
+      itemPlacing: '先點檯面放下彈珠',
+      useCoin: '使用銀幣：持珠 +{n} 顆', useLaserRed: '雷射筆（紅）：這回合攻擊燈 +1，定燈後亮 {lit} 顆',
+      useLaserGreen: '雷射筆（綠）：這回合補珠燈 +1', useFakeMult: '假彈珠：倍率 +1，變成 {mult} 倍！',
+      useFakeBet: '假彈珠：投珠 +1，變成 {bet} 顆！', useStone: '丟石頭！對{name}造成 {d} 點傷害（無視防禦）',
+      useAcid: '潑鹽酸！{name}的防禦降到 {def}', useHeavy: '沉重彈珠：這回合每顆珠的基本傷害變成 {n}',
+      useHourglass: '沙漏翻過來了：鋼珠落下後可以選擇保留結果或返回上回合',
+      useDrink: '嘶～～～ 紅燈全部變成補珠燈了！', useKey: '用老闆的鑰匙打開珠箱，拿回 {n} 顆彈珠！',
+      useShake: '搖晃機台！點檯面上任何地方放下彈珠', shakeWhere: '點檯面上（釘子區）放下彈珠',
+      shakeHint: '點檯面放珠', shakePlaced: '「你不能那樣做！」彈珠放下去了',
+      outUseItem: '彈珠用完了！背包裡還有能用的道具',
+      hgTitle: '沙漏', hgKeep: '保留結果', hgRewindBtn: '返回上回合',
+      hgHit: '鋼珠落進亮燈的那一排，將造成 {dmg} 點傷害。',
+      hgBlock: '鋼珠落進亮燈的那一排，但 {raw} 點攻擊打不破防禦 {def}，造成 0 傷害。',
+      hgRefill: '鋼珠落進補珠燈，將補回 {n} 顆彈珠。', hgMiss: '鋼珠沒落在亮燈的那一排。',
+      hgAsk: '要保留這個結果，還是返回這回合開始前？返回會退回這回合投的彈珠，用掉的道具不會退還。',
+      hgRewind: '時間倒轉！退回這回合投的 {n} 顆彈珠',
     },
     en: {
       title: 'Candy Pinball',
@@ -368,7 +521,7 @@
       langBtn: '中文', langShort: '中', close: 'Close',
       modeShort: 'Quest', modeShortAdv: 'Classic', modeLong: 'Pinball Quest', modeLongAdv: 'Classic mode',
       planFree: 'Free fight', planCampaign: 'Campaign',
-      campaignIntro: 'Fight from stage 1 ({first}) all the way to stage {total} ({last}). You start with {n} balls, keep whatever is left after each win, and get {bonus} more for every stage cleared. Lose and you start over from stage 1. Best: {best} defeated.',
+      campaignIntro: 'Fight from stage 1 ({first}) all the way to stage {total} ({last}). You start with {n} balls, keep whatever is left after each win, and get {bonus} more for every stage cleared. A treasure chest between stages gives you items. Lose and you start over from stage 1 with an empty backpack. Best: {best} defeated.',
       campaignStart: 'Start campaign',
       campaignWinTitle: 'Stage {stage} cleared!', campaignWinText: 'You beat the {name}! {left} balls left, plus {bonus} bonus for the next stage. Next: {next}.',
       campaignNext: 'Go to stage {stage}',
@@ -391,6 +544,41 @@
       dmgPop: '-{d} HP', advNoCoin: 'No coins in Quest mode',
       advPressStart: 'Press Start', laugh: 'hehehe',
       stWinAdv: 'Last hit', stBestWinAdv: 'Wins', stBestAdv: 'Losses',
+      hitMsgHeavy: 'Hit! Heavy marbles: {raw} attack − DEF {def} = {dmg} damage',
+      chestName: 'Treasure Chest', chestGo: 'Go to the chest',
+      chestAppear: 'A treasure chest! Use the multiplier hole to upgrade it (up to 3 balls), lock, then bet 1 ball to open it',
+      chestTierUp: 'Chest upgraded! {desc}. Press blue to lock',
+      chestDesc1: '3 blue', chestDesc2: '3 blue, 2 purple', chestDesc3: '3 blue, 2 purple, 1 orange',
+      chestMultMax: 'The chest takes at most 3 multiplier balls',
+      lockedChest: 'Locked! Bet 1 ball, then shoot to open the chest',
+      chestBetOne: 'Only 1 ball can be bet on the chest', chestBetMsg: 'Bet 1 ball. Shoot to open the chest!',
+      chestOpenMsg: 'Chest opened! Got a {tier} item: {item}',
+      chestWinTitle: 'New item!',
+      chestWinText: 'You opened the chest and got a {tier} item, {item}: {effect}. It\'s in your backpack (the bag button right of the tray). Next: {next}.',
+      cvBag: 'ITEMS', btnBag: 'Backpack', bagTitle: 'Backpack', bagUse: 'Use',
+      bagEmpty: 'Your backpack is empty. Open treasure chests in Campaign to get items.',
+      bagNowSelect: 'Now: before locking', bagNowBet: 'Now: after locking, before shooting',
+      whenPre: 'Use before locking', whenPost: 'Use after locking, before shooting', whenBoth: 'Use before locking or before shooting',
+      itemCampaignOnly: 'Items only work in Campaign monster stages', itemNoChest: 'No items at the treasure chest',
+      itemNotNow: 'Can\'t use items while the ball is in play', itemPreOnly: 'Only before locking', itemPostOnly: 'Only after locking, before shooting',
+      itemMaxLights: 'No room for more lights', itemNoDef: 'The monster has no DEF left', itemActive: 'Already used this round',
+      itemNoLit: 'No red lights to convert', itemKeyEmpty: 'You haven\'t lost any balls yet', itemNeedBet: 'Bet first',
+      itemPlacing: 'Tap the board to drop the ball first',
+      useCoin: 'Silver Coin: +{n} balls', useLaserRed: 'Red laser: +1 attack light this round ({lit} after locking)',
+      useLaserGreen: 'Green laser: +1 refill light this round', useFakeMult: 'Fake marble: multiplier +1, now ×{mult}!',
+      useFakeBet: 'Fake marble: +1 bet, now {bet}!', useStone: 'Threw a stone! {d} damage to the {name}, ignoring DEF',
+      useAcid: 'Acid! The {name}\'s DEF drops to {def}', useHeavy: 'Heavy marble: {n} base damage per ball this round',
+      useHourglass: 'Hourglass flipped: after the ball lands, keep the result or rewind the round',
+      useDrink: 'Slurrrp~ Every red light is now a refill light!', useKey: 'The shopkeeper\'s key opened the ball box: {n} balls back!',
+      useShake: 'Shake the machine! Tap anywhere on the board to drop the ball', shakeWhere: 'Tap the pin area of the board to drop the ball',
+      shakeHint: 'Tap to drop', shakePlaced: '"You can\'t do that!" Ball dropped',
+      outUseItem: 'Out of balls! Your backpack still has items that can help',
+      hgTitle: 'Hourglass', hgKeep: 'Keep result', hgRewindBtn: 'Rewind',
+      hgHit: 'The ball landed in a lit lane: {dmg} damage.',
+      hgBlock: 'The ball landed in a lit lane, but {raw} attack can\'t break DEF {def}: 0 damage.',
+      hgRefill: 'The ball landed on a refill light: {n} balls back.', hgMiss: 'The ball missed the lit lanes.',
+      hgAsk: 'Keep this result, or rewind to the start of the round? Rewinding returns the balls you put in this round; used items are not returned.',
+      hgRewind: 'Time rewinds! {n} balls returned',
     },
   };
   let lang = 'zh';
@@ -434,6 +622,9 @@
   const CHUTE = { x: 52, y: 914 };
   // 托盤：從斜上方看的不鏽鋼盤，y 方向是盤子的深度（往前傾）
   const TRAY = { left: 34, right: 400, back: 934, front: 1034 };   // 右邊讓給投珠孔
+  // 大冒險的托盤往左縮，讓出位置給背包（道具）按鈕
+  const TRAY_RIGHT = { classic: 400, adv: 352 };
+  const BAG = { x: 398, y: 980, r: 22 };
   const TRAY_TILT = 260;            // 盤子往前傾，珠子會滾到前緣
   const TRAY_CAP = 190;             // 托盤裝得下的顆數；再多就從托盤滿出來、掉到機台外面（仍然計數）
   const DISPLAY = { x: 272, y: 856, w: 110, h: 46 };
@@ -605,6 +796,7 @@
     payoutTimer: 0,
     started: false,
     buttonT: 0,           // 藍色按鈕按下的動畫
+    shakeT: 0,            // 搖晃機台時畫面晃動
   };
   const round = {
     phase: 'select',      // select（燈在閃，可投倍率孔）| bet（燈已定，可投珠）| flying | win | lose
@@ -614,7 +806,16 @@
     landSlot: -1,
     resetT: 0,
     flashT: 0,
-    refill: -1,           // 大冒險：補珠燈在哪一排（-1 = 沒有）
+    refills: new Set(),   // 大冒險：補珠燈在哪幾排
+    tiers: new Array(SLOT_COUNT).fill(0),   // 寶箱：每一排的道具等級（0 白、1 藍、2 紫、3 橘）
+    betPaid: 0,           // 這局真的從持珠拿出來的投珠、倍率珠（退還時用；假彈珠送的不算）
+    multPaid: 0,
+    extraLit: 0,          // 雷射筆（紅）：多亮幾顆攻擊燈
+    extraRefill: 0,       // 雷射筆（綠）：多亮幾顆補珠燈
+    heavy: 0,             // 沉重彈珠：每顆珠的基本傷害多幾點
+    hourglass: false,     // 沙漏：落點後可以選擇保留或返回
+    placing: false,       // 搖晃機台：等玩家點檯面放珠
+    pendingSlot: -1,
   };
   let ball = null;        // 機台內那顆發射用的鋼珠
   const tray = [];        // 托盤裡看得到的彈珠
@@ -652,7 +853,15 @@
     pops: [],             // 螢幕上的傷害數字
     wins: loadRecord('candy-pinball-adv-wins'),
     losses: loadRecord('candy-pinball-adv-losses'),
+    chest: false,         // 目前是寶箱關卡
+    items: {},            // 背包：道具 id → 數量（連續闖關從第 1 關開始時清空）
+    lost: 0,              // 這次闖關失去的彈珠（老闆的鑰匙用）
+    defDown: 0,           // 鹽酸：這隻怪物的防禦被降了幾點
+    loot: null,           // 剛從寶箱拿到的道具
+    rescueSaid: false,
   };
+  const chestStage = () => mode === 'adv' && adv.chest;
+  const itemCount = () => ITEM_IDS.reduce((s, id) => s + (adv.items[id] || 0), 0);
   const advActive = () => mode === 'adv' && adv.status === 'playing';
   // 大冒險還沒開始或已經結束時，機台不能操作
   const advLocked = () => mode === 'adv' && adv.status !== 'playing';
@@ -684,49 +893,64 @@
   const LAST_STAGE = MONSTERS.length - 1;
   // 連續闖關打贏了、後面還有關卡
   // 打倒最後一顆彈珠時沒有珠可以帶到下一關，就算闖關結束
-  const campaignBalls = () => state.credits + state.payoutQueue + CAMPAIGN_BONUS;
-  const campaignMidRun = () => adv.campaign && adv.status === 'won' && adv.monsterIdx < LAST_STAGE && campaignBalls() > 0;
+  // 打完怪物下一關是寶箱（會補珠）；打開寶箱後下一關是下一隻怪物（不補珠）
+  const campaignBalls = () => state.credits + state.payoutQueue + (adv.chest ? 0 : CAMPAIGN_BONUS);
+  const campaignMidRun = () => adv.campaign && adv.status === 'won' && (adv.chest || adv.monsterIdx < LAST_STAGE) && campaignBalls() > 0;
 
   function startAdventure() {
     if (advPlan === 'campaign') {
       const cont = campaignMidRun();
       adv.campaign = true;
-      startFight(cont ? adv.monsterIdx + 1 : 0, cont);
+      if (!cont) startFight(0, false);
+      else if (adv.chest) startFight(adv.monsterIdx + 1, true, false);
+      else startStage(CHEST, adv.monsterIdx, true, true);
     } else {
       adv.campaign = false;
       startFight(pickIdx, false);
     }
   }
 
-  // keepBalls：連續闖關的下一關，持珠不重置
-  function startFight(idx, keepBalls) {
+  // keepBalls：連續闖關的下一關，持珠不重置；bonus：要不要補 CAMPAIGN_BONUS 顆
+  function startFight(idx, keepBalls, bonus = keepBalls) {
+    startStage(MONSTERS[idx], idx, keepBalls, bonus);
+  }
+
+  // 寶箱也走這裡（HP 1、不會反擊）；idx 是寶箱前面那一關的怪物
+  function startStage(m, idx, keepBalls, bonus) {
     Sound.init();
     Sound.coin();
-    const m = MONSTERS[idx];
     adv.monster = m;
+    adv.chest = m === CHEST;
     adv.monsterIdx = idx;
-    adv.maxHp = adv.hp = Math.max(1, Math.round(m.hp * (0.9 + Math.random() * 0.2)));
+    adv.maxHp = adv.hp = adv.chest ? 1 : Math.max(1, Math.round(m.hp * (0.9 + Math.random() * 0.2)));
     adv.status = 'playing';
     adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = 0;
     adv.pops.length = 0;
+    adv.defDown = 0;
+    adv.loot = null;
     if (keepBalls) {
-      state.payoutQueue += CAMPAIGN_BONUS;
+      if (bonus) state.payoutQueue += CAMPAIGN_BONUS;
     } else {
-      // 新的一場（或闖關從第 1 關開始）重新發彈珠
+      // 新的一場（或闖關從第 1 關開始）重新發彈珠，背包也清空
       state.credits = 0;
       state.payoutQueue = ADV_BALLS;
       tray.length = 0;
       spills.length = 0;
+      adv.items = {};
+      adv.lost = 0;
     }
     state.lastWin = null;
     state.started = true;
     newRound();
     refreshOverlay();
     const info = { name: monsterName(), hp: adv.hp, def: monsterDef(), stage: idx + 1 };
-    say(adv.campaign ? 'campaignAppear' : 'advAppear', info);
+    say(adv.chest ? 'chestAppear' : adv.campaign ? 'campaignAppear' : 'advAppear', info);
   }
 
-  const monsterDef = () => adv.monster ? adv.monster.def : 0;
+  // 鹽酸會把防禦往下降
+  const monsterDef = () => adv.monster ? Math.max(0, adv.monster.def - adv.defDown) : 0;
+  // 攻擊力 = 倍率 × 投珠數 × 每顆的基本傷害（平常 1，沉重彈珠每用一次 +1）
+  const attackRaw = () => mult() * round.bet * (1 + round.heavy);
   // 攻擊力扣掉防禦才是實際傷害
   const dmgAfterDef = raw => Math.max(0, raw - monsterDef());
 
@@ -748,35 +972,216 @@
     adv.hitT = 0.5;
     adv.pops.push({ text: '-' + dmg, t: 0 });
     popups.push({ x: px, y: SLOT_TOP - 16, text: t('dmgPop', { d: dmg }), t: 0, color: '#ff6b6b' });
-    say(def > 0 ? 'hitMsgDef' : 'hitMsg', { mult: mult(), bet: round.bet, raw, def, dmg });
+    say(round.heavy ? 'hitMsgHeavy' : def > 0 ? 'hitMsgDef' : 'hitMsg', { mult: mult(), bet: round.bet, raw, def, dmg });
     Sound.hit();
-    if (adv.hp === 0) {
-      adv.status = 'won';
-      adv.dieT = 1.4;
-      adv.endT = 1.8;
-      adv.wins++;
-      saveRecord('candy-pinball-adv-wins', adv.wins);
-      cleared.add(adv.monsterIdx);
-      try { localStorage.setItem('candy-pinball-adv-cleared', JSON.stringify([...cleared])); } catch (e) { /* 無痕模式 */ }
-      setPick(adv.monsterIdx + 1);      // 下一場預設挑戰下一隻（比較強的）
-      if (adv.campaign) {
-        if (adv.monsterIdx + 1 > campaign.best) {
-          campaign.best = adv.monsterIdx + 1;
-          saveRecord('candy-pinball-campaign-best', campaign.best);
-        }
-        if (adv.monsterIdx === LAST_STAGE) saveRecord('candy-pinball-campaign-clears', ++campaign.clears);
+    if (adv.hp === 0) defeatMonster();
+  }
+
+  function defeatMonster() {
+    adv.status = 'won';
+    adv.dieT = 1.4;
+    adv.endT = 1.8;
+    adv.wins++;
+    saveRecord('candy-pinball-adv-wins', adv.wins);
+    cleared.add(adv.monsterIdx);
+    try { localStorage.setItem('candy-pinball-adv-cleared', JSON.stringify([...cleared])); } catch (e) { /* 無痕模式 */ }
+    setPick(adv.monsterIdx + 1);      // 下一場預設挑戰下一隻（比較強的）
+    if (adv.campaign) {
+      if (adv.monsterIdx + 1 > campaign.best) {
+        campaign.best = adv.monsterIdx + 1;
+        saveRecord('candy-pinball-campaign-best', campaign.best);
       }
-      say('advWinMsg', { name: monsterName() });
-      setTimeout(() => Sound.win(), 350);
+      if (adv.monsterIdx === LAST_STAGE) saveRecord('candy-pinball-campaign-clears', ++campaign.clears);
     }
+    say('advWinMsg', { name: monsterName() });
+    setTimeout(() => Sound.win(), 350);
+  }
+
+  // 寶箱：落在哪一排，就從那一排顏色等級的道具池抽一個
+  function openChest(slot, px) {
+    const tier = round.tiers[slot];
+    const pool = ITEM_IDS.filter(id => ITEMS[id].tier === tier);
+    const id = pool[Math.floor(Math.random() * pool.length)];
+    adv.items[id] = (adv.items[id] || 0) + 1;
+    adv.loot = id;
+    adv.hp = 0;
+    adv.hitT = 0.3;
+    adv.status = 'won';
+    adv.endT = 1.8;
+    const color = TIERS[tier].color;
+    adv.pops.push({ text: ITEMS[id].name[lang], t: 0, color });
+    popups.push({ x: px, y: SLOT_TOP - 16, text: TIERS[tier].name[lang], t: 0, color });
+    round.phase = 'win';
+    say('chestOpenMsg', { tier: TIERS[tier].name[lang], item: ITEMS[id].name[lang] });
+    Sound.coin();
+    setTimeout(() => Sound.win(), 250);
+  }
+
+  // ===== 道具 =====
+  const itemName = id => ITEMS[id].name[lang];
+  const itemEffect = id => ITEMS[id].effect[lang].replace('{n}', adv.lost);
+
+  // 不能用的原因（i18n key），可以用就回傳 null
+  function itemBlockGeneral() {
+    if (mode !== 'adv' || !adv.campaign || adv.status !== 'playing') return 'itemCampaignOnly';
+    if (adv.chest) return 'itemNoChest';
+    if (round.placing) return 'itemPlacing';
+    if (state.charging || (round.phase !== 'select' && round.phase !== 'bet')) return 'itemNotNow';
+    return null;
+  }
+  function itemBlock(id) {
+    const general = itemBlockGeneral();
+    if (general) return general;
+    const it = ITEMS[id];
+    if (it.when === 'pre' && round.phase !== 'select') return 'itemPreOnly';
+    if (it.when === 'post' && round.phase !== 'bet') return 'itemPostOnly';
+    switch (id) {
+      case 'laserRed': case 'laserGreen':
+        if (litCount() + 1 + round.extraRefill >= SLOT_COUNT) return 'itemMaxLights';
+        break;
+      case 'acid': if (monsterDef() === 0) return 'itemNoDef'; break;
+      case 'hourglass': if (round.hourglass) return 'itemActive'; break;
+      case 'drink': if (!round.lit.size) return 'itemNoLit'; break;
+      case 'key': if (adv.lost <= 0) return 'itemKeyEmpty'; break;
+      case 'shake':
+        if (round.bet === 0) return 'itemNeedBet';
+        if (!ballAtShooter()) return 'itemNotNow';
+        break;
+    }
+    return null;
+  }
+
+  function useItem(id) {
+    Sound.init();
+    if (!(adv.items[id] > 0)) return false;
+    const why = itemBlock(id);
+    if (why) { say(why); Sound.error(); return false; }
+    adv.items[id]--;
+    ITEM_FX[id]();
+    return true;
+  }
+
+  const ITEM_FX = {
+    coin() {
+      state.payoutQueue += 10;
+      say('useCoin', { n: 10 });
+      Sound.coin();
+    },
+    laserRed() {
+      round.extraLit++;
+      rollLit(litCount());
+      say('useLaserRed', { lit: litCount() });
+      Sound.lock();
+    },
+    laserGreen() {
+      round.extraRefill++;
+      rollLit(litCount());
+      say('useLaserGreen');
+      Sound.lock();
+    },
+    fake() {
+      // 定燈前：倍率、投珠隨機加 1（倍率已經最高或手上沒珠時直接加投珠）
+      const canMult = round.phase === 'select' && round.level < multRule().mults.length - 1 && !(state.credits === 0 && round.bet === 0);
+      if (canMult && Math.random() < 0.5) {
+        round.level++;
+        say('useFakeMult', { mult: mult() });
+      } else {
+        round.bet++;
+        say('useFakeBet', { bet: round.bet });
+      }
+      tweens.push({ x0: CHUTE.x, y0: TRAY.back + 10, x1: HOLES.bet.x, y1: HOLES.bet.y, t: 0, dur: 0.45 });
+      Sound.clunk();
+    },
+    stone() {
+      adv.hp = Math.max(0, adv.hp - 1);
+      adv.hitT = 0.5;
+      adv.pops.push({ text: '-1', t: 0 });
+      popups.push({ x: W / 2, y: SLOT_TOP - 16, text: t('dmgPop', { d: 1 }), t: 0, color: '#ff6b6b' });
+      say('useStone', { name: monsterName(), d: 1 });
+      Sound.thud();
+      Sound.hit();
+      if (adv.hp === 0) {
+        // 這局投下去的珠還沒用到，退回來
+        const refund = round.betPaid + round.multPaid;
+        state.payoutQueue += refund;
+        adv.lost = Math.max(0, adv.lost - refund);
+        round.bet = round.level = 0;
+        round.lit.clear();
+        round.refills.clear();
+        round.phase = 'win';
+        round.resetT = 1.6;
+        round.landSlot = -1;
+        defeatMonster();
+      }
+    },
+    acid() {
+      adv.defDown++;
+      say('useAcid', { name: monsterName(), def: monsterDef() });
+      Sound.thud();
+    },
+    heavy() {
+      round.heavy++;
+      say('useHeavy', { n: 1 + round.heavy });
+      Sound.clunk();
+    },
+    hourglass() {
+      round.hourglass = true;
+      say('useHourglass');
+      Sound.lock();
+    },
+    drink() {
+      for (const i of round.lit) round.refills.add(i);
+      round.lit.clear();
+      say('useDrink');
+      Sound.coin();
+    },
+    key() {
+      const n = adv.lost;
+      state.payoutQueue += n;
+      adv.lost = 0;
+      say('useKey', { n });
+      Sound.coin();
+      Sound.win();
+    },
+    shake() {
+      round.placing = true;
+      state.shakeT = 0.6;
+      say('useShake');
+      Sound.thud();
+      setTimeout(() => Sound.thud(), 150);
+    },
+  };
+
+  // 搖晃機台：點檯面放珠（釘子區，避開上方彎軌和下方落獎區）
+  const PLACE_ZONE = { x0: B.left + 12, x1: LANE_X - 12, y0: 290, y1: SLOT_TOP - 20 };
+  const inPlaceZone = p => p.x > PLACE_ZONE.x0 && p.x < PLACE_ZONE.x1 && p.y > PLACE_ZONE.y0 && p.y < PLACE_ZONE.y1;
+  function placeBall(p) {
+    if (!inPlaceZone(p)) { say('shakeWhere'); Sound.error(); return; }
+    round.placing = false;
+    ball = { x: p.x, y: p.y, vx: 0, vy: 0, still: 0 };
+    round.phase = 'flying';
+    state.shakeT = 0.3;
+    say('shakePlaced');
+    Sound.clunk();
+  }
+
+  // 彈珠用完時，背包裡還有能補珠或送投珠的道具，就先不判輸
+  function canRescue() {
+    if (mode !== 'adv' || !adv.campaign || adv.chest) return false;
+    const has = id => (adv.items[id] || 0) > 0;
+    return has('coin') || has('fake') || (has('key') && adv.lost > 0);
   }
 
   // 每局開始時檢查：彈珠用完、怪物還活著就落敗
   function checkAdvDefeat() {
     if (!advActive()) return;
     // 燈在閃，或已定燈但一顆都還沒投：這時沒有彈珠、也沒有珠在掉，就打不下去了
-    const idle = round.phase === 'select' || (round.phase === 'bet' && round.bet === 0);
+    const idle = (round.phase === 'select' || round.phase === 'bet') && round.bet === 0;
     if (!idle || state.credits > 0 || state.payoutQueue > 0 || tweens.length) return;
+    if (canRescue()) {
+      if (!adv.rescueSaid) { adv.rescueSaid = true; say('outUseItem'); }
+      return;
+    }
     adv.status = 'lost';
     adv.endT = 0.8;
     adv.losses++;
@@ -809,12 +1214,14 @@
     state.floorY = SHOOTER_FLOOR;
     // 這一局還沒結算就切換：投下去的珠和倍率孔的珠都退回
     if (round.phase === 'select' || round.phase === 'bet' || round.phase === 'flying') {
-      state.credits += round.bet + round.level * multRule().cost;
+      state.credits += round.betPaid + round.multPaid;
+      if (mode === 'adv') adv.lost = Math.max(0, adv.lost - round.betPaid - round.multPaid);
     }
     state.credits += state.payoutQueue;
     state.payoutQueue = 0;
     store[mode] = { credits: state.credits, lastWin: state.lastWin, started: state.started };
     mode = mode === 'classic' ? 'adv' : 'classic';
+    TRAY.right = TRAY_RIGHT[mode];
     try { localStorage.setItem('candy-pinball-mode', mode); } catch (e) { /* 無痕模式 */ }
     ({ credits: state.credits, lastWin: state.lastWin, started: state.started } = store[mode]);
     tweens.length = 0;
@@ -839,6 +1246,20 @@
       [slots[i], slots[j]] = [slots[j], slots[i]];
     }
     round.lit = new Set(slots.slice(0, n));
+    // 寶箱：燈全亮，倍率珠依序把幾排換成藍、紫、橘燈（等級累加）
+    round.tiers.fill(0);
+    if (chestStage()) {
+      let k = 0;
+      for (let tier = 1; tier <= round.level; tier++) {
+        for (let j = 0; j < CHEST_LANES[tier]; j++) round.tiers[slots[k++]] = tier;
+      }
+    }
+  }
+
+  // 這局亮幾顆攻擊燈：寶箱全亮；雷射筆（紅）多亮，但要留位置給補珠燈
+  function litCount() {
+    if (chestStage()) return SLOT_COUNT;
+    return Math.min(litFor(round.level) + round.extraLit, SLOT_COUNT - 1 - round.extraRefill);
   }
 
   function newRound() {
@@ -846,8 +1267,13 @@
     round.bet = 0;
     round.level = 0;
     round.landSlot = -1;
-    round.refill = -1;
-    rollLit(litFor(0));
+    round.refills = new Set();
+    round.betPaid = round.multPaid = 0;
+    round.extraLit = round.extraRefill = round.heavy = 0;
+    round.hourglass = round.placing = false;
+    round.pendingSlot = -1;
+    adv.rescueSaid = false;
+    rollLit(litCount());
     if (!ball) ball = { x: PLUNGER_X, y: SHOOTER_FLOOR - BALL_R - 1, vx: 0, vy: 0, still: 0 };
     if (mode === 'adv') {
       if (adv.status === 'playing') {
@@ -869,14 +1295,18 @@
       Sound.error();
       return;
     }
-    rollLit(litFor(round.level));
+    rollLit(litCount());
     round.phase = 'bet';
     Sound.lock();
-    if (mode === 'adv') {
-      // 定燈後，在沒亮燈的排裡隨機挑一排當補珠燈
+    if (chestStage()) {
+      say('lockedChest');
+    } else if (mode === 'adv') {
+      // 定燈後，在沒亮燈的排裡隨機挑一排當補珠燈（雷射筆（綠）會多挑幾排）
       const free = [];
       for (let i = 0; i < SLOT_COUNT; i++) if (!round.lit.has(i)) free.push(i);
-      round.refill = free[Math.floor(Math.random() * free.length)];
+      for (let n = 1 + round.extraRefill; n > 0 && free.length; n--) {
+        round.refills.add(free.splice(Math.floor(Math.random() * free.length), 1)[0]);
+      }
       say('lockedAdv', { lit: round.lit.size });
     } else {
       say('locked', { mult: mult(), lit: round.lit.size });
@@ -894,6 +1324,7 @@
 
   function takeBall(hole, delay = 0) {
     state.credits--;
+    if (mode === 'adv' && adv.campaign) adv.lost++;
     let from = { x: CHUTE.x, y: TRAY.back + 10 };
     if (tray.length > state.credits) {
       let idx = 0;
@@ -916,12 +1347,16 @@
     if (advLocked()) return false;
     if (round.phase === 'select') { say('betBeforeLock'); Sound.error(); return false; }
     if (round.phase !== 'bet') { say('inPlay'); Sound.error(); return false; }
+    if (chestStage() && round.bet >= 1) { say('chestBetOne'); Sound.error(); return false; }
     if (!hasCredits()) return false;
     takeBall(HOLES.bet);
     round.bet++;
+    round.betPaid++;
     Sound.clunk();
-    const raw = round.bet * mult();
-    if (mode === 'adv') {
+    const raw = attackRaw();
+    if (chestStage()) {
+      say('chestBetMsg');
+    } else if (mode === 'adv') {
       say(monsterDef() > 0 ? 'betInfoAdvDef' : 'betInfoAdv', { bet: round.bet, mult: mult(), win: dmgAfterDef(raw), def: monsterDef() });
     } else {
       say('betInfo', { bet: round.bet, mult: mult(), win: raw });
@@ -958,7 +1393,12 @@
     Sound.init();
     if (advLocked()) return;
     if (round.phase !== 'select') { say('multLocked'); Sound.error(); return; }
-    if (round.level >= multRule().mults.length - 1) { say('multMax', { max: multRule().mults[multRule().mults.length - 1] }); Sound.error(); return; }
+    if (round.level >= multRule().mults.length - 1) {
+      if (chestStage()) say('chestMultMax');
+      else say('multMax', { max: multRule().mults[multRule().mults.length - 1] });
+      Sound.error();
+      return;
+    }
     if (state.credits < multNeed()) {
       // 大冒險沒辦法投幣，加倍後至少要留 1 顆投珠，不然這局只能直接輸掉
       say(mode === 'adv' ? 'multKeepOne' : 'multShort', { cost: multRule().cost, need: multNeed() });
@@ -968,7 +1408,9 @@
     for (let i = 0; i < multRule().cost; i++) takeBall(HOLES.mult, i * 0.12);
     Sound.clunk();
     round.level++;
-    say('multUp', { mult: mult(), lit: litFor(round.level) });
+    round.multPaid += multRule().cost;
+    if (chestStage()) say('chestTierUp', { desc: t('chestDesc' + round.level) });
+    else say('multUp', { mult: mult(), lit: litCount() });
   }
 
   function insertCoin() {
@@ -985,9 +1427,25 @@
     ball = null;
     round.landSlot = slot;
     round.resetT = 1.6;
+    // 沙漏：先讓玩家看結果，再決定保留還是返回
+    if (mode === 'adv' && round.hourglass && !adv.chest) {
+      round.phase = 'choose';
+      round.pendingSlot = slot;
+      Sound.lock();
+      openChoice(slot);
+      return;
+    }
+    resolveLanding(slot);
+  }
+
+  function resolveLanding(slot) {
     const px = B.left + (slot + 0.5) * SLOT_W;
+    if (chestStage()) {
+      openChest(slot, px);
+      return;
+    }
     if (round.lit.has(slot)) {
-      const win = mult() * round.bet;
+      const win = attackRaw();
       round.phase = 'win';
       if (mode === 'adv') {
         damageMonster(win, px);
@@ -1002,11 +1460,12 @@
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('winPop', { win }), t: 0, color: '#ffd166' });
       say('winMsg', { mult: mult(), bet: round.bet, win });
       Sound.win();
-    } else if (mode === 'adv' && slot === round.refill) {
+    } else if (mode === 'adv' && round.refills.has(slot)) {
       // 補珠燈：不造成傷害，改成退回這局投進倍率孔的珠，再補 投珠數 × 2 顆
-      const refund = round.level * multRule().cost, bonus = round.bet * REFILL_MULT, n = refund + bonus;
+      const refund = round.multPaid, bonus = round.bet * REFILL_MULT, n = refund + bonus;
       round.phase = 'win';
       state.payoutQueue += n;
+      adv.lost = Math.max(0, adv.lost - n);
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('refillPop', { n }), t: 0, color: '#4ade80' });
       say(refund ? 'refillMsgMult' : 'refillMsg', { n, refund, bonus });
       Sound.coin();
@@ -1024,6 +1483,33 @@
       }
       Sound.lose();
     }
+  }
+
+  // 沙漏：預告這次落點的結果
+  function landingPreview(slot) {
+    if (round.lit.has(slot)) {
+      const raw = attackRaw(), dmg = dmgAfterDef(raw);
+      return dmg > 0 ? t('hgHit', { dmg }) : t('hgBlock', { raw, def: monsterDef() });
+    }
+    if (round.refills.has(slot)) return t('hgRefill', { n: round.multPaid + round.bet * REFILL_MULT });
+    return t('hgMiss');
+  }
+
+  function chooseHourglass(keep) {
+    if (round.phase !== 'choose') return;
+    if (keep) {
+      resolveLanding(round.pendingSlot);
+      return;
+    }
+    // 返回上回合：退回這局投的珠（用掉的道具不退）
+    const n = round.betPaid + round.multPaid;
+    state.payoutQueue += n;
+    adv.lost = Math.max(0, adv.lost - n);
+    round.phase = 'rewind';
+    round.resetT = 0.6;
+    round.landSlot = -1;
+    say('hgRewind', { n });
+    Sound.coin();
   }
 
   // ===== 物理 =====
@@ -1223,12 +1709,13 @@
     if (round.phase === 'select') {
       round.flashT -= dt;
       if (round.flashT <= 0) {
-        rollLit(litFor(round.level));
+        rollLit(litCount());
         round.flashT = 0.12;
       }
     }
 
-    if (round.phase === 'win' || round.phase === 'lose') {
+    state.shakeT = Math.max(0, state.shakeT - dt);
+    if (round.phase === 'win' || round.phase === 'lose' || round.phase === 'rewind') {
       round.resetT -= dt;
       if (round.resetT <= 0 && state.payoutQueue === 0) newRound();
     }
@@ -1243,6 +1730,7 @@
   function startCharge() {
     Sound.init();
     if (advLocked()) return;
+    if (round.placing) { say('shakeWhere'); return; }
     if (!ballAtShooter()) return;
     if (round.phase === 'select') {
       say('lockFirst');
@@ -1341,6 +1829,10 @@
   const LED_COLORS = {
     red: { glow: '#ff2a2a', c0: '#fff0f0', c1: '#ff3b3b', c2: '#b30000', halo: 'rgba(255, 40, 40, 0.18)' },
     green: { glow: '#22e07a', c0: '#effff5', c1: '#34d399', c2: '#047857', halo: 'rgba(34, 224, 122, 0.22)' },
+    white: { glow: '#ffffff', c0: '#ffffff', c1: '#f1f5f9', c2: '#94a3b8', halo: 'rgba(255, 255, 255, 0.18)' },
+    blue: { glow: '#3b82f6', c0: '#eff6ff', c1: '#60a5fa', c2: '#1d4ed8', halo: 'rgba(59, 130, 246, 0.22)' },
+    purple: { glow: '#a855f7', c0: '#faf5ff', c1: '#c084fc', c2: '#7e22ce', halo: 'rgba(168, 85, 247, 0.24)' },
+    orange: { glow: '#f97316', c0: '#fff7ed', c1: '#fb923c', c2: '#c2410c', halo: 'rgba(249, 115, 22, 0.26)' },
   };
   function led(c, x, y, r, on, color = 'red') {
     if (on) {
@@ -1635,15 +2127,16 @@
     c.textAlign = 'center';
 
     // ---- 托盤：不鏽鋼盤身、後壁、拉絲盤底（前緣在動態層畫，才能蓋住珠子） ----
+    const TR = TRAY.right + 14;          // 托盤外緣的右邊（大冒險會往左縮，讓出背包按鈕）
     const body = c.createLinearGradient(0, 920, 0, 1050);
     body.addColorStop(0, '#f3f4f6');
     body.addColorStop(0.5, '#9ca3af');
     body.addColorStop(1, '#d1d5db');
-    roundRect(c, 20, 920, 394, 130, 14);
+    roundRect(c, 20, 920, TR - 20, 130, 14);
     c.fillStyle = body;
     c.fill();
     c.save();
-    roundRect(c, 30, 927, 374, 112, 10);
+    roundRect(c, 30, 927, TR - 40, 112, 10);
     c.clip();
     const floor = c.createLinearGradient(0, 927, 0, 1038);
     floor.addColorStop(0, '#4b5058');
@@ -1651,7 +2144,7 @@
     floor.addColorStop(0.75, '#b9bec5');
     floor.addColorStop(1, '#d6dade');
     c.fillStyle = floor;
-    c.fillRect(30, 927, 374, 112);
+    c.fillRect(30, 927, TR - 40, 112);
     const brush = mulberry32(5);
     for (let i = 0; i < 140; i++) {
       const y = 929 + brush() * 108;
@@ -1665,9 +2158,9 @@
     back.addColorStop(0, 'rgba(0,0,0,0.55)');
     back.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = back;
-    c.fillRect(30, 927, 374, 19);
+    c.fillRect(30, 927, TR - 40, 19);
     // 左右側壁
-    for (const [x0, x1] of [[30, 48], [404, 386]]) {
+    for (const [x0, x1] of [[30, 48], [TR - 10, TR - 28]]) {
       const side = c.createLinearGradient(x0, 0, x1, 0);
       side.addColorStop(0, 'rgba(0,0,0,0.35)');
       side.addColorStop(1, 'rgba(0,0,0,0)');
@@ -1679,7 +2172,7 @@
     sheen.addColorStop(0, 'rgba(255,255,255,0)');
     sheen.addColorStop(1, 'rgba(255,255,255,0.25)');
     c.fillStyle = sheen;
-    c.fillRect(30, 980, 374, 58);
+    c.fillRect(30, 980, TR - 40, 58);
     c.restore();
 
     // ---- 投珠孔（拉桿下方）、倍率孔（定燈按鈕旁）：白邊黑心的圓 ----
@@ -2008,6 +2501,27 @@
         box(x, h - 18, P, P, '#ffd166');
         if (r() < 0.6) box(x + 4, h - 12, P, P, '#ff8a3d');
       }
+    } else if (kind === 'treasure') {
+      box(0, 0, w, h, '#2b1d3a');
+      // 石磚牆
+      for (let row = 0; row * 16 < h; row++) {
+        for (let col = -1; col * 32 < w; col++) {
+          const x = col * 32 + (row % 2 ? 16 : 0);
+          box(x + 2, row * 16 + 2, 28, 12, ['#3a2a4d', '#352645', '#402f55'][Math.floor(r() * 3)]);
+        }
+      }
+      // 地上的金幣堆
+      for (let x = 0; x < w; x += P) {
+        const hh = 6 + Math.round(Math.abs(Math.sin(x * 0.03)) * 14 + Math.abs(Math.sin(x * 0.11 + 1)) * 6);
+        box(x, h - 14 - hh, P, hh, '#c8961a');
+      }
+      box(0, h - 14, w, 14, '#a87a12');
+      for (let i = 0; i < 70; i++) box(r() * w, h - 30 + r() * 26, P, P, r() < 0.5 ? '#ffe08a' : '#f5c542');
+      // 兩邊的寶石
+      for (const [x, col] of [[40, '#ef4444'], [76, '#22d3ee'], [w - 60, '#a855f7'], [w - 96, '#4ade80']]) {
+        box(x, h - 40, 8, 8, col);
+        box(x + 2, h - 38, P, P, '#ffffff');
+      }
     } else if (kind === 'ruins') {
       bands(['#f3d9a4', '#f0c98d', '#ebb877', '#e3a663', '#d99558'], 0, h - 24);
       disc(Math.round(w * 0.82), 30, 14, '#fff1c1');                         // 夕陽
@@ -2064,6 +2578,17 @@
         const x = (i * 47 + time * (25 + (i % 3) * 12)) % S.w;
         const y = S.h - 30 - (i % 5) * 9 + Math.sin(time * 2 + i) * 3;
         ctx.fillRect(S.x + Math.floor(x / 2) * 2, S.y + Math.floor(y / 2) * 2, 2, 2);
+      }
+    } else if (kind === 'treasure') {
+      // 金幣堆上一閃一閃的光點
+      for (let i = 0; i < 8; i++) {
+        if (Math.floor(time * 3 + i * 0.9) % 3 !== 0) continue;
+        const x = S.x + 18 + ((i * 61) % (S.w - 36)), y = S.y + S.h - 22 - (i % 3) * 6;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x, y, 2, 2);
+        ctx.fillRect(x - 2, y + 2, 2, 2);
+        ctx.fillRect(x + 2, y + 2, 2, 2);
+        ctx.fillRect(x, y + 4, 2, 2);
       }
     } else if (kind === 'graveyard') {
       // 幾顆星星一閃一閃
@@ -2188,8 +2713,8 @@
     }));
   }
 
-  function drawMonster(m, x0, y0, flash, laughing = false) {
-    const map = laughing ? m.laugh : m.map;
+  function drawMonster(m, x0, y0, flash, laughing = false, open = false) {
+    const map = open ? m.open : laughing ? m.laugh : m.map;
     for (let r = 0; r < map.length; r++) {
       const row = map[r];
       for (let col = 0; col < row.length; col++) {
@@ -2223,13 +2748,22 @@
       const cx = S.x + S.w / 2;                 // 怪物放在螢幕中間
       let ox = 0, oy = Math.round(Math.sin(time * 3) * 3);
       if (adv.hitT > 0) ox = Math.round((Math.random() - 0.5) * 10 * (adv.hitT / 0.5));
-      const laughing = adv.monster && (adv.laughT > 0 || adv.status === 'lost');
+      const opened = adv.chest && adv.status === 'won';
+      const laughing = !adv.chest && (adv.laughT > 0 || adv.status === 'lost');
       if (laughing) {
         oy += Math.floor(time * 16) % 2 ? -3 : 0;
         ox += Math.floor(time * 11) % 2 ? 1 : -1;
       }
       const x0 = cx - size / 2 + ox, y0 = S.y + 8 + oy;
-      const visible = adv.status !== 'won' || (adv.dieT > 0 && Math.floor(adv.dieT * 12) % 2 === 0);
+      const visible = adv.status !== 'won' || adv.chest || (adv.dieT > 0 && Math.floor(adv.dieT * 12) % 2 === 0);
+      if (opened) {
+        // 打開的寶箱往外發光
+        const g = ctx.createRadialGradient(cx, y0 + 30, 4, cx, y0 + 30, 70);
+        g.addColorStop(0, `rgba(255, 224, 138, ${0.55 + 0.2 * Math.sin(time * 6)})`);
+        g.addColorStop(1, 'rgba(255, 224, 138, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(cx - 80, S.y, 160, S.h);
+      }
       // 影子：腳下一塊圓形影子，怪物往上彈時變小、落下時變大
       if (visible) {
         const k = Math.max(0.75, 1 + oy / 30);
@@ -2243,7 +2777,7 @@
         ctx.ellipse(sx, sy, size * 0.36 * k, 6 * k, 0, 0, Math.PI * 2);
         ctx.fill();
       }
-      if (visible) drawMonster(m, x0, y0, adv.hitT > 0 && Math.floor(adv.hitT * 20) % 2 === 0, laughing);
+      if (visible) drawMonster(m, x0, y0, adv.hitT > 0 && Math.floor(adv.hitT * 20) % 2 === 0, laughing, opened);
       if (laughing && visible) {
         // 「嘻嘻嘻」在怪物頭的右邊
         const word = t('laugh');
@@ -2261,7 +2795,7 @@
       ctx.textAlign = 'center';
       for (const p of adv.pops) {
         ctx.globalAlpha = Math.max(0, 1 - p.t / 1.2);
-        ctx.fillStyle = '#ff5c5c';
+        ctx.fillStyle = p.color || '#ff5c5c';
         ctx.fillText(p.text, cx, S.y + 32 - p.t * 26);
       }
       ctx.globalAlpha = 1;
@@ -2275,12 +2809,12 @@
       ctx.textAlign = 'right';
       ctx.font = `bold 16px ${PIXEL_FONT}`;
       if (adv.status === 'won' || adv.status === 'lost') {
-        const label = adv.status === 'won' ? 'VICTORY!' : 'GAME OVER';
+        const label = adv.status === 'won' ? (adv.chest ? 'OPEN!' : 'VICTORY!') : 'GAME OVER';
         textBacking(S.x + S.w - ctx.measureText(label).width - 16, S.y + 4, ctx.measureText(label).width + 12, 20);
         if (adv.status === 'lost') { ctx.fillStyle = '#ef4444'; ctx.fillText(label, S.x + S.w - 10, S.y + 14); }
         else if (Math.floor(time * 4) % 2 === 0) { ctx.fillStyle = '#facc15'; ctx.fillText(label, S.x + S.w - 10, S.y + 14); }
       } else if (adv.campaign) {
-        const label = `STAGE ${adv.monsterIdx + 1}/${MONSTERS.length}`;
+        const label = adv.chest ? 'TREASURE' : `STAGE ${adv.monsterIdx + 1}/${MONSTERS.length}`;
         textBacking(S.x + S.w - ctx.measureText(label).width - 16, S.y + 4, ctx.measureText(label).width + 12, 20);
         ctx.fillStyle = '#facc15';
         ctx.fillText(label, S.x + S.w - 10, S.y + 14);
@@ -2339,13 +2873,14 @@
     }
     if (mode === 'classic') led(ctx, multColX(round.level), 146, 5, true);
     // 檯面每一排的 LED
+    const chest = chestStage();
     for (const i of round.lit) {
       const on = round.phase === 'win' && i === round.landSlot ? blink : true;
-      led(ctx, B.left + (i + 0.5) * SLOT_W, LED_Y, 6, on);
+      led(ctx, B.left + (i + 0.5) * SLOT_W, LED_Y, 6, on, chest ? TIERS[round.tiers[i]].led : 'red');
     }
-    if (round.refill >= 0) {
-      const on = round.phase === 'win' && round.refill === round.landSlot ? blink : true;
-      led(ctx, B.left + (round.refill + 0.5) * SLOT_W, LED_Y, 6, on, 'green');
+    for (const i of round.refills) {
+      const on = round.phase === 'win' && i === round.landSlot ? blink : true;
+      led(ctx, B.left + (i + 0.5) * SLOT_W, LED_Y, 6, on, 'green');
     }
     if (round.phase === 'lose' && round.landSlot >= 0) {
       ctx.fillStyle = 'rgba(255,255,255,0.08)';
@@ -2458,7 +2993,7 @@
 
   // 每個階段閃爍下一步要按的地方；開始拉桿後就不提示
   function drawHints(time) {
-    if (state.charging || !state.started || advLocked()) return;
+    if (state.charging || !state.started || advLocked() || round.placing) return;
     if (round.phase === 'select') {
       const m = HOLES.mult;
       if (state.credits >= multNeed() && round.level < multRule().mults.length - 1) {
@@ -2469,7 +3004,7 @@
       hintBubble(time, BUTTON.x, BUTTON.y - BUTTON.r - 12, 'above', t('hintLock'), 'end');
     } else if (round.phase === 'bet') {
       const b = HOLES.bet;
-      if (state.credits > 0) hintCircle(time, b.x, b.y, b.r + 5);
+      if (state.credits > 0 && !(chestStage() && round.bet > 0)) hintCircle(time, b.x, b.y, b.r + 5);
       if (round.bet === 0) {
         hintBubble(time, b.x - b.r - 8, b.y, 'left', t('hintBet'));
       } else if (ballAtShooter()) {
@@ -2527,14 +3062,15 @@
     lip.addColorStop(0.3, '#f9fafb');
     lip.addColorStop(0.6, '#b6bcc4');
     lip.addColorStop(1, '#5b626b');
-    roundRect(ctx, 20, 1030, 394, 22, 11);
+    const TR = TRAY.right + 14;
+    roundRect(ctx, 20, 1030, TR - 20, 22, 11);
     ctx.fillStyle = lip;
     ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.85)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(36, 1035.5);
-    ctx.lineTo(398, 1035.5);
+    ctx.lineTo(TR - 16, 1035.5);
     ctx.stroke();
     // 持珠顯示器最多到 DISPLAY_MAX，超過的部分才在右下角另外顯示
     const hidden = state.credits - DISPLAY_MAX;
@@ -2543,8 +3079,82 @@
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#374151';
-      ctx.fillText(t('moreBalls', { n: hidden }), 398, 1041);
+      ctx.fillText(t('moreBalls', { n: hidden }), TR - 16, 1041);
     }
+  }
+
+  // 背包按鈕：托盤和投珠孔之間，右上角顯示道具數量
+  function drawBag() {
+    if (mode !== 'adv') return;
+    const { x, y, r } = BAG;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x + 1, y + 2, r + 1, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fill();
+    const rim = ctx.createRadialGradient(x - 5, y - 6, 2, x, y, r);
+    rim.addColorStop(0, '#ffffff');
+    rim.addColorStop(1, '#d9d6cc');
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = rim;
+    ctx.fill();
+    const inner = ctx.createRadialGradient(x - 4, y - 5, 1, x, y, r - 3);
+    inner.addColorStop(0, '#9a6532');
+    inner.addColorStop(1, '#4a2c12');
+    ctx.beginPath();
+    ctx.arc(x, y, r - 3, 0, Math.PI * 2);
+    ctx.fillStyle = inner;
+    ctx.fill();
+    // 背包圖案：提把、包身、蓋子、扣環、前口袋
+    ctx.strokeStyle = '#2a1405';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(x, y - 7, 4.5, Math.PI, 0);
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, x - 9, y - 7, 18, 18, 4);
+    ctx.fillStyle = '#f0c27a';
+    ctx.fill();
+    ctx.stroke();
+    roundRect(ctx, x - 9, y - 7, 18, 8, 3);
+    ctx.fillStyle = '#d49a4f';
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(x - 2, y - 1, 4, 4);
+    ctx.strokeRect(x - 2, y - 1, 4, 4);
+    roundRect(ctx, x - 5, y + 4, 10, 5, 2);
+    ctx.stroke();
+    // 標籤
+    ctx.fillStyle = '#3b2412';
+    ctx.font = `bold 12px ${SANS}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(t('cvBag'), x, y + r + 14);
+    const n = itemCount();
+    if (n > 0) {
+      const bx = x + r - 3, by = y - r + 3;
+      ctx.beginPath();
+      ctx.arc(bx, by, 9, 0, Math.PI * 2);
+      ctx.fillStyle = '#e63946';
+      ctx.fill();
+      ctx.strokeStyle = '#fff3d6';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold 11px ${SANS}`;
+      ctx.fillText(String(Math.min(99, n)), bx, by + 0.5);
+    }
+    ctx.restore();
+  }
+
+  // 搖晃機台：框出可以放珠的範圍
+  function drawPlacing(time) {
+    if (!round.placing) return;
+    const Z = PLACE_ZONE;
+    hintRect(time, Z.x0, Z.y0, Z.x1 - Z.x0, Z.y1 - Z.y0);
+    hintBubble(time, (Z.x0 + Z.x1) / 2, Z.y0 + 6, 'below', t('shakeHint'));
   }
 
   function drawTweens() {
@@ -2660,10 +3270,21 @@
     drawButton(t);
     drawDisplay();
     drawTray();
+    drawBag();
     drawTweens();
     drawHints(t);
+    drawPlacing(t);
     drawSpills();
+    // 搖晃機台：整台晃一下
+    const shaking = state.shakeT > 0;
+    if (shaking || canvasShaken) {
+      canvas.style.transform = shaking
+        ? `translate(${((Math.random() - 0.5) * 10).toFixed(1)}px, ${((Math.random() - 0.5) * 6).toFixed(1)}px) rotate(${((Math.random() - 0.5) * 1.4).toFixed(2)}deg)`
+        : '';
+      canvasShaken = shaking;
+    }
   }
+  let canvasShaken = false;
 
   // ===== 介面 =====
   const $ = id => document.getElementById(id);
@@ -2691,7 +3312,7 @@
   }
 
   window.addEventListener('keydown', e => {
-    if (helpDlg.open) return;   // 說明視窗開著時不操作機台（Esc 會關閉視窗）
+    if (document.querySelector('dialog[open]')) return;   // 說明、背包視窗開著時不操作機台（Esc 會關閉視窗）
     if (e.target instanceof HTMLButtonElement && (e.code === 'Space' || e.code === 'Enter')) e.preventDefault();
     if (e.repeat) return;
     switch (e.code) {
@@ -2704,6 +3325,7 @@
       case 'KeyH': openHelp(); break;
       case 'KeyL': toggleLang(); break;
       case 'KeyQ': switchMode(); break;
+      case 'KeyI': openBag(); break;
     }
   });
   window.addEventListener('keyup', e => {
@@ -2722,14 +3344,18 @@
       if (hit) return key;
     }
     if (Math.hypot(p.x - BUTTON.x, p.y - BUTTON.y) < 32) return 'button';
+    if (mode === 'adv' && Math.hypot(p.x - BAG.x, p.y - BAG.y) < BAG.r + 8) return 'bag';
     if (mode === 'classic' && Math.abs(p.x - COIN_SLOT.x) < 34 && Math.abs(p.y - COIN_SLOT.y) < 50) return 'coin';
     return null;
   }
 
   canvas.addEventListener('pointerdown', e => {
-    const target = hitTarget(toLogical(e));
+    const p = toLogical(e);
+    const target = hitTarget(p);
     e.preventDefault();
-    if (target === 'bet') {
+    if (target === 'bag') openBag();
+    else if (round.placing) placeBall(p);
+    else if (target === 'bet') {
       try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 同下 */ }
       startBetHold();
     }
@@ -2763,6 +3389,110 @@
   fireBtn.addEventListener('pointerup', endFire);
   fireBtn.addEventListener('pointercancel', endFire);
 
+
+  // ---- 背包 ----
+  const bagDlg = $('bag'), bagList = $('bag-list'), bagNote = $('bag-note');
+  const choiceDlg = $('choice');
+
+  function cancelCharge() {
+    state.charging = false;
+    state.power = 0;
+    state.floorY = SHOOTER_FLOOR;
+    fireBtn.classList.remove('pressed');
+  }
+
+  function renderBag() {
+    bagList.textContent = '';
+    const ids = ITEM_IDS.filter(id => adv.items[id] > 0);
+    const general = itemBlockGeneral();
+    bagNote.textContent = !ids.length ? t('bagEmpty')
+      : general ? t(general)
+      : t(round.phase === 'select' ? 'bagNowSelect' : 'bagNowBet');
+    for (const id of ids) {
+      const it = ITEMS[id], tier = TIERS[it.tier];
+      const li = document.createElement('li');
+      li.className = 'bag-item';
+      li.style.setProperty('--tier', tier.color);
+      const head = document.createElement('div');
+      head.className = 'bag-head';
+      const name = document.createElement('b');
+      name.textContent = it.name[lang];
+      const tag = document.createElement('span');
+      tag.className = 'bag-tier';
+      tag.textContent = tier.name[lang];
+      const count = document.createElement('span');
+      count.className = 'bag-count';
+      count.textContent = '×' + adv.items[id];
+      head.append(name, tag, count);
+      const quote = document.createElement('p');
+      quote.className = 'bag-quote';
+      quote.textContent = it.quote[lang];
+      const effect = document.createElement('p');
+      effect.textContent = itemEffect(id);
+      const when = document.createElement('p');
+      when.className = 'bag-when';
+      when.textContent = t({ pre: 'whenPre', post: 'whenPost', both: 'whenBoth' }[it.when]);
+      const row = document.createElement('div');
+      row.className = 'bag-row';
+      const why = itemBlock(id);
+      const reason = document.createElement('span');
+      reason.className = 'bag-reason';
+      if (why && why !== general) reason.textContent = t(why);
+      const use = document.createElement('button');
+      use.type = 'button';
+      use.className = 'btn coin';
+      use.textContent = t('bagUse');
+      use.disabled = !!why;
+      use.addEventListener('click', () => { if (useItem(id)) bagDlg.close(); else renderBag(); });
+      row.append(reason, use);
+      li.append(head, quote, effect, when, row);
+      bagList.append(li);
+    }
+  }
+
+  function openBag() {
+    if (mode !== 'adv' || !bagDlg) return;
+    Sound.init();
+    cancelCharge();
+    stopBetHold();
+    Sound.clunk();
+    renderBag();
+    bagDlg.showModal();
+  }
+
+  // 沙漏：落點後跳出選擇
+  function openChoice(slot) {
+    cancelCharge();
+    stopBetHold();
+    $('choice-text').textContent = landingPreview(slot);
+    $('choice-ask').textContent = t('hgAsk');
+    choiceDlg.showModal();
+  }
+  if (choiceDlg) {
+    choiceDlg.addEventListener('cancel', e => e.preventDefault());   // 一定要選一個
+    $('choice-keep').addEventListener('click', () => { choiceDlg.close(); chooseHourglass(true); });
+    $('choice-rewind').addEventListener('click', () => { choiceDlg.close(); chooseHourglass(false); });
+  }
+  if (bagDlg) bagDlg.addEventListener('click', e => { if (e.target === bagDlg) bagDlg.close(); });
+
+  // 說明視窗裡的道具清單
+  function renderItemGuide() {
+    for (const el of document.querySelectorAll('[data-item-guide]')) {
+      const L = el.closest('[data-lang]').dataset.lang;
+      el.textContent = '';
+      for (const id of ITEM_IDS) {
+        const it = ITEMS[id], tier = TIERS[it.tier];
+        const li = document.createElement('li');
+        const name = document.createElement('b');
+        name.style.color = tier.color;
+        name.textContent = L === 'zh' ? `${it.name[L]}（${tier.name[L]}）` : `${it.name[L]} (${tier.name[L]})`;
+        const when = I18N[L][{ pre: 'whenPre', post: 'whenPost', both: 'whenBoth' }[it.when]];
+        const dot = L === 'zh' ? '。' : '. ';
+        li.append(name, ` ${it.effect[L].replace(/\s*[（(][^）)]*\{n\}[^）)]*[）)]/, '')}${dot}${when}${dot.trim()}`);
+        el.append(li);
+      }
+    }
+  }
 
   // ---- 遊戲模式的畫面切換 ----
   const ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('overlay-coin');
@@ -2839,9 +3569,16 @@
       let target = 0;
       if (midRun) {
         target = adv.monsterIdx + 1;
-        title = t('campaignWinTitle', { stage });
-        text = t('campaignWinText', { name, left: state.credits, bonus: CAMPAIGN_BONUS, next: MONSTERS[target].name[lang] });
-        btn = t('campaignNext', { stage: target + 1 });
+        if (adv.chest) {
+          const id = adv.loot;
+          title = t('chestWinTitle');
+          text = t('chestWinText', { tier: TIERS[ITEMS[id].tier].name[lang], item: itemName(id), effect: itemEffect(id), next: MONSTERS[target].name[lang] });
+          btn = t('campaignNext', { stage: target + 1 });
+        } else {
+          title = t('campaignWinTitle', { stage });
+          text = t('campaignWinText', { name, left: state.credits, bonus: CAMPAIGN_BONUS, next: t('chestName') });
+          btn = t('chestGo');
+        }
       } else if (advPlan === 'campaign') {
         if (hasResult && adv.status === 'won' && adv.monsterIdx < LAST_STAGE) {
           // 打贏了但彈珠剛好用完，沒辦法往下一關
@@ -2887,6 +3624,7 @@
 
   function applyMode() {
     document.body.dataset.mode = mode;
+    TRAY.right = TRAY_RIGHT[mode];
     applyLang();
   }
 
@@ -2904,6 +3642,7 @@
     }
     for (const el of document.querySelectorAll('[data-i18n-html]')) el.innerHTML = t(el.dataset.i18nHtml);
     for (const el of document.querySelectorAll('[data-lang]')) el.hidden = el.dataset.lang !== lang;
+    renderItemGuide();
     drawStatic();
     refreshOverlay();
     say(...lastMsg);
@@ -2932,6 +3671,7 @@
   helpDlg.addEventListener('click', e => { if (e.target === helpDlg) helpDlg.close(); });   // 點背景關閉
   $('overlay-coin').addEventListener('click', overlayPrimary);
   for (const el of byAction('mode')) el.addEventListener('click', switchMode);
+  for (const el of byAction('bag')) el.addEventListener('click', openBag);
   {
     const btn = $('bet-btn');
     btn.addEventListener('pointerdown', e => {

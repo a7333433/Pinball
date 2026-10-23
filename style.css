@@ -336,8 +336,10 @@ body {
 .btn.lock { background: #2550f0; box-shadow: 0 4px 0 #0b1f7a; }
 .btn.mode { background: #6d28d9; box-shadow: 0 4px 0 #3b1580; }
 
-/* 大冒險模式不能投幣 */
+/* 大冒險模式不能投幣；背包只有大冒險才有 */
 body[data-mode="adv"] [data-action="coin"] { display: none; }
+body:not([data-mode="adv"]) [data-action="bag"] { display: none; }
+.btn.bag { background: #8a5a2b; box-shadow: 0 4px 0 #4a2c12; }
 .btn kbd { margin-left: 4px; vertical-align: 1px; }
 
 .msg {
@@ -395,6 +397,31 @@ kbd {
 .help form { margin-top: 12px; text-align: center; }
 .help .version { margin-top: 14px; text-align: center; font-size: 12px; opacity: 0.6; }
 .help form .btn { min-width: 120px; }
+.help .item-guide { margin: 8px 0 0; padding-left: 22px; font-size: 14px; }
+
+/* ---- 背包、沙漏 ---- */
+.bag-note { margin: 0 0 10px; opacity: 0.85; font-size: 14px; }
+.bag-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.bag-item {
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border-left: 5px solid var(--tier);
+  border-radius: 8px;
+}
+.bag-item p { margin: 2px 0; font-size: 14px; }
+.bag-head { display: flex; align-items: baseline; gap: 8px; }
+.bag-head b { color: var(--tier); font-size: 17px; }
+.bag-tier { font-size: 12px; color: var(--tier); border: 1px solid var(--tier); border-radius: 4px; padding: 0 5px; }
+.bag-count { margin-left: auto; font-weight: bold; }
+.help .bag-quote { font-style: italic; opacity: 0.75; }
+.help .bag-when { font-size: 12px; opacity: 0.75; }
+.bag-row { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+.bag-reason { font-size: 12px; color: #fca5a5; }
+.bag-row .btn { padding: 6px 18px; font-size: 14px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.choice { width: min(400px, calc(100vw - 32px)); text-align: center; }
+.help .choice-ask { margin-top: 8px; font-size: 13px; opacity: 0.8; }
+.choice-btns { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }
 
 /* ---- 手機版：上方精簡列 + 機台佔滿剩下的高度 ---- */
 @media (max-width: 760px) {
