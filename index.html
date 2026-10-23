@@ -31,6 +31,7 @@
               <button type="button" data-plan="free" data-i18n="planFree">自由挑戰</button>
             </div>
             <p id="ov-text">投一枚硬幣，換 20 顆彈珠！</p>
+            <div id="ov-rewards" class="ov-rewards" hidden></div>
             <div id="ov-status" class="ov-status" hidden></div>
             <div id="monster-pick" class="monster-pick" hidden></div>
             <button id="overlay-coin" class="btn coin">投幣開始</button>
@@ -106,8 +107,15 @@
         <li>道具放在托盤右邊的<strong>背包按鈕</strong>（或 <kbd>I</kbd>）裡，只能在冒險模式的怪物關卡使用。每個道具有使用時機：定燈前、定燈後（發射前），或兩者都可。</li>
         <li>闖關失敗、從第 1 關重來時，背包會清空。</li>
       </ol>
+      <h3>過關獎勵與暴擊</h3>
+      <ol>
+        <li>冒險模式每打倒一隻怪物（最後一隻除外），會從獎勵池隨機抽 3 樣讓你選 1 樣，效果持續整個冒險、可以疊加。不滿意可以花彈珠重骰：第 1 次 1 顆，之後每次多 1 顆。</li>
+        <li>獎勵包含：彈珠 +5、每珠增傷、倍率強化、穿透傷害、加重彈珠、拔釘子、補珠加量、寶箱升級、暴擊率、暴擊傷害。</li>
+        <li>命中紅燈時有機會<strong>暴擊</strong>：基礎暴擊機率 0%、暴擊傷害 150%，要靠過關獎勵提升。</li>
+        <li>新的冒險開始時，過關獎勵會全部清空。</li>
+      </ol>
       <h3>鍵盤</h3>
-      <p class="keys"><kbd>X</kbd> 倍率孔　<kbd>D</kbd> 定燈　<kbd>B</kbd> 投珠孔　<kbd>Space</kbd> 拉彈簧　<kbd>C</kbd> 投幣　<kbd>Q</kbd> 切換模式　<kbd>I</kbd> 背包　<kbd>T</kbd> 寶藏　　<kbd>L</kbd> 語言　<kbd>M</kbd> 靜音　<kbd>H</kbd> 說明</p>
+      <p class="keys"><kbd>X</kbd> 倍率孔　<kbd>D</kbd> 定燈　<kbd>B</kbd> 投珠孔　<kbd>Space</kbd> 拉彈簧　<kbd>C</kbd> 投幣　<kbd>Q</kbd> 切換模式　<kbd>I</kbd> 背包　<kbd>T</kbd> 寶藏　<kbd>L</kbd> 語言　<kbd>M</kbd> 靜音　<kbd>H</kbd> 說明</p>
       <h3>我的紀錄</h3>
       <p class="records">最高分（單局最高得珠）<b data-record="bestWin">0</b>　最多持珠 <b data-record="best">0</b></p>
       <p class="records">大冒險：勝 <b data-record="advWins">0</b> 場　敗 <b data-record="advLosses">0</b> 場</p>
@@ -139,6 +147,13 @@
         <li>In Adventure there is a <strong>treasure chest</strong> between every two monsters. It has 1 HP and every prize light is lit: 3 blue, 2 purple, 1 orange and the rest white. No multiplier is needed: lock, bet 1 ball and shoot: the lane you land in decides the item's tier. White is Common, blue Rare, purple Epic, orange Legendary.</li>
         <li>Items go into the <strong>backpack button</strong> right of the tray (or <kbd>I</kbd>) and can only be used in Adventure monster stages. Each item says when it can be used: before locking, after locking (before shooting), or either.</li>
         <li>Failing the campaign and starting over from stage 1 empties the backpack.</li>
+      </ol>
+      <h3>Stage rewards and crits</h3>
+      <ol>
+        <li>In Adventure, every monster you beat (except the last) offers 3 random rewards; pick 1. Rewards last for the whole adventure and stack. You can reroll for balls: 1 the first time, then 1 more each time.</li>
+        <li>Rewards: +5 balls, per-ball damage, multiplier up, piercing damage, heavier marble, fewer pins, bigger refills, better chests, crit rate, crit damage.</li>
+        <li>Hits on red lights can <strong>crit</strong>: base crit chance 0% and crit damage 150%, raised only by rewards.</li>
+        <li>Rewards reset when a new adventure starts.</li>
       </ol>
       <h3>Keyboard</h3>
       <p class="keys"><kbd>X</kbd> Multiply　<kbd>D</kbd> Lock　<kbd>B</kbd> Bet　<kbd>Space</kbd> Pull　<kbd>C</kbd> Coin　<kbd>Q</kbd> Switch mode　<kbd>I</kbd> Backpack　<kbd>T</kbd> Treasures　<kbd>L</kbd> Language　<kbd>M</kbd> Mute　<kbd>H</kbd> Help</p>

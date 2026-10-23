@@ -441,6 +441,28 @@ body[data-mode="adv"] .overlay-card .link { display: none; }
   text-align: left;
 }
 .ov-status[hidden] { display: none; }
+/* ---- 過關獎勵 ---- */
+.ov-rewards { width: 100%; display: grid; gap: 8px; }
+.ov-rewards[hidden] { display: none; }
+.rw-head { margin: 0; color: var(--gold); font-weight: bold; }
+.rw-card {
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  color: var(--cream);
+  text-align: left;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.rw-card:hover, .rw-card:focus-visible { background: rgba(255, 209, 102, 0.15); }
+.rw-card b { color: var(--gold); font-size: 16px; }
+.rw-card span { font-size: 14px; }
+.rw-card small { font-size: 12px; opacity: 0.7; }
+.rw-reroll { justify-self: center; padding: 8px 20px; font-size: 14px; }
 .st-row { display: flex; align-items: center; gap: 10px; }
 .st-label { flex-shrink: 0; min-width: 5em; color: var(--gold); font-weight: bold; font-size: 14px; }
 .st-value { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 15px; }

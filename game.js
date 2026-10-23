@@ -105,6 +105,24 @@
     },
   };
   const ITEM_IDS = Object.keys(ITEMS);
+
+  // ===== 暴擊、過關獎勵（冒險模式） =====
+  const CRIT_BASE_RATE = 0;       // 基礎暴擊機率
+  const CRIT_BASE_MULT = 1.5;     // 基礎暴擊傷害倍率 150%
+  // 每打倒一隻怪物（最後一隻除外）從這裡隨機抽 3 樣選 1 樣，效果持續整個冒險、可以疊加
+  const BOONS = {
+    balls: { name: { zh: '彈珠補給', en: 'Ball Supply' }, desc: { zh: '持有彈珠數增加 5', en: '+5 balls' } },
+    perBall: { name: { zh: '每珠增傷', en: 'Per-ball Damage' }, desc: { zh: '每顆投珠增加最終傷害 1', en: '+1 final damage per ball bet' } },
+    multPct: { name: { zh: '倍率強化', en: 'Multiplier Up' }, desc: { zh: '倍率孔的倍率增加 1%', en: 'Multiplier +1%' } },
+    pierce: { name: { zh: '穿透傷害', en: 'Piercing' }, desc: { zh: '每次攻擊追加 1 點忽視防禦的傷害', en: '+1 damage that ignores DEF on every hit' } },
+    weight: { name: { zh: '加重彈珠', en: 'Heavier Marble' }, desc: { zh: '彈珠重量增加 0.1（撞釘子彈得比較低、比較不會亂跳）', en: 'Marble weight +0.1 (bounces lower and jitters less)' } },
+    pin: { name: { zh: '拔釘子', en: 'Fewer Pins' }, desc: { zh: '落珠區的釘子隨機減少 1 根', en: 'Removes 1 random pin from the board' } },
+    refill: { name: { zh: '補珠加量', en: 'Bigger Refills' }, desc: { zh: '補珠燈補珠時多得 1 顆', en: '+1 ball on every refill light' } },
+    chestRare: { name: { zh: '寶箱升級', en: 'Better Chests' }, desc: { zh: '寶箱關卡的稀有（藍）燈 +1、一般（白）燈 −1', en: 'Chests get +1 rare (blue) lane, −1 common (white) lane' } },
+    critRate: { name: { zh: '暴擊率', en: 'Crit Rate' }, desc: { zh: '暴擊機率增加 1%', en: 'Crit chance +1%' } },
+    critDmg: { name: { zh: '暴擊傷害', en: 'Crit Damage' }, desc: { zh: '暴擊傷害倍率增加 10%', en: 'Crit damage +10%' } },
+  };
+  const BOON_IDS = Object.keys(BOONS);
   // 道具的 12×12 像素圖示（背包、寶箱結果、說明、怪物螢幕都用這個）
   const LASER_MAP = [
       '.........RRR',
@@ -620,7 +638,10 @@
       dmgPop: '-{d} HP', advNoCoin: '大冒險模式不能投幣',
       advPressStart: '按「開始冒險」', laugh: '嘻嘻嘻',
       stWinAdv: '上次傷害', stBestWinAdv: '勝場', stBestAdv: '敗場',
-      hitMsgHeavy: '命中！沉重彈珠 {raw} 點攻擊，扣掉防禦 {def}，造成 {dmg} 點傷害',
+      hitMsgTotal: '命中！攻擊 {raw}，扣掉防禦 {def}，加上加成共造成 {dmg} 點傷害',
+      critMsg: '暴擊！造成 {dmg} 點傷害', critPop: '暴擊 -{d}',
+      rewardTitle: '選擇過關獎勵', rewardReroll: '重骰（{n} 顆彈珠）', rewardHave: '已有 ×{n}',
+      statusBoons: '過關獎勵',
       chestName: '寶箱',
       chestAppear: '寶箱出現了！有 3 排藍燈、2 排紫燈、1 排橘燈，按藍色按鈕定燈，再投 1 顆珠打開它',
       chestNoMult: '寶箱關卡不用投倍率孔，直接按藍色按鈕定燈',
@@ -714,7 +735,10 @@
       dmgPop: '-{d} HP', advNoCoin: 'No coins in Quest mode',
       advPressStart: 'Press Start', laugh: 'hehehe',
       stWinAdv: 'Last hit', stBestWinAdv: 'Wins', stBestAdv: 'Losses',
-      hitMsgHeavy: 'Hit! Heavy marbles: {raw} attack − DEF {def} = {dmg} damage',
+      hitMsgTotal: 'Hit! {raw} attack − DEF {def}, with bonuses {dmg} damage',
+      critMsg: 'Critical hit! {dmg} damage', critPop: 'CRIT -{d}',
+      rewardTitle: 'Choose a reward', rewardReroll: 'Reroll ({n} balls)', rewardHave: 'Have ×{n}',
+      statusBoons: 'Rewards',
       chestName: 'Treasure Chest',
       chestAppear: 'A treasure chest! 3 blue, 2 purple and 1 orange lane. Press blue to lock, then bet 1 ball to open it',
       chestNoMult: 'No multiplier on the chest. Just press blue to lock',
@@ -858,6 +882,12 @@
       if (caps.some(c => Math.hypot(c.x - x, c.y - y) < 24)) continue;
       pins.push({ x, y });
     }
+  }
+  const ALL_PINS = pins.slice();
+  // 大冒險拔掉的釘子只在大冒險拿掉，經典模式永遠是完整的釘陣
+  function syncPins() {
+    pins.length = 0;
+    ALL_PINS.forEach((p, i) => { if (!(mode === 'adv' && adv.removedPins.has(i))) pins.push(p); });
   }
 
   // ===== 音效 =====
@@ -1027,7 +1057,14 @@
     defDown: 0,           // 鹽酸：這隻怪物的防禦被降了幾點
     loot: null,           // 剛從寶箱拿到的道具
     rescueSaid: false,
+    boons: {},            // 過關獎勵：id → 疊了幾層（新的冒險開始時清空）
+    rewards: null,        // 正在選的 3 個過關獎勵
+    rerollCost: 1,        // 下一次重骰要花幾顆
+    removedPins: new Set(),   // 「拔釘子」拔掉的釘子（ALL_PINS 的索引）
   };
+  const boon = id => adv.boons[id] || 0;
+  const critRate = () => CRIT_BASE_RATE + 0.01 * boon('critRate');
+  const critMult = () => CRIT_BASE_MULT + 0.1 * boon('critDmg');
   const chestStage = () => mode === 'adv' && adv.chest;
   // 寶藏圖鑑：取得過哪些道具（存在瀏覽器，重新闖關也會保留）
   const itemsSeen = new Set();
@@ -1114,6 +1151,11 @@
       spills.length = 0;
       adv.items = {};
       adv.lost = 0;
+      adv.boons = {};
+      adv.rewards = null;
+      adv.removedPins.clear();
+      syncPins();
+      drawStatic();
     }
     state.lastWin = null;
     state.started = true;
@@ -1129,10 +1171,22 @@
   const attackRaw = () => mult() * round.bet * (1 + round.heavy);
   // 攻擊力扣掉防禦才是實際傷害
   const dmgAfterDef = raw => Math.max(0, raw - monsterDef());
-
-  function damageMonster(raw, px) {
+  // 加上過關獎勵、暴擊後的傷害：
+  // 攻擊 = 倍率 ×（1 + 倍率強化%）× 投珠數 × 基本傷害 → 扣防禦 → + 每珠增傷 → × 暴擊 → + 穿透傷害
+  function computeHit(crit) {
     const def = monsterDef();
-    const dmg = dmgAfterDef(raw);
+    const raw = Math.round(mult() * (1 + 0.01 * boon('multPct')) * round.bet * (1 + round.heavy));
+    let dmg = Math.max(0, raw - def) + boon('perBall') * round.bet;
+    if (crit) dmg = Math.round(dmg * critMult());
+    dmg += boon('pierce');
+    return { raw, def, dmg };
+  }
+  const hitBonused = () => round.heavy > 0 || boon('multPct') > 0 || boon('perBall') > 0 || boon('pierce') > 0;
+  const refillBonus = () => round.bet * REFILL_MULT + boon('refill');
+
+  function damageMonster(px) {
+    const crit = Math.random() < critRate();
+    const { raw, def, dmg } = computeHit(crit);
     state.lastWin = dmg;
     if (dmg === 0) {
       // 攻擊沒打破防禦：0 傷害，怪物竊笑
@@ -1147,8 +1201,9 @@
     adv.hp = Math.max(0, adv.hp - dmg);
     adv.hitT = 0.5;
     adv.pops.push({ text: '-' + dmg, t: 0 });
-    popups.push({ x: px, y: SLOT_TOP - 16, text: t('dmgPop', { d: dmg }), t: 0, color: '#ff6b6b' });
-    say(round.heavy ? 'hitMsgHeavy' : def > 0 ? 'hitMsgDef' : 'hitMsg', { mult: mult(), bet: round.bet, raw, def, dmg });
+    popups.push({ x: px, y: SLOT_TOP - 16, text: t(crit ? 'critPop' : 'dmgPop', { d: dmg }), t: 0, color: crit ? '#ffd166' : '#ff6b6b' });
+    const key = crit ? 'critMsg' : hitBonused() ? 'hitMsgTotal' : def > 0 ? 'hitMsgDef' : 'hitMsg';
+    say(key, { mult: mult(), bet: round.bet, raw, def, dmg });
     Sound.hit();
     if (adv.hp === 0) defeatMonster();
   }
@@ -1162,6 +1217,11 @@
     cleared.add(adv.monsterIdx);
     try { localStorage.setItem('candy-pinball-adv-cleared', JSON.stringify([...cleared])); } catch (e) { /* 無痕模式 */ }
     setPick(adv.monsterIdx + 1);      // 下一場預設挑戰下一隻（比較強的）
+    // 冒險模式：打倒怪物（最後一隻除外）後先選過關獎勵
+    if (adv.campaign && adv.monsterIdx < LAST_STAGE) {
+      adv.rerollCost = 1;
+      rollRewards();
+    }
     if (adv.campaign) {
       if (adv.monsterIdx + 1 > campaign.best) {
         campaign.best = adv.monsterIdx + 1;
@@ -1171,6 +1231,50 @@
     }
     say('advWinMsg', { name: monsterName() });
     setTimeout(() => Sound.win(), 350);
+  }
+
+  // ===== 過關獎勵 =====
+  // 已經沒有效果的獎勵不抽（寶箱已經沒有白燈、釘子拔光）
+  function boonAvailable(id) {
+    if (id === 'chestRare') return CHEST_LANES[1] + boon('chestRare') + CHEST_LANES[2] + CHEST_LANES[3] < SLOT_COUNT;
+    if (id === 'pin') return pins.length > 0;
+    return true;
+  }
+  function rollRewards() {
+    const pool = BOON_IDS.filter(boonAvailable);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    adv.rewards = pool.slice(0, 3);
+  }
+  function rerollRewards() {
+    Sound.init();
+    if (!adv.rewards || state.credits < adv.rerollCost) { Sound.error(); return; }
+    state.credits -= adv.rerollCost;
+    if (tray.length > state.credits) tray.length = state.credits;
+    adv.lost += adv.rerollCost;
+    adv.rerollCost++;
+    rollRewards();
+    Sound.clunk();
+    refreshOverlay();
+  }
+  function pickReward(id) {
+    Sound.init();
+    if (!adv.rewards || !adv.rewards.includes(id)) return;
+    adv.boons[id] = boon(id) + 1;
+    adv.rewards = null;
+    if (id === 'balls') state.payoutQueue += 5;
+    if (id === 'pin') removeRandomPin();
+    Sound.coin();
+    refreshOverlay();
+  }
+  function removeRandomPin() {
+    const left = ALL_PINS.map((p, i) => i).filter(i => !adv.removedPins.has(i));
+    if (!left.length) return;
+    adv.removedPins.add(left[Math.floor(Math.random() * left.length)]);
+    syncPins();
+    drawStatic();
   }
 
   // 寶箱：落在哪一排，就從那一排顏色等級的道具池抽一個
@@ -1428,7 +1532,8 @@
     if (chestStage()) {
       let k = 0;
       for (let tier = 1; tier < CHEST_LANES.length; tier++) {
-        for (let j = 0; j < CHEST_LANES[tier]; j++) round.tiers[slots[k++]] = tier;
+        const n = CHEST_LANES[tier] + (tier === 1 ? boon('chestRare') : 0);   // 寶箱升級：藍燈多、白燈少
+        for (let j = 0; j < n && k < SLOT_COUNT; j++) round.tiers[slots[k++]] = tier;
       }
     }
   }
@@ -1534,7 +1639,7 @@
     if (chestStage()) {
       say('chestBetMsg');
     } else if (mode === 'adv') {
-      say(monsterDef() > 0 ? 'betInfoAdvDef' : 'betInfoAdv', { bet: round.bet, mult: mult(), win: dmgAfterDef(raw), def: monsterDef() });
+      say(monsterDef() > 0 ? 'betInfoAdvDef' : 'betInfoAdv', { bet: round.bet, mult: mult(), win: computeHit(false).dmg, def: monsterDef() });
     } else {
       say('betInfo', { bet: round.bet, mult: mult(), win: raw });
     }
@@ -1624,7 +1729,7 @@
       const win = attackRaw();
       round.phase = 'win';
       if (mode === 'adv') {
-        damageMonster(win, px);
+        damageMonster(px);
         return;
       }
       state.payoutQueue += win;
@@ -1638,7 +1743,7 @@
       Sound.win();
     } else if (mode === 'adv' && round.refills.has(slot)) {
       // 補珠燈：不造成傷害，改成退回這局投進倍率孔的珠，再補 投珠數 × 2 顆
-      const refund = round.multPaid, bonus = round.bet * REFILL_MULT, n = refund + bonus;
+      const refund = round.multPaid, bonus = refillBonus(), n = refund + bonus;
       round.phase = 'win';
       state.payoutQueue += n;
       adv.lost = Math.max(0, adv.lost - n);
@@ -1664,10 +1769,10 @@
   // 沙漏：預告這次落點的結果
   function landingPreview(slot) {
     if (round.lit.has(slot)) {
-      const raw = attackRaw(), dmg = dmgAfterDef(raw);
-      return dmg > 0 ? t('hgHit', { dmg }) : t('hgBlock', { raw, def: monsterDef() });
+      const { raw, def, dmg } = computeHit(false);
+      return dmg > 0 ? t('hgHit', { dmg }) : t('hgBlock', { raw, def });
     }
-    if (round.refills.has(slot)) return t('hgRefill', { n: round.multPaid + round.bet * REFILL_MULT });
+    if (round.refills.has(slot)) return t('hgRefill', { n: round.multPaid + refillBonus() });
     return t('hgMiss');
   }
 
@@ -1689,7 +1794,9 @@
   }
 
   // ===== 物理 =====
+  let ballWeight = 1;     // 加重彈珠：撞到東西時反彈係數、隨機抖動都除以重量
   function collideCircle(b, px, py, rad, e, jitter = true) {
+    e /= ballWeight;
     const dx = b.x - px, dy = b.y - py;
     const min = BALL_R + rad;
     const d2 = dx * dx + dy * dy;
@@ -1703,7 +1810,7 @@
     b.vy -= (1 + e) * vn * ny;
     if (jitter) {
       // 一點點隨機，避免鋼珠剛好平衡在釘子頂端
-      const j = (Math.random() - 0.5) * 8;
+      const j = (Math.random() - 0.5) * 8 / ballWeight;
       b.vx += -ny * j;
       b.vy += nx * j;
     }
@@ -1718,6 +1825,7 @@
 
   function stepBall(h) {
     const b = ball;
+    ballWeight = mode === 'adv' ? 1 + 0.1 * boon('weight') : 1;
     b.vy += GRAVITY * h;
     const damp = 1 - 0.1 * h;
     b.vx *= damp; b.vy *= damp;
@@ -3744,7 +3852,40 @@
 
   // ---- 遊戲模式的畫面切換 ----
   const ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('overlay-coin'), ovItem = $('ov-item');
-  const ovStatus = $('ov-status');
+  const ovStatus = $('ov-status'), ovRewards = $('ov-rewards');
+
+  // 過關獎勵：3 張卡片選 1 張，下面是重骰按鈕
+  function renderRewards() {
+    ovRewards.textContent = '';
+    const head = document.createElement('p');
+    head.className = 'rw-head';
+    head.textContent = t('rewardTitle');
+    ovRewards.append(head);
+    for (const id of adv.rewards) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'rw-card';
+      const name = document.createElement('b');
+      name.textContent = BOONS[id].name[lang];
+      const desc = document.createElement('span');
+      desc.textContent = BOONS[id].desc[lang];
+      b.append(name, desc);
+      if (boon(id)) {
+        const have = document.createElement('small');
+        have.textContent = t('rewardHave', { n: boon(id) });
+        b.append(have);
+      }
+      b.addEventListener('click', () => pickReward(id));
+      ovRewards.append(b);
+    }
+    const re = document.createElement('button');
+    re.type = 'button';
+    re.className = 'btn rw-reroll';
+    re.textContent = t('rewardReroll', { n: adv.rerollCost });
+    re.disabled = state.credits < adv.rerollCost;
+    re.addEventListener('click', rerollRewards);
+    ovRewards.append(re);
+  }
 
   // 過關卡片的「目前狀態」：彈珠數、背包裡的道具
   function renderStatus() {
@@ -3771,6 +3912,14 @@
       return chip;
     });
     row(t('statusItems'), ...(items.length ? items : [t('statusNoItems')]));
+    const boons = BOON_IDS.filter(id => boon(id) > 0).map(id => {
+      const chip = document.createElement('span');
+      chip.className = 'st-item';
+      chip.title = BOONS[id].desc[lang];
+      chip.textContent = `${BOONS[id].name[lang]} ×${boon(id)}`;
+      return chip;
+    });
+    row(t('statusBoons'), ...(boons.length ? boons : [t('statusNoItems')]));
   }
   const pickEl = $('monster-pick');
   const planEl = $('adv-plan');
@@ -3855,7 +4004,9 @@
       const name = monsterName(), stage = adv.monsterIdx + 1, total = MONSTERS.length;
       // 結果只在「上一場的玩法」和目前選的玩法一樣時顯示，否則顯示該玩法的說明
       const hasResult = adv.status !== 'intro' && (adv.campaign ? 'campaign' : 'free') === advPlan;
-      if (midRun) {
+      if (midRun && adv.rewards) {
+        title = t('stageClearTitle', { name });
+      } else if (midRun) {
         // 過關卡片：標題 + 目前狀態（彈珠、道具），按鈕只有「下一關」
         title = adv.chest ? t('chestWinTitle') : t('stageClearTitle', { name });
         text = adv.chest ? itemEffect(adv.loot) : '';
@@ -3896,7 +4047,11 @@
     // 瀏覽器快取到舊版 index.html 時這些元素可能不存在，略過就好，不要讓遊戲壞掉
     if (ovTitle) ovTitle.textContent = title;
     if (ovText) { ovText.textContent = text; ovText.hidden = !text; }
-    if (ovBtn) ovBtn.textContent = btn;
+    if (ovBtn) { ovBtn.textContent = btn; ovBtn.hidden = !!(midRun && adv.rewards); }
+    if (ovRewards) {
+      ovRewards.hidden = !(midRun && adv.rewards);
+      if (midRun && adv.rewards) renderRewards();
+    }
     if (ovStatus) {
       ovStatus.hidden = !midRun;
       if (midRun) renderStatus();
@@ -3922,6 +4077,7 @@
 
   function applyMode() {
     document.body.dataset.mode = mode;
+    syncPins();
     TRAY.right = TRAY_RIGHT[mode];
     applyLang();
   }
