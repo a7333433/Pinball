@@ -16,7 +16,7 @@
   // ===== 彈珠台大冒險：怪物 =====
   const ADV_BALLS = 30;       // 每場冒險有幾顆彈珠
   const REFILL_MULT = 2;      // 補珠燈：中了得到 投珠數 × 2 顆彈珠
-  const CAMPAIGN_BONUS = 0;   // 連續闖關：每過一關額外補幾顆彈珠（0 = 不補，剩下的彈珠直接帶到下一關）
+  const CAMPAIGN_BONUS = 20;  // 連續闖關：每過一關額外補幾顆彈珠（剩下的彈珠也會帶到下一關）
   // 12×12 像素圖：'.' 透明，其他字元對應 pal 的顏色
   // 防禦越高的怪物 HP 越少；實際傷害 = 倍率 × 投珠數 − 防禦（最少 0）
   // 數值依「30 顆彈珠、最佳打法」的勝率由易到難排：約 95% → 53%（落點平均的估算）
@@ -300,9 +300,9 @@
       langBtn: 'English', langShort: 'EN', close: '關閉',
       modeShort: '冒險', modeShortAdv: '經典', modeLong: '切換到大冒險', modeLongAdv: '切換到經典模式',
       planFree: '自由挑戰', planCampaign: '連續闖關',
-      campaignIntro: '從第 1 關{first}一路打到第 {total} 關{last}。一開始有 {n} 顆彈珠，打倒怪物後剩下的彈珠會帶到下一關；失敗就要從第 1 關重來。最佳紀錄：打倒 {best} 隻。',
+      campaignIntro: '從第 1 關{first}一路打到第 {total} 關{last}。一開始有 {n} 顆彈珠，打倒怪物後剩下的彈珠會帶到下一關，每過一關再補 {bonus} 顆；失敗就要從第 1 關重來。最佳紀錄：打倒 {best} 隻。',
       campaignStart: '開始闖關',
-      campaignWinTitle: '第 {stage} 關過關！', campaignWinText: '打倒了{name}，還有 {left} 顆彈珠帶到下一關。下一關：{next}。',
+      campaignWinTitle: '第 {stage} 關過關！', campaignWinText: '打倒了{name}！剩下 {left} 顆彈珠，再補 {bonus} 顆帶到下一關。下一關：{next}。',
       campaignNext: '前往第 {stage} 關',
       campaignClearTitle: '全部通關！', campaignClearText: '你一路打倒了全部 {total} 隻怪物，最後還剩 {left} 顆彈珠！', campaignAgain: '再闖一次',
       campaignLoseTitle: '闖關失敗…', campaignLoseText: '在第 {stage} 關被{name}擋下了，要從第 1 關重新開始。', campaignRetry: '從第 1 關重來',
@@ -359,9 +359,9 @@
       langBtn: '中文', langShort: '中', close: 'Close',
       modeShort: 'Quest', modeShortAdv: 'Classic', modeLong: 'Pinball Quest', modeLongAdv: 'Classic mode',
       planFree: 'Free fight', planCampaign: 'Campaign',
-      campaignIntro: 'Fight from stage 1 ({first}) all the way to stage {total} ({last}). You start with {n} balls and keep whatever is left after each win. Lose and you start over from stage 1. Best: {best} defeated.',
+      campaignIntro: 'Fight from stage 1 ({first}) all the way to stage {total} ({last}). You start with {n} balls, keep whatever is left after each win, and get {bonus} more for every stage cleared. Lose and you start over from stage 1. Best: {best} defeated.',
       campaignStart: 'Start campaign',
-      campaignWinTitle: 'Stage {stage} cleared!', campaignWinText: 'You beat the {name} and carry {left} balls on. Next: {next}.',
+      campaignWinTitle: 'Stage {stage} cleared!', campaignWinText: 'You beat the {name}! {left} balls left, plus {bonus} bonus for the next stage. Next: {next}.',
       campaignNext: 'Go to stage {stage}',
       campaignClearTitle: 'Campaign cleared!', campaignClearText: 'You defeated all {total} monsters with {left} balls to spare!', campaignAgain: 'Play again',
       campaignLoseTitle: 'Campaign failed…', campaignLoseText: 'The {name} stopped you at stage {stage}. Start over from stage 1.', campaignRetry: 'Restart from stage 1',
@@ -763,8 +763,10 @@
 
   // 每局開始時檢查：彈珠用完、怪物還活著就落敗
   function checkAdvDefeat() {
-    if (!advActive() || round.phase !== 'select') return;
-    if (state.credits > 0 || state.payoutQueue > 0) return;
+    if (!advActive()) return;
+    // 燈在閃，或已定燈但一顆都還沒投：這時沒有彈珠、也沒有珠在掉，就打不下去了
+    const idle = round.phase === 'select' || (round.phase === 'bet' && round.bet === 0);
+    if (!idle || state.credits > 0 || state.payoutQueue > 0 || tweens.length) return;
     adv.status = 'lost';
     adv.endT = 0.8;
     adv.losses++;
@@ -1185,6 +1187,7 @@
 
     state.buttonT = Math.max(0, state.buttonT - dt);
     if (mode === 'adv') {
+      checkAdvDefeat();
       adv.hitT = Math.max(0, adv.hitT - dt);
       adv.laughT = Math.max(0, adv.laughT - dt);
       // 落敗：落敗音效之後竊笑一聲（畫面上會一直笑，聲音只出一次）
@@ -2823,7 +2826,7 @@
       if (midRun) {
         target = adv.monsterIdx + 1;
         title = t('campaignWinTitle', { stage });
-        text = t('campaignWinText', { name, left: state.credits, next: MONSTERS[target].name[lang] });
+        text = t('campaignWinText', { name, left: state.credits, bonus: CAMPAIGN_BONUS, next: MONSTERS[target].name[lang] });
         btn = t('campaignNext', { stage: target + 1 });
       } else if (advPlan === 'campaign') {
         if (hasResult && adv.status === 'won' && adv.monsterIdx < LAST_STAGE) {
@@ -2835,7 +2838,7 @@
           title = t('campaignLoseTitle'); text = t('campaignLoseText', { stage, name }); btn = t('campaignRetry');
         } else {
           title = t('advTitle');
-          text = t('campaignIntro', { first: MONSTERS[0].name[lang], last: MONSTERS[LAST_STAGE].name[lang], total, n: ADV_BALLS, best: campaign.best });
+          text = t('campaignIntro', { first: MONSTERS[0].name[lang], last: MONSTERS[LAST_STAGE].name[lang], total, n: ADV_BALLS, bonus: CAMPAIGN_BONUS, best: campaign.best });
           btn = t('campaignStart');
         }
       } else {
