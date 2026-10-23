@@ -340,7 +340,7 @@ body {
 body[data-mode="adv"] [data-action="coin"] { display: none; }
 body:not([data-mode="adv"]) [data-action="bag"],
 body:not([data-mode="adv"]) [data-action="codex"] { display: none; }
-.btn.treasure { background: #b45309; box-shadow: 0 4px 0 #6b2f05; }
+.btn.treasure { background: #b45309; box-shadow: 0 4px 0 #6b2f05; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .btn.bag { background: #8a5a2b; box-shadow: 0 4px 0 #4a2c12; }
 .btn kbd { margin-left: 4px; vertical-align: 1px; }
 

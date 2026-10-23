@@ -3969,7 +3969,14 @@
   $('overlay-coin').addEventListener('click', overlayPrimary);
   for (const el of byAction('mode')) el.addEventListener('click', switchMode);
   for (const el of byAction('bag')) el.addEventListener('click', openBag);
-  for (const el of byAction('codex')) el.addEventListener('click', openCodex);
+  for (const el of byAction('codex')) {
+    // 寶藏按鈕只放寶箱的像素圖示，不寫字
+    const icon = pixelCanvas(CHEST.map, CHEST.pal, 2);
+    icon.className = 'item-icon';
+    icon.style.width = icon.style.height = '24px';
+    el.prepend(icon);
+    el.addEventListener('click', openCodex);
+  }
   {
     const btn = $('bet-btn');
     btn.addEventListener('pointerdown', e => {
