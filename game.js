@@ -5,9 +5,15 @@
   const VERSION = '1.1.0';
 
   // ===== 規則 =====
-  const MULTS = [2, 4, 6, 8, 10];          // 倍率段數
-  const MULT_COST = 2;        // 倍率孔每升一段要扣幾顆
-  const litFor = level => MULTS.length - level;   // 倍率越高，亮的燈越少：2 倍亮 5 顆 … 10 倍亮 1 顆
+  // 倍率規則依模式不同（倍率越高，亮的燈越少）：
+  // 經典：2/4/6/8/10 倍，倍率孔每升一段扣 2 顆，亮燈 5 → 1
+  // 大冒險：從 ×1 起跳，倍率孔每投 1 顆 +1 倍、少一顆燈，×1 亮 7 顆 … ×7 亮 1 顆
+  const MULT_RULES = {
+    classic: { mults: [2, 4, 6, 8, 10], cost: 2 },
+    adv: { mults: [1, 2, 3, 4, 5, 6, 7], cost: 1 },
+  };
+  const multRule = () => MULT_RULES[mode];
+  const litFor = level => multRule().mults.length - level;
   const COIN_BALLS = 20;      // 投一次幣換幾顆彈珠
   const SLOT_COUNT = 11;      // 底部落點數，每一排一顆 LED
 
@@ -603,7 +609,7 @@
   const round = {
     phase: 'select',      // select（燈在閃，可投倍率孔）| bet（燈已定，可投珠）| flying | win | lose
     bet: 0,
-    level: 0,             // 目前倍率段 MULTS[level]
+    level: 0,             // 目前倍率段 multRule().mults[level]
     lit: new Set(),
     landSlot: -1,
     resetT: 0,
@@ -803,7 +809,7 @@
     state.floorY = SHOOTER_FLOOR;
     // 這一局還沒結算就切換：投下去的珠和倍率孔的珠都退回
     if (round.phase === 'select' || round.phase === 'bet' || round.phase === 'flying') {
-      state.credits += round.bet + round.level * MULT_COST;
+      state.credits += round.bet + round.level * multRule().cost;
     }
     state.credits += state.payoutQueue;
     state.payoutQueue = 0;
@@ -820,7 +826,7 @@
     applyMode();
   }
 
-  const mult = () => MULTS[round.level];
+  const mult = () => multRule().mults[round.level];
 
   function ballAtShooter() {
     return ball && ball.x > LANE_X && ball.y > SHOOTER_FLOOR - 30;
@@ -946,20 +952,20 @@
   }
 
   // 升一段倍率需要的持珠數：大冒險要多留 1 顆投珠
-  const multNeed = () => MULT_COST + (mode === 'adv' ? 1 : 0);
+  const multNeed = () => multRule().cost + (mode === 'adv' ? 1 : 0);
 
   function addMult() {
     Sound.init();
     if (advLocked()) return;
     if (round.phase !== 'select') { say('multLocked'); Sound.error(); return; }
-    if (round.level >= MULTS.length - 1) { say('multMax', { max: MULTS[MULTS.length - 1] }); Sound.error(); return; }
+    if (round.level >= multRule().mults.length - 1) { say('multMax', { max: multRule().mults[multRule().mults.length - 1] }); Sound.error(); return; }
     if (state.credits < multNeed()) {
       // 大冒險沒辦法投幣，加倍後至少要留 1 顆投珠，不然這局只能直接輸掉
-      say(mode === 'adv' ? 'multKeepOne' : 'multShort', { cost: MULT_COST, need: multNeed() });
+      say(mode === 'adv' ? 'multKeepOne' : 'multShort', { cost: multRule().cost, need: multNeed() });
       Sound.error();
       return;
     }
-    for (let i = 0; i < MULT_COST; i++) takeBall(HOLES.mult, i * 0.12);
+    for (let i = 0; i < multRule().cost; i++) takeBall(HOLES.mult, i * 0.12);
     Sound.clunk();
     round.level++;
     say('multUp', { mult: mult(), lit: litFor(round.level) });
@@ -998,7 +1004,7 @@
       Sound.win();
     } else if (mode === 'adv' && slot === round.refill) {
       // 補珠燈：不造成傷害，改成退回這局投進倍率孔的珠，再補 投珠數 × 2 顆
-      const refund = round.level * MULT_COST, bonus = round.bet * REFILL_MULT, n = refund + bonus;
+      const refund = round.level * multRule().cost, bonus = round.bet * REFILL_MULT, n = refund + bonus;
       round.phase = 'win';
       state.payoutQueue += n;
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('refillPop', { n }), t: 0, color: '#4ade80' });
@@ -1434,7 +1440,7 @@
       drawAdvScreenFrame(c);
     } else {
     // 右邊：倍率欄（毛筆字）
-    for (let j = 0; j < MULTS.length; j++) {
+    for (let j = 0; j < multRule().mults.length; j++) {
       const x = multColX(j);
       c.fillStyle = '#111';
       if (lang === 'zh') {
@@ -1443,7 +1449,7 @@
         c.fillText(MULT_COLS[j][1], x, 96);
       } else {
         c.font = `bold 28px Georgia, "Times New Roman", serif`;
-        c.fillText('×' + MULTS[j], x, 80);
+        c.fillText('×' + multRule().mults[j], x, 80);
       }
       c.font = `bold 13px ${SANS}`;
       c.fillStyle = '#7a1010';
@@ -2455,7 +2461,7 @@
     if (state.charging || !state.started || advLocked()) return;
     if (round.phase === 'select') {
       const m = HOLES.mult;
-      if (state.credits >= multNeed() && round.level < MULTS.length - 1) {
+      if (state.credits >= multNeed() && round.level < multRule().mults.length - 1) {
         hintCircle(time, m.x, m.y, m.r + 5);
         hintBubble(time, m.x, m.y - m.r - 10, 'above', t('hintMult'), 'start');
       }
