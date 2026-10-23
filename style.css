@@ -403,6 +403,22 @@ kbd {
 .item-guide .item-icon { margin-right: 6px; }
 .ov-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .ov-item[hidden] { display: none; }
+.overlay-card.stage-clear .link { display: none; }
+.ov-status {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 209, 102, 0.5);
+  border-radius: 10px;
+  display: grid;
+  gap: 8px;
+  text-align: left;
+}
+.ov-status[hidden] { display: none; }
+.st-row { display: flex; align-items: center; gap: 10px; }
+.st-label { flex-shrink: 0; min-width: 5em; color: var(--gold); font-weight: bold; font-size: 14px; }
+.st-value { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 15px; }
+.st-item { display: inline-flex; align-items: center; gap: 2px; font-size: 13px; }
 .ov-item b { font-size: 18px; text-shadow: 1px 1px 0 #000; }
 
 /* ---- 背包、沙漏 ---- */

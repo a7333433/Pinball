@@ -599,8 +599,8 @@
       planFree: '自由挑戰', planCampaign: '冒險模式',
       campaignIntro: '最佳紀錄：打倒 {best} 隻怪物，全部通關 {clears} 次',
       campaignStart: '開始冒險',
-      campaignWinTitle: '第 {stage} 關過關！', campaignWinText: '打倒了{name}！剩下 {left} 顆彈珠，再補 {bonus} 顆帶到下一關。下一關：{next}。',
-      campaignNext: '前往第 {stage} 關',
+      stageClearTitle: '打倒了{name}！', nextStage: '下一關',
+      statusBalls: '目前彈珠', statusItems: '已擁有道具', statusBallsN: '{n} 顆', statusNoItems: '無',
       campaignClearTitle: '全部通關！', campaignClearText: '你一路打倒了全部 {total} 隻怪物，最後還剩 {left} 顆彈珠！', campaignAgain: '再闖一次',
       campaignLoseTitle: '闖關失敗…', campaignLoseText: '在第 {stage} 關被{name}擋下了，要從第 1 關重新開始。', campaignRetry: '從第 1 關重來',
       campaignAppear: '第 {stage} 關：野生的{name}出現了！HP {hp}，防禦 {def}',
@@ -621,14 +621,13 @@
       advPressStart: '按「開始冒險」', laugh: '嘻嘻嘻',
       stWinAdv: '上次傷害', stBestWinAdv: '勝場', stBestAdv: '敗場',
       hitMsgHeavy: '命中！沉重彈珠 {raw} 點攻擊，扣掉防禦 {def}，造成 {dmg} 點傷害',
-      chestName: '寶箱', chestGo: '前往寶箱關',
+      chestName: '寶箱',
       chestAppear: '寶箱出現了！有 3 排藍燈、2 排紫燈、1 排橘燈，按藍色按鈕定燈，再投 1 顆珠打開它',
       chestNoMult: '寶箱關卡不用投倍率孔，直接按藍色按鈕定燈',
       lockedChest: '定燈！投 1 顆珠，再拉彈簧打開寶箱',
       chestBetOne: '寶箱關卡只能投 1 顆珠', chestBetMsg: '投珠 1 顆，拉彈簧發射打開寶箱！',
       chestOpenMsg: '打開寶箱！獲得{tier}道具「{item}」',
       chestWinTitle: '獲得道具！',
-      chestWinText: '打開寶箱，拿到{tier}道具「{item}」：{effect}。道具放在背包裡（托盤右邊的背包按鈕）。下一關：{next}。',
       cvBag: '道具', btnBag: '背包', bagTitle: '背包', bagUse: '使用',
       bagEmpty: '背包是空的。冒險模式中打開寶箱就能拿到道具。',
       bagNowSelect: '現在：定燈前', bagNowBet: '現在：定燈後、發射前',
@@ -693,8 +692,8 @@
       planFree: 'Free fight', planCampaign: 'Adventure',
       campaignIntro: 'Best: {best} monsters defeated, {clears} full clears',
       campaignStart: 'Start adventure',
-      campaignWinTitle: 'Stage {stage} cleared!', campaignWinText: 'You beat the {name}! {left} balls left, plus {bonus} bonus for the next stage. Next: {next}.',
-      campaignNext: 'Go to stage {stage}',
+      stageClearTitle: 'You beat the {name}!', nextStage: 'Next stage',
+      statusBalls: 'Balls', statusItems: 'Items', statusBallsN: '{n}', statusNoItems: 'None',
       campaignClearTitle: 'Adventure cleared!', campaignClearText: 'You defeated all {total} monsters with {left} balls to spare!', campaignAgain: 'Play again',
       campaignLoseTitle: 'Adventure failed…', campaignLoseText: 'The {name} stopped you at stage {stage}. Start over from stage 1.', campaignRetry: 'Restart from stage 1',
       campaignAppear: 'Stage {stage}: a wild {name} appears! HP {hp}, DEF {def}',
@@ -715,14 +714,13 @@
       advPressStart: 'Press Start', laugh: 'hehehe',
       stWinAdv: 'Last hit', stBestWinAdv: 'Wins', stBestAdv: 'Losses',
       hitMsgHeavy: 'Hit! Heavy marbles: {raw} attack − DEF {def} = {dmg} damage',
-      chestName: 'Treasure Chest', chestGo: 'Go to the chest',
+      chestName: 'Treasure Chest',
       chestAppear: 'A treasure chest! 3 blue, 2 purple and 1 orange lane. Press blue to lock, then bet 1 ball to open it',
       chestNoMult: 'No multiplier on the chest. Just press blue to lock',
       lockedChest: 'Locked! Bet 1 ball, then shoot to open the chest',
       chestBetOne: 'Only 1 ball can be bet on the chest', chestBetMsg: 'Bet 1 ball. Shoot to open the chest!',
       chestOpenMsg: 'Chest opened! Got a {tier} item: {item}',
       chestWinTitle: 'New item!',
-      chestWinText: 'You opened the chest and got a {tier} item, {item}: {effect}. It\'s in your backpack (the bag button right of the tray). Next: {next}.',
       cvBag: 'ITEMS', btnBag: 'Backpack', bagTitle: 'Backpack', bagUse: 'Use',
       bagEmpty: 'Your backpack is empty. Open treasure chests in Adventure to get items.',
       bagNowSelect: 'Now: before locking', bagNowBet: 'Now: after locking, before shooting',
@@ -3677,6 +3675,34 @@
 
   // ---- 遊戲模式的畫面切換 ----
   const ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('overlay-coin'), ovItem = $('ov-item');
+  const ovStatus = $('ov-status'), ovCard = overlay.querySelector('.overlay-card');
+
+  // 過關卡片的「目前狀態」：彈珠數、背包裡的道具
+  function renderStatus() {
+    ovStatus.textContent = '';
+    const row = (label, ...content) => {
+      const r = document.createElement('div');
+      r.className = 'st-row';
+      const l = document.createElement('span');
+      l.className = 'st-label';
+      l.textContent = label;
+      const v = document.createElement('div');
+      v.className = 'st-value';
+      v.append(...content);
+      r.append(l, v);
+      ovStatus.append(r);
+    };
+    row(t('statusBalls'), t('statusBallsN', { n: state.credits + state.payoutQueue }));
+    const ids = ITEM_IDS.filter(id => adv.items[id] > 0);
+    const items = ids.map(id => {
+      const chip = document.createElement('span');
+      chip.className = 'st-item';
+      chip.title = itemName(id);
+      chip.append(itemIcon(id, 2), '×' + adv.items[id]);
+      return chip;
+    });
+    row(t('statusItems'), ...(items.length ? items : [t('statusNoItems')]));
+  }
   const pickEl = $('monster-pick');
   const planEl = $('adv-plan');
   if (planEl) {
@@ -3760,19 +3786,11 @@
       const name = monsterName(), stage = adv.monsterIdx + 1, total = MONSTERS.length;
       // 結果只在「上一場的玩法」和目前選的玩法一樣時顯示，否則顯示該玩法的說明
       const hasResult = adv.status !== 'intro' && (adv.campaign ? 'campaign' : 'free') === advPlan;
-      let target = 0;
       if (midRun) {
-        target = adv.monsterIdx + 1;
-        if (adv.chest) {
-          const id = adv.loot;
-          title = t('chestWinTitle');
-          text = t('chestWinText', { tier: TIERS[ITEMS[id].tier].name[lang], item: itemName(id), effect: itemEffect(id), next: MONSTERS[target].name[lang] });
-          btn = t('campaignNext', { stage: target + 1 });
-        } else {
-          title = t('campaignWinTitle', { stage });
-          text = t('campaignWinText', { name, left: state.credits, bonus: CAMPAIGN_BONUS, next: t('chestName') });
-          btn = t('chestGo');
-        }
+        // 過關卡片：標題 + 目前狀態（彈珠、道具），按鈕只有「下一關」
+        title = adv.chest ? t('chestWinTitle') : t('stageClearTitle', { name });
+        text = adv.chest ? itemEffect(adv.loot) : '';
+        btn = t('nextStage');
       } else if (advPlan === 'campaign') {
         if (hasResult && adv.status === 'won' && adv.monsterIdx < LAST_STAGE) {
           // 打贏了但彈珠剛好用完，沒辦法往下一關
@@ -3797,9 +3815,9 @@
         btn = t('advFight', { name: MONSTERS[pickIdx].name[lang] });
       }
       // 冒險模式的首頁、結果不顯示怪物；過關後的卡片才顯示關卡進度
-      if (pickEl && (midRun || advPlan === 'free')) renderPicker(midRun, target);
+      if (pickEl && advPlan === 'free' && !midRun) renderPicker();
     }
-    if (pickEl) pickEl.hidden = !picking || !(midRun || advPlan === 'free');
+    if (pickEl) pickEl.hidden = !picking || midRun || advPlan !== 'free';
     if (planEl) {
       planEl.hidden = !picking || midRun;
       for (const b of planEl.querySelectorAll('[data-plan]')) b.classList.toggle('active', b.dataset.plan === advPlan);
@@ -3808,8 +3826,14 @@
     overlay.classList.toggle('below-screen', mode === 'adv');
     // 瀏覽器快取到舊版 index.html 時這些元素可能不存在，略過就好，不要讓遊戲壞掉
     if (ovTitle) ovTitle.textContent = title;
-    if (ovText) ovText.textContent = text;
+    if (ovText) { ovText.textContent = text; ovText.hidden = !text; }
     if (ovBtn) ovBtn.textContent = btn;
+    // 過關卡片不顯示切換模式、說明、語系
+    if (ovCard) ovCard.classList.toggle('stage-clear', midRun);
+    if (ovStatus) {
+      ovStatus.hidden = !midRun;
+      if (midRun) renderStatus();
+    }
     // 寶箱結果：顯示拿到的道具圖示
     if (ovItem) {
       const loot = show && mode === 'adv' && adv.chest && adv.status === 'won' && adv.loot;
