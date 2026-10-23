@@ -105,6 +105,178 @@
     },
   };
   const ITEM_IDS = Object.keys(ITEMS);
+  // 道具的 12×12 像素圖示（背包、寶箱結果、說明、怪物螢幕都用這個）
+  const LASER_MAP = [
+      '.........RRR',
+      '........RRR.',
+      '.......RR...',
+      '......KW....',
+      '.....KSSK...',
+      '....KSSK....',
+      '...KSBK.....',
+      '..KSSK......',
+      '.KSSK.......',
+      'KSSK........',
+      'KKK.........',
+      '............',
+    ];
+  const ITEM_ICONS = {
+    coin: {
+      pal: { K: '#3f3f46', S: '#d4d4d8', W: '#ffffff', D: '#a1a1aa' },
+      map: [
+        '...KKKKKK...',
+        '..KSSSSSSK..',
+        '.KSWWSSSSDK.',
+        'KSWSKSSKKSDK',
+        'KSWKKSKSSKDK',
+        'KSSSKSKSSKDK',
+        'KSSSKSKSSKDK',
+        'KSSSKSKSSKDK',
+        'KSSKKKSKKSDK',
+        '.KSSSSSSSDK.',
+        '..KDDDDDDK..',
+        '...KKKKKK...',
+      ],
+    },
+    laserRed: { pal: { K: '#1f2937', S: '#9ca3af', W: '#fff0f0', B: '#ef4444', R: '#ff3b3b' }, map: LASER_MAP },
+    laserGreen: { pal: { K: '#1f2937', S: '#9ca3af', W: '#effff5', B: '#22c55e', R: '#22e07a' }, map: LASER_MAP },
+    fake: {
+      pal: { K: '#4a044e', S: '#f9a8d4', W: '#ffffff', D: '#db2777' },
+      map: [
+        '...KKKKKK...',
+        '..KSSSSSSK..',
+        '.KSWWSSSSSK.',
+        'KSWWSKKKSSDK',
+        'KSWSKSSSKSDK',
+        'KSSSSSSKSSDK',
+        'KSSSSSKSSSDK',
+        'KSSSSKSSSSDK',
+        'KSSSSSSSSSDK',
+        '.KSSSKSSSDK.',
+        '..KDDDDDDK..',
+        '...KKKKKK...',
+      ],
+    },
+    stone: {
+      pal: { K: '#292524', S: '#a8a29e', D: '#78716c', W: '#e7e5e4' },
+      map: [
+        '............',
+        '............',
+        '....KKKK....',
+        '..KKSSSSKK..',
+        '.KSWSSSSSSK.',
+        '.KSWSSDSSSDK',
+        'KSSSSSSSSDDK',
+        'KSSSDSSSSSDK',
+        'KSSSSSSSDDK.',
+        '.KDDSSSDDDK.',
+        '..KKDDDDKK..',
+        '....KKKK....',
+      ],
+    },
+    acid: {
+      pal: { K: '#1a2e05', G: '#a3e635', W: '#ecfccb', R: '#dc2626', Y: '#facc15' },
+      map: [
+        '....KKKK....',
+        '....KRRK....',
+        '....KKKK....',
+        '....KWGK....',
+        '...KWGGGK...',
+        '..KWGGGGGK..',
+        '..KWKKKKGK..',
+        '..KWKYYKGK..',
+        '..KWKKKKGK..',
+        '..KWGGGGGK..',
+        '..KGGGGGGK..',
+        '...KKKKKK...',
+      ],
+    },
+    heavy: {
+      pal: { K: '#0b0f17', D: '#4b5563', S: '#1f2937', W: '#d1d5db', Y: '#9ca3af' },
+      map: [
+        '...KKKKKK...',
+        '..KDDDDDDK..',
+        '.KDWWDDDDDK.',
+        'KDWWDDDDDDSK',
+        'KDWDDDDDDDSK',
+        'KDDDDDDDDDSK',
+        'KDDDDDDDDSSK',
+        'KDDDDDDDSSSK',
+        '.KDDDDDSSSK.',
+        '..KSSSSSSK..',
+        '...KKKKKK...',
+        'Y.Y......Y.Y',
+      ],
+    },
+    hourglass: {
+      pal: { B: '#8b4a1c', K: '#5b3a1e', G: '#bfdbfe', Y: '#fbbf24' },
+      map: [
+        'BBBBBBBBBBBB',
+        '.K........K.',
+        '.KGYYYYYYGK.',
+        '.K.GYYYYG.K.',
+        '.K..GYYG..K.',
+        '.K...GG...K.',
+        '.K...GG...K.',
+        '.K..G.YG..K.',
+        '.K.G..Y.G.K.',
+        '.KGYYYYYYGK.',
+        '.K........K.',
+        'BBBBBBBBBBBB',
+      ],
+    },
+    drink: {
+      pal: { K: '#451a03', O: '#f59e0b', W: '#fff7ed', R: '#dc2626', S: '#f472b6' },
+      map: [
+        '.......SS...',
+        '......S.....',
+        '......S.....',
+        '......S.....',
+        '..KKKKSKKK..',
+        '..KOOOOOOK..',
+        '..KOWWWWOK..',
+        '..KOWRRWOK..',
+        '..KOWRRWOK..',
+        '..KOWWWWOK..',
+        '..KOOOOOOK..',
+        '..KKKKKKKK..',
+      ],
+    },
+    key: {
+      pal: { K: '#713f12', Y: '#facc15', W: '#fef9c3' },
+      map: [
+        '............',
+        '............',
+        '.KKKK.......',
+        'KYWYYK......',
+        'KY..YKKKKKK.',
+        'KY..YYYYYYYK',
+        'KY..YKKYKYKK',
+        'KYYYYKKYKYK.',
+        '.KKKK..K.K..',
+        '............',
+        '............',
+        '............',
+      ],
+    },
+    shake: {
+      pal: { K: '#1f1f1f', R: '#c1121f', Y: '#fde68a', B: '#8b5a2b', W: '#fff36b', S: '#e5e7eb' },
+      map: [
+        'W..KKKKKK..W',
+        'W.KRRRRRRK.W',
+        '..KRYYYYRK..',
+        'W.KRKYKYRK.W',
+        'W.KRYKYKRK.W',
+        '..KRKYKYRK..',
+        'W.KRYYSYRK.W',
+        'W.KRRRRRRK.W',
+        '..KBBBBBBK..',
+        '..KBBBBBBK..',
+        '..KKKKKKKK..',
+        '...K....K...',
+      ],
+    },
+  };
   const CHEST = {
     bg: 'treasure',
     name: { zh: '寶箱', en: 'Treasure Chest' }, hp: 1, def: 0,
@@ -2778,6 +2950,18 @@
         ctx.fill();
       }
       if (visible) drawMonster(m, x0, y0, adv.hitT > 0 && Math.floor(adv.hitT * 20) % 2 === 0, laughing, opened);
+      if (opened && adv.loot) {
+        // 拿到的道具從寶箱旁邊浮出來
+        const icon = ITEM_ICONS[adv.loot], IP = 4;
+        const ix = x0 + size + 14, iy = y0 + 10 + Math.round(Math.sin(time * 4) * 3);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fillRect(ix - 3, iy - 3, 12 * IP + 6, 12 * IP + 6);
+        icon.map.forEach((row, r) => [...row].forEach((ch, col) => {
+          if (ch === '.') return;
+          ctx.fillStyle = icon.pal[ch];
+          ctx.fillRect(ix + col * IP, iy + r * IP, IP, IP);
+        }));
+      }
       if (laughing && visible) {
         // 「嘻嘻嘻」在怪物頭的右邊
         const word = t('laugh');
@@ -3425,7 +3609,7 @@
       const count = document.createElement('span');
       count.className = 'bag-count';
       count.textContent = '×' + adv.items[id];
-      head.append(name, tag, count);
+      head.append(itemIcon(id, 3), name, tag, count);
       const quote = document.createElement('p');
       quote.className = 'bag-quote';
       quote.textContent = it.quote[lang];
@@ -3490,14 +3674,14 @@
         name.textContent = L === 'zh' ? `${it.name[L]}（${tier.name[L]}）` : `${it.name[L]} (${tier.name[L]})`;
         const when = I18N[L][{ pre: 'whenPre', post: 'whenPost', both: 'whenBoth' }[it.when]];
         const dot = L === 'zh' ? '。' : '. ';
-        li.append(name, ` ${it.effect[L].replace(/\s*[（(][^）)]*\{n\}[^）)]*[）)]/, '')}${dot}${when}${dot.trim()}`);
+        li.append(itemIcon(id, 2), name, ` ${it.effect[L].replace(/\s*[（(][^）)]*\{n\}[^）)]*[）)]/, '')}${dot}${when}${dot.trim()}`);
         el.append(li);
       }
     }
   }
 
   // ---- 遊戲模式的畫面切換 ----
-  const ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('overlay-coin');
+  const ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('overlay-coin'), ovItem = $('ov-item');
   const pickEl = $('monster-pick');
   const planEl = $('adv-plan');
   if (planEl) {
@@ -3508,9 +3692,30 @@
 
   // 選怪物的按鈕：像素頭像、名字、HP、防禦、難度星等、已擊敗打勾
   // lineup = 連續闖關的關卡一覽（不能點，標出目前要打的那一關）
+  // 12×12 像素圖畫成一個 <canvas>（P = 每格幾像素）
+  function pixelCanvas(map, pal, P) {
+    const dpr = window.devicePixelRatio || 1;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = Math.round(12 * P * dpr);
+    const c = cv.getContext('2d');
+    c.scale(dpr, dpr);
+    map.forEach((row, r) => [...row].forEach((ch, col) => {
+      if (ch === '.') return;
+      c.fillStyle = pal[ch];
+      c.fillRect(col * P, r * P, P, P);
+    }));
+    return cv;
+  }
+  const itemIcon = (id, P) => {
+    const cv = pixelCanvas(ITEM_ICONS[id].map, ITEM_ICONS[id].pal, P);
+    cv.className = 'item-icon';
+    cv.style.width = cv.style.height = 12 * P + 'px';
+    return cv;
+  };
+
   function renderPicker(lineup = false, target = 0) {
     pickEl.textContent = '';
-    const dpr = window.devicePixelRatio || 1, P = 4;
+    const P = 4;
     MONSTERS.forEach((m, i) => {
       const b = document.createElement('button');
       b.type = 'button';
@@ -3518,15 +3723,7 @@
       b.className = 'mp-item' + (sel ? ' selected' : '') + (lineup ? ' lineup' : '');
       b.setAttribute('aria-pressed', String(sel));
       if (lineup) b.tabIndex = -1;
-      const cv = document.createElement('canvas');
-      cv.width = cv.height = Math.round(12 * P * dpr);
-      const c = cv.getContext('2d');
-      c.scale(dpr, dpr);
-      m.map.forEach((row, r) => [...row].forEach((ch, col) => {
-        if (ch === '.') return;
-        c.fillStyle = m.pal[ch];
-        c.fillRect(col * P, r * P, P, P);
-      }));
+      const cv = pixelCanvas(m.map, m.pal, P);
       const name = document.createElement('span');
       name.className = 'mp-name';
       name.textContent = m.name[lang];
@@ -3617,6 +3814,18 @@
     if (ovTitle) ovTitle.textContent = title;
     if (ovText) ovText.textContent = text;
     if (ovBtn) ovBtn.textContent = btn;
+    // 寶箱結果：顯示拿到的道具圖示
+    if (ovItem) {
+      const loot = show && mode === 'adv' && adv.chest && adv.status === 'won' && adv.loot;
+      ovItem.hidden = !loot;
+      ovItem.textContent = '';
+      if (loot) {
+        const name = document.createElement('b');
+        name.textContent = itemName(loot);
+        name.style.color = TIERS[ITEMS[loot].tier].color;
+        ovItem.append(itemIcon(loot, 5), name);
+      }
+    }
   }
 
   function overlayPrimary() {
