@@ -338,7 +338,9 @@ body {
 
 /* 大冒險模式不能投幣；背包只有大冒險才有 */
 body[data-mode="adv"] [data-action="coin"] { display: none; }
-body:not([data-mode="adv"]) [data-action="bag"] { display: none; }
+body:not([data-mode="adv"]) [data-action="bag"],
+body:not([data-mode="adv"]) [data-action="codex"] { display: none; }
+.btn.treasure { background: #b45309; box-shadow: 0 4px 0 #6b2f05; }
 .btn.bag { background: #8a5a2b; box-shadow: 0 4px 0 #4a2c12; }
 .btn kbd { margin-left: 4px; vertical-align: 1px; }
 
@@ -397,10 +399,33 @@ kbd {
 .help form { margin-top: 12px; text-align: center; }
 .help .version { margin-top: 14px; text-align: center; font-size: 12px; opacity: 0.6; }
 .help form .btn { min-width: 120px; }
-.help .item-guide { margin: 8px 0 0; padding: 0; list-style: none; font-size: 14px; }
-.help .item-guide li { margin: 4px 0; }
 .item-icon { image-rendering: pixelated; flex-shrink: 0; vertical-align: middle; }
-.item-guide .item-icon { margin-right: 6px; }
+/* ---- 寶藏圖鑑 ---- */
+.help h3.codex-tier { margin: 12px 0 6px; color: var(--tier); border-bottom: 1px solid var(--tier); }
+.codex-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+.codex-cell {
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  color: var(--cream);
+  font-size: 13px;
+  line-height: 1.3;
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid var(--tier);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.codex-cell:hover { background: rgba(255, 255, 255, 0.08); }
+.codex-cell.unknown { border-color: rgba(255, 255, 255, 0.15); color: rgba(255, 243, 214, 0.45); cursor: not-allowed; }
+.codex-cell.unknown:hover { background: rgba(0, 0, 0, 0.25); }
+.codex-detail { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.codex-detail[hidden] { display: none; }
+.help .codex-detail h3 { margin: 6px 0 0; color: var(--tier); font-size: 20px; }
+.codex-detail .bag-tier { margin-bottom: 6px; }
+.codex-detail .btn { margin-top: 10px; padding: 8px 24px; }
 .ov-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .ov-item[hidden] { display: none; }
 /* 大冒險的卡片不放切換模式、說明、語系（上方列／右側面板都有） */
@@ -478,6 +503,10 @@ body[data-mode="adv"] .overlay-card .link { display: none; }
     -webkit-line-clamp: 2;    /* 最多兩行 */
     overflow: hidden;
   }
+
+  /* 大冒險：訊息改在機台的訊息螢幕顯示，上方列換成寶藏按鈕 */
+  body[data-mode="adv"] .topbar .msg { display: none; }
+  .topbar .btn.treasure { margin-right: auto; box-shadow: 0 3px 0 #6b2f05; }
 
   .stage { flex: 1 1 auto; width: 100%; }
   .panel { display: none; }

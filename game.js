@@ -629,6 +629,7 @@
       chestOpenMsg: '打開寶箱！獲得{tier}道具「{item}」',
       chestWinTitle: '獲得道具！',
       cvBag: '道具', btnBag: '背包', bagTitle: '背包', bagUse: '使用',
+      btnCodex: '寶藏', codexTitle: '寶藏', codexCount: '已取得 {n} / {total} 種', codexBack: '返回',
       bagEmpty: '背包是空的。冒險模式中打開寶箱就能拿到道具。',
       bagNowSelect: '現在：定燈前', bagNowBet: '現在：定燈後、發射前',
       whenPre: '定燈前使用', whenPost: '定燈後、發射前使用', whenBoth: '定燈前或發射前使用',
@@ -722,6 +723,7 @@
       chestOpenMsg: 'Chest opened! Got a {tier} item: {item}',
       chestWinTitle: 'New item!',
       cvBag: 'ITEMS', btnBag: 'Backpack', bagTitle: 'Backpack', bagUse: 'Use',
+      btnCodex: 'Treasures', codexTitle: 'Treasures', codexCount: 'Found {n} / {total}', codexBack: 'Back',
       bagEmpty: 'Your backpack is empty. Open treasure chests in Adventure to get items.',
       bagNowSelect: 'Now: before locking', bagNowBet: 'Now: after locking, before shooting',
       whenPre: 'Use before locking', whenPost: 'Use after locking, before shooting', whenBoth: 'Use before locking or before shooting',
@@ -1027,6 +1029,14 @@
     rescueSaid: false,
   };
   const chestStage = () => mode === 'adv' && adv.chest;
+  // 寶藏圖鑑：取得過哪些道具（存在瀏覽器，重新闖關也會保留）
+  const itemsSeen = new Set();
+  try { (JSON.parse(localStorage.getItem('candy-pinball-items-seen') || '[]')).forEach(id => itemsSeen.add(id)); } catch (e) { /* 無痕模式 */ }
+  function markSeen(id) {
+    if (itemsSeen.has(id)) return;
+    itemsSeen.add(id);
+    try { localStorage.setItem('candy-pinball-items-seen', JSON.stringify([...itemsSeen])); } catch (e) { /* 無痕模式 */ }
+  }
   const itemCount = () => ITEM_IDS.reduce((s, id) => s + (adv.items[id] || 0), 0);
   const advActive = () => mode === 'adv' && adv.status === 'playing';
   // 大冒險還沒開始或已經結束時，機台不能操作
@@ -1169,6 +1179,7 @@
     const pool = ITEM_IDS.filter(id => ITEMS[id].tier === tier);
     const id = pool[Math.floor(Math.random() * pool.length)];
     adv.items[id] = (adv.items[id] || 0) + 1;
+    markSeen(id);
     adv.loot = id;
     adv.hp = 0;
     adv.hitT = 0.3;
@@ -3505,6 +3516,7 @@
       case 'KeyL': toggleLang(); break;
       case 'KeyQ': switchMode(); break;
       case 'KeyI': openBag(); break;
+      case 'KeyT': openCodex(); break;
     }
   });
   window.addEventListener('keyup', e => {
@@ -3654,24 +3666,81 @@
   }
   if (bagDlg) bagDlg.addEventListener('click', e => { if (e.target === bagDlg) bagDlg.close(); });
 
-  // 說明視窗裡的道具清單
-  function renderItemGuide() {
-    for (const el of document.querySelectorAll('[data-item-guide]')) {
-      const L = el.closest('[data-lang]').dataset.lang;
-      el.textContent = '';
-      for (const id of ITEM_IDS) {
-        const it = ITEMS[id], tier = TIERS[it.tier];
-        const li = document.createElement('li');
-        const name = document.createElement('b');
-        name.style.color = tier.color;
-        name.textContent = L === 'zh' ? `${it.name[L]}（${tier.name[L]}）` : `${it.name[L]} (${tier.name[L]})`;
-        const when = I18N[L][{ pre: 'whenPre', post: 'whenPost', both: 'whenBoth' }[it.when]];
-        const dot = L === 'zh' ? '。' : '. ';
-        li.append(itemIcon(id, 2), name, ` ${it.effect[L].replace(/\s*[（(][^）)]*\{n\}[^）)]*[）)]/, '')}${dot}${when}${dot.trim()}`);
-        el.append(li);
+  // ---- 寶藏圖鑑：依稀有度、名稱排列；沒取得過的道具只顯示黑色輪廓、不能點 ----
+  const codexDlg = $('codex'), codexGrid = $('codex-grid'), codexDetail = $('codex-detail');
+  const BLACK = new Proxy({}, { get: () => '#000000' });
+
+  function renderCodex() {
+    codexGrid.textContent = '';
+    codexDetail.hidden = true;
+    codexGrid.hidden = false;
+    $('codex-count').textContent = t('codexCount', { n: ITEM_IDS.filter(id => itemsSeen.has(id)).length, total: ITEM_IDS.length });
+    TIERS.forEach((tier, ti) => {
+      const head = document.createElement('h3');
+      head.className = 'codex-tier';
+      head.style.setProperty('--tier', tier.color);
+      head.textContent = tier.name[lang];
+      const row = document.createElement('div');
+      row.className = 'codex-row';
+      const ids = ITEM_IDS.filter(id => ITEMS[id].tier === ti)
+        .sort((a, b) => ITEMS[a].name[lang].localeCompare(ITEMS[b].name[lang], lang === 'zh' ? 'zh-Hant-TW' : 'en'));
+      for (const id of ids) {
+        const seen = itemsSeen.has(id);
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'codex-cell' + (seen ? '' : ' unknown');
+        b.style.setProperty('--tier', tier.color);
+        b.disabled = !seen;
+        const icon = seen ? itemIcon(id, 3) : pixelCanvas(ITEM_ICONS[id].map, BLACK, 3);
+        icon.classList.add('item-icon');
+        icon.style.width = icon.style.height = '36px';
+        const name = document.createElement('span');
+        name.textContent = seen ? ITEMS[id].name[lang] : '？？？';
+        b.append(icon, name);
+        if (seen) b.addEventListener('click', () => { Sound.clunk(); showCodexItem(id); });
+        row.append(b);
       }
-    }
+      codexGrid.append(head, row);
+    });
   }
+
+  function showCodexItem(id) {
+    const it = ITEMS[id], tier = TIERS[it.tier];
+    codexDetail.textContent = '';
+    codexDetail.style.setProperty('--tier', tier.color);
+    const name = document.createElement('h3');
+    name.textContent = it.name[lang];
+    const tag = document.createElement('span');
+    tag.className = 'bag-tier';
+    tag.textContent = tier.name[lang];
+    const quote = document.createElement('p');
+    quote.className = 'bag-quote';
+    quote.textContent = it.quote[lang];
+    const effect = document.createElement('p');
+    effect.textContent = it.effect[lang].replace(/\s*[（(][^）)]*\{n\}[^）)]*[）)]/, '');
+    const when = document.createElement('p');
+    when.className = 'bag-when';
+    when.textContent = t({ pre: 'whenPre', post: 'whenPost', both: 'whenBoth' }[it.when]);
+    const back = document.createElement('button');
+    back.type = 'button';
+    back.className = 'btn';
+    back.textContent = t('codexBack');
+    back.addEventListener('click', () => { codexDetail.hidden = true; codexGrid.hidden = false; });
+    codexDetail.append(itemIcon(id, 6), name, tag, quote, effect, when, back);
+    codexGrid.hidden = true;
+    codexDetail.hidden = false;
+  }
+
+  function openCodex() {
+    if (mode !== 'adv' || !codexDlg) return;
+    Sound.init();
+    cancelCharge();
+    stopBetHold();
+    Sound.clunk();
+    renderCodex();
+    codexDlg.showModal();
+  }
+  if (codexDlg) codexDlg.addEventListener('click', e => { if (e.target === codexDlg) codexDlg.close(); });
 
   // ---- 遊戲模式的畫面切換 ----
   const ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('overlay-coin'), ovItem = $('ov-item');
@@ -3871,7 +3940,6 @@
     }
     for (const el of document.querySelectorAll('[data-i18n-html]')) el.innerHTML = t(el.dataset.i18nHtml);
     for (const el of document.querySelectorAll('[data-lang]')) el.hidden = el.dataset.lang !== lang;
-    renderItemGuide();
     drawStatic();
     refreshOverlay();
     say(...lastMsg);
@@ -3901,6 +3969,7 @@
   $('overlay-coin').addEventListener('click', overlayPrimary);
   for (const el of byAction('mode')) el.addEventListener('click', switchMode);
   for (const el of byAction('bag')) el.addEventListener('click', openBag);
+  for (const el of byAction('codex')) el.addEventListener('click', openCodex);
   {
     const btn = $('bet-btn');
     btn.addEventListener('pointerdown', e => {
