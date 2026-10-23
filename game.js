@@ -280,6 +280,7 @@
       multLocked: '燈已經定了，這一局不能再投倍率孔',
       multMax: '倍率最高 {max} 倍',
       multShort: '彈珠不足 {cost} 顆，不能提升倍率',
+      multKeepOne: '加倍後至少要留 1 顆投珠，彈珠不足 {need} 顆時不能提升倍率',
       multUp: '{mult} 倍！定燈後亮 {lit} 顆，按藍色按鈕定燈',
       winPop: '+{win} 顆',
       winMsg: '中了！{mult} 倍 × {bet} 顆 = {win} 顆',
@@ -339,6 +340,7 @@
       multLocked: 'Locked. No more multiplier this round',
       multMax: 'Max multiplier is ×{max}',
       multShort: 'Need {cost} balls to raise the multiplier',
+      multKeepOne: 'Keep at least 1 ball to bet: you need {need} balls to raise the multiplier',
       multUp: '×{mult}! {lit} lit after locking',
       winPop: '+{win}',
       winMsg: 'Win! ×{mult} × {bet} = {win} balls',
@@ -941,13 +943,17 @@
     }
   }
 
+  // 升一段倍率需要的持珠數：大冒險要多留 1 顆投珠
+  const multNeed = () => MULT_COST + (mode === 'adv' ? 1 : 0);
+
   function addMult() {
     Sound.init();
     if (advLocked()) return;
     if (round.phase !== 'select') { say('multLocked'); Sound.error(); return; }
     if (round.level >= MULTS.length - 1) { say('multMax', { max: MULTS[MULTS.length - 1] }); Sound.error(); return; }
-    if (state.credits < MULT_COST) {
-      say('multShort', { cost: MULT_COST });
+    if (state.credits < multNeed()) {
+      // 大冒險沒辦法投幣，加倍後至少要留 1 顆投珠，不然這局只能直接輸掉
+      say(mode === 'adv' ? 'multKeepOne' : 'multShort', { cost: MULT_COST, need: multNeed() });
       Sound.error();
       return;
     }
@@ -2447,7 +2453,7 @@
     if (state.charging || !state.started || advLocked()) return;
     if (round.phase === 'select') {
       const m = HOLES.mult;
-      if (state.credits >= MULT_COST && round.level < MULTS.length - 1) {
+      if (state.credits >= multNeed() && round.level < MULTS.length - 1) {
         hintCircle(time, m.x, m.y, m.r + 5);
         hintBubble(time, m.x, m.y - m.r - 10, 'above', t('hintMult'), 'start');
       }
