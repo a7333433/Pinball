@@ -596,9 +596,9 @@
       btnMult: '投倍率孔', btnLock: '定燈', btnBet: '投珠孔', btnFire: '按住拉彈簧',
       langBtn: 'English', langShort: 'EN', close: '關閉',
       modeShort: '冒險', modeShortAdv: '經典', modeLong: '切換到大冒險', modeLongAdv: '切換到經典模式',
-      planFree: '自由挑戰', planCampaign: '連續闖關',
-      campaignIntro: '從第 1 關{first}一路打到第 {total} 關{last}。一開始有 {n} 顆彈珠，打倒怪物後剩下的彈珠會帶到下一關，每過一關再補 {bonus} 顆；每兩關之間有寶箱，可以拿到道具。失敗就要從第 1 關重來、道具也會清空。最佳紀錄：打倒 {best} 隻。',
-      campaignStart: '開始闖關',
+      planFree: '自由挑戰', planCampaign: '冒險模式',
+      campaignIntro: '最佳紀錄：打倒 {best} 隻怪物，全部通關 {clears} 次',
+      campaignStart: '開始冒險',
       campaignWinTitle: '第 {stage} 關過關！', campaignWinText: '打倒了{name}！剩下 {left} 顆彈珠，再補 {bonus} 顆帶到下一關。下一關：{next}。',
       campaignNext: '前往第 {stage} 關',
       campaignClearTitle: '全部通關！', campaignClearText: '你一路打倒了全部 {total} 隻怪物，最後還剩 {left} 顆彈珠！', campaignAgain: '再闖一次',
@@ -606,7 +606,7 @@
       campaignAppear: '第 {stage} 關：野生的{name}出現了！HP {hp}，防禦 {def}',
       campaignOutTitle: '彈珠用完了…', campaignOutText: '打倒了第 {stage} 關的{name}，但彈珠剛好用完，沒辦法往下一關，要從第 1 關重新開始。',
       advTitle: '彈珠台大冒險', advStart: '開始冒險', advFight: '挑戰{name}', advCleared: '已擊敗',
-      advIntro: '選一隻怪物來挑戰！每場有 {n} 顆彈珠，鋼珠落進亮燈的那一排就能造成「倍率 × 投珠數 − 防禦」點傷害。',
+      advIntro: '選一隻怪物來挑戰',
       advWinTitle: '勝利！', advWinText: '打倒了{name}，還剩 {left} 顆彈珠。', advAgain: '挑戰下一隻',
       advLoseTitle: '落敗…', advLoseText: '彈珠用完了，{name}還剩 {hp} HP。', advRetry: '再試一次',
       advAppear: '野生的{name}出現了！HP {hp}，防禦 {def}',
@@ -630,10 +630,10 @@
       chestWinTitle: '獲得道具！',
       chestWinText: '打開寶箱，拿到{tier}道具「{item}」：{effect}。道具放在背包裡（托盤右邊的背包按鈕）。下一關：{next}。',
       cvBag: '道具', btnBag: '背包', bagTitle: '背包', bagUse: '使用',
-      bagEmpty: '背包是空的。連續闖關時打開寶箱就能拿到道具。',
+      bagEmpty: '背包是空的。冒險模式中打開寶箱就能拿到道具。',
       bagNowSelect: '現在：定燈前', bagNowBet: '現在：定燈後、發射前',
       whenPre: '定燈前使用', whenPost: '定燈後、發射前使用', whenBoth: '定燈前或發射前使用',
-      itemCampaignOnly: '道具只能在連續闖關的怪物關卡使用', itemNoChest: '寶箱關卡不能使用道具',
+      itemCampaignOnly: '道具只能在冒險模式的怪物關卡使用', itemNoChest: '寶箱關卡不能使用道具',
       itemNotNow: '鋼珠發射後不能使用道具', itemPreOnly: '只能在定燈前使用', itemPostOnly: '只能在定燈後、發射前使用',
       itemMaxLights: '燈已經亮滿了', itemNoDef: '怪物已經沒有防禦了', itemActive: '這回合已經用過了',
       itemNoLit: '沒有亮著的紅燈', itemKeyEmpty: '還沒有失去任何彈珠', itemNeedBet: '先往投珠孔投珠再使用',
@@ -690,17 +690,17 @@
       btnMult: 'Multiply', btnLock: 'Lock', btnBet: 'Bet', btnFire: 'Hold to pull',
       langBtn: '中文', langShort: '中', close: 'Close',
       modeShort: 'Quest', modeShortAdv: 'Classic', modeLong: 'Pinball Quest', modeLongAdv: 'Classic mode',
-      planFree: 'Free fight', planCampaign: 'Campaign',
-      campaignIntro: 'Fight from stage 1 ({first}) all the way to stage {total} ({last}). You start with {n} balls, keep whatever is left after each win, and get {bonus} more for every stage cleared. A treasure chest between stages gives you items. Lose and you start over from stage 1 with an empty backpack. Best: {best} defeated.',
-      campaignStart: 'Start campaign',
+      planFree: 'Free fight', planCampaign: 'Adventure',
+      campaignIntro: 'Best: {best} monsters defeated, {clears} full clears',
+      campaignStart: 'Start adventure',
       campaignWinTitle: 'Stage {stage} cleared!', campaignWinText: 'You beat the {name}! {left} balls left, plus {bonus} bonus for the next stage. Next: {next}.',
       campaignNext: 'Go to stage {stage}',
-      campaignClearTitle: 'Campaign cleared!', campaignClearText: 'You defeated all {total} monsters with {left} balls to spare!', campaignAgain: 'Play again',
-      campaignLoseTitle: 'Campaign failed…', campaignLoseText: 'The {name} stopped you at stage {stage}. Start over from stage 1.', campaignRetry: 'Restart from stage 1',
+      campaignClearTitle: 'Adventure cleared!', campaignClearText: 'You defeated all {total} monsters with {left} balls to spare!', campaignAgain: 'Play again',
+      campaignLoseTitle: 'Adventure failed…', campaignLoseText: 'The {name} stopped you at stage {stage}. Start over from stage 1.', campaignRetry: 'Restart from stage 1',
       campaignAppear: 'Stage {stage}: a wild {name} appears! HP {hp}, DEF {def}',
       campaignOutTitle: 'Out of balls…', campaignOutText: 'You beat the {name} on stage {stage}, but you have no balls left to go on. Start over from stage 1.',
       advTitle: 'Pinball Quest', advStart: 'Start', advFight: 'Fight the {name}', advCleared: 'Defeated',
-      advIntro: 'Pick a monster to fight! You get {n} balls. Land in a lit lane to deal multiplier × bet − DEF damage.',
+      advIntro: 'Pick a monster to fight',
       advWinTitle: 'Victory!', advWinText: 'You defeated the {name} with {left} balls left.', advAgain: 'Next monster',
       advLoseTitle: 'Defeated…', advLoseText: 'Out of balls. The {name} still has {hp} HP.', advRetry: 'Try again',
       advAppear: 'A wild {name} appears! HP {hp}, DEF {def}',
@@ -724,10 +724,10 @@
       chestWinTitle: 'New item!',
       chestWinText: 'You opened the chest and got a {tier} item, {item}: {effect}. It\'s in your backpack (the bag button right of the tray). Next: {next}.',
       cvBag: 'ITEMS', btnBag: 'Backpack', bagTitle: 'Backpack', bagUse: 'Use',
-      bagEmpty: 'Your backpack is empty. Open treasure chests in Campaign to get items.',
+      bagEmpty: 'Your backpack is empty. Open treasure chests in Adventure to get items.',
       bagNowSelect: 'Now: before locking', bagNowBet: 'Now: after locking, before shooting',
       whenPre: 'Use before locking', whenPost: 'Use after locking, before shooting', whenBoth: 'Use before locking or before shooting',
-      itemCampaignOnly: 'Items only work in Campaign monster stages', itemNoChest: 'No items at the treasure chest',
+      itemCampaignOnly: 'Items only work in Adventure monster stages', itemNoChest: 'No items at the treasure chest',
       itemNotNow: 'Can\'t use items while the ball is in play', itemPreOnly: 'Only before locking', itemPostOnly: 'Only after locking, before shooting',
       itemMaxLights: 'No room for more lights', itemNoDef: 'The monster has no DEF left', itemActive: 'Already used this round',
       itemNoLit: 'No red lights to convert', itemKeyEmpty: 'You haven\'t lost any balls yet', itemNeedBet: 'Bet first',
@@ -1046,9 +1046,9 @@
   // 難度星等：1～5 顆
   const monsterStars = i => 1 + Math.floor(i * 4 / (MONSTERS.length - 1));
 
-  // 大冒險的玩法：free = 自由挑戰（自己選怪物）、campaign = 連續闖關（從第 1 隻一路打到最後一隻）
-  let advPlan = 'free';
-  try { if (localStorage.getItem('candy-pinball-adv-plan') === 'campaign') advPlan = 'campaign'; } catch (e) { /* 無痕模式 */ }
+  // 大冒險的玩法：campaign = 冒險模式（從第 1 隻一路打到最後一隻，預設）、free = 自由挑戰（自己選怪物）
+  let advPlan = 'campaign';
+  try { if (localStorage.getItem('candy-pinball-adv-plan') === 'free') advPlan = 'free'; } catch (e) { /* 無痕模式 */ }
   function setPlan(p) {
     advPlan = p;
     try { localStorage.setItem('candy-pinball-adv-plan', p); } catch (e) { /* 無痕模式 */ }
@@ -3783,7 +3783,7 @@
           title = t('campaignLoseTitle'); text = t('campaignLoseText', { stage, name }); btn = t('campaignRetry');
         } else {
           title = t('advTitle');
-          text = t('campaignIntro', { first: MONSTERS[0].name[lang], last: MONSTERS[LAST_STAGE].name[lang], total, n: ADV_BALLS, bonus: CAMPAIGN_BONUS, best: campaign.best });
+          text = t('campaignIntro', { best: campaign.best, clears: campaign.clears });
           btn = t('campaignStart');
         }
       } else {
@@ -3792,13 +3792,14 @@
         } else if (hasResult && adv.status === 'lost') {
           title = t('advLoseTitle'); text = t('advLoseText', { name, hp: adv.hp });
         } else {
-          title = t('advTitle'); text = t('advIntro', { n: ADV_BALLS });
+          title = t('advTitle'); text = t('advIntro');
         }
         btn = t('advFight', { name: MONSTERS[pickIdx].name[lang] });
       }
-      if (pickEl) renderPicker(advPlan === 'campaign' || midRun, target);
+      // 冒險模式的首頁、結果不顯示怪物；過關後的卡片才顯示關卡進度
+      if (pickEl && (midRun || advPlan === 'free')) renderPicker(midRun, target);
     }
-    if (pickEl) pickEl.hidden = !picking;
+    if (pickEl) pickEl.hidden = !picking || !(midRun || advPlan === 'free');
     if (planEl) {
       planEl.hidden = !picking || midRun;
       for (const b of planEl.querySelectorAll('[data-plan]')) b.classList.toggle('active', b.dataset.plan === advPlan);

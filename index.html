@@ -26,8 +26,8 @@
             <h2 id="ov-title">柑仔店彈珠台</h2>
             <div id="ov-item" class="ov-item" hidden></div>
             <div id="adv-plan" class="adv-plan" hidden>
+              <button type="button" data-plan="campaign" data-i18n="planCampaign">冒險模式</button>
               <button type="button" data-plan="free" data-i18n="planFree">自由挑戰</button>
-              <button type="button" data-plan="campaign" data-i18n="planCampaign">連續闖關</button>
             </div>
             <p id="ov-text">投一枚硬幣，換 20 顆彈珠！</p>
             <div id="monster-pick" class="monster-pick" hidden></div>
@@ -95,12 +95,12 @@
         <li>每隻怪物都有<strong>防禦</strong>（顯示在 HP 旁邊的盾牌數字）：實際傷害 = 倍率 × 投珠數 − 防禦。打不破防禦就是 0 傷害，怪物還會竊笑。防禦越高的怪物 HP 越少。</li>
         <li>定燈後，沒亮燈的排裡會隨機多亮一顆<strong>綠色的補珠燈</strong>。鋼珠落進補珠燈不會造成傷害，但會退回這局投進倍率孔的珠，再補「投珠數 × 2」顆彈珠。</li>
         <li>把怪物 HP 打到 0 就勝利；彈珠用完怪物還活著就落敗。</li>
-        <li>卡片上方可以切換「自由挑戰」和「<strong>連續闖關</strong>」。連續闖關要從第 1 關史萊姆一路打到第 7 關石像怪：一開始 30 顆彈珠，打倒怪物後剩下的彈珠會帶到下一關，每過一關再補 20 顆，失敗就要從第 1 關重來。螢幕右上角會顯示目前第幾關。</li>
+        <li>卡片上方可以切換「<strong>冒險模式</strong>」（預設）和「自由挑戰」。冒險模式要從第 1 關史萊姆一路打到第 7 關石像怪：一開始 30 顆彈珠，打倒怪物後剩下的彈珠會帶到下一關，每過一關再補 20 顆，失敗就要從第 1 關重來。螢幕右上角會顯示目前第幾關。</li>
       </ol>
       <h3>寶箱與道具</h3>
       <ol>
-        <li>連續闖關每兩隻怪物之間有一個<strong>寶箱關卡</strong>：寶箱 HP 1，落獎區的燈全亮：3 排藍燈、2 排紫燈、1 排橘燈，其他都是白燈，不用投倍率孔。按藍色按鈕定燈後投 1 顆珠發射，落在哪一排就拿那個顏色等級的道具：白燈一般、藍燈稀有、紫燈史詩、橘燈傳說。</li>
-        <li>道具放在托盤右邊的<strong>背包按鈕</strong>（或 <kbd>I</kbd>）裡，只能在連續闖關的怪物關卡使用。每個道具有使用時機：定燈前、定燈後（發射前），或兩者都可。</li>
+        <li>冒險模式每兩隻怪物之間有一個<strong>寶箱關卡</strong>：寶箱 HP 1，落獎區的燈全亮：3 排藍燈、2 排紫燈、1 排橘燈，其他都是白燈，不用投倍率孔。按藍色按鈕定燈後投 1 顆珠發射，落在哪一排就拿那個顏色等級的道具：白燈一般、藍燈稀有、紫燈史詩、橘燈傳說。</li>
+        <li>道具放在托盤右邊的<strong>背包按鈕</strong>（或 <kbd>I</kbd>）裡，只能在冒險模式的怪物關卡使用。每個道具有使用時機：定燈前、定燈後（發射前），或兩者都可。</li>
         <li>闖關失敗、從第 1 關重來時，背包會清空。</li>
       </ol>
       <ul class="item-guide" data-item-guide></ul>
@@ -109,7 +109,7 @@
       <h3>我的紀錄</h3>
       <p class="records">最高分（單局最高得珠）<b data-record="bestWin">0</b>　最多持珠 <b data-record="best">0</b></p>
       <p class="records">大冒險：勝 <b data-record="advWins">0</b> 場　敗 <b data-record="advLosses">0</b> 場</p>
-      <p class="records">連續闖關：最多打倒 <b data-record="campaignBest">0</b> 隻　全部通關 <b data-record="campaignClears">0</b> 次</p>
+      <p class="records">冒險模式：最多打倒 <b data-record="campaignBest">0</b> 隻　全部通關 <b data-record="campaignClears">0</b> 次</p>
     </div>
     <div data-lang="en" hidden>
       <h2>How to play</h2>
@@ -130,12 +130,12 @@
         <li>Every monster has <strong>defense</strong> (the shield number next to its HP): damage = multiplier × bet − DEF. If your attack doesn't beat its defense it deals 0 and the monster snickers. Monsters with higher defense have less HP.</li>
         <li>After locking, one unlit lane also gets a <strong>green refill light</strong>. Landing there deals no damage, but refunds the balls you put into the multiplier this round plus bet × 2 balls.</li>
         <li>Bring the monster's HP to 0 to win. Run out of balls while it's still alive and you lose.</li>
-        <li>Switch between <strong>Free fight</strong> and <strong>Campaign</strong> at the top of the card. Campaign runs from stage 1 (Slime) to stage 7 (Gargoyle): you start with 30 balls, keep whatever is left after each win plus 20 bonus balls per stage, and losing sends you back to stage 1. The current stage shows at the top right of the screen.</li>
+        <li>Switch between <strong>Adventure</strong> (the default) and <strong>Free fight</strong> at the top of the card. Adventure runs from stage 1 (Slime) to stage 7 (Gargoyle): you start with 30 balls, keep whatever is left after each win plus 20 bonus balls per stage, and losing sends you back to stage 1. The current stage shows at the top right of the screen.</li>
       </ol>
       <h3>Treasure chests and items</h3>
       <ol>
-        <li>In Campaign there is a <strong>treasure chest</strong> between every two monsters. It has 1 HP and every prize light is lit: 3 blue, 2 purple, 1 orange and the rest white. No multiplier is needed: lock, bet 1 ball and shoot: the lane you land in decides the item's tier. White is Common, blue Rare, purple Epic, orange Legendary.</li>
-        <li>Items go into the <strong>backpack button</strong> right of the tray (or <kbd>I</kbd>) and can only be used in Campaign monster stages. Each item says when it can be used: before locking, after locking (before shooting), or either.</li>
+        <li>In Adventure there is a <strong>treasure chest</strong> between every two monsters. It has 1 HP and every prize light is lit: 3 blue, 2 purple, 1 orange and the rest white. No multiplier is needed: lock, bet 1 ball and shoot: the lane you land in decides the item's tier. White is Common, blue Rare, purple Epic, orange Legendary.</li>
+        <li>Items go into the <strong>backpack button</strong> right of the tray (or <kbd>I</kbd>) and can only be used in Adventure monster stages. Each item says when it can be used: before locking, after locking (before shooting), or either.</li>
         <li>Failing the campaign and starting over from stage 1 empties the backpack.</li>
       </ol>
       <ul class="item-guide" data-item-guide></ul>
@@ -144,7 +144,7 @@
       <h3>My records</h3>
       <p class="records">High score (best single win) <b data-record="bestWin">0</b>　Most balls held <b data-record="best">0</b></p>
       <p class="records">Pinball Quest: <b data-record="advWins">0</b> wins　<b data-record="advLosses">0</b> losses</p>
-      <p class="records">Campaign: best <b data-record="campaignBest">0</b> defeated in a run　<b data-record="campaignClears">0</b> full clears</p>
+      <p class="records">Adventure: best <b data-record="campaignBest">0</b> defeated in a run　<b data-record="campaignClears">0</b> full clears</p>
     </div>
     <p class="version">v<span data-version>1.1.0</span></p>
     <form method="dialog"><button class="btn coin" data-i18n="close">關閉</button></form>
