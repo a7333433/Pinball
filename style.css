@@ -84,6 +84,18 @@ body {
   border-radius: 0 0 12px 12px;
 }
 
+/* 卡片內容較多（選怪物、闖關），太高時可以捲動，不會被切掉 */
+.overlay-card {
+  max-height: calc(100% - 16px);
+  overflow-y: auto;
+}
+
+.overlay.below-screen .overlay-card {
+  gap: 8px;
+  padding: 16px 16px;
+  max-width: 88%;
+}
+
 .overlay-card {
   display: flex;
   flex-direction: column;
@@ -116,6 +128,34 @@ body {
   border: none;
   text-decoration: underline;
   cursor: pointer;
+}
+
+/* 大冒險：自由挑戰 / 連續闖關 切換 */
+.adv-plan {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.adv-plan[hidden] { display: none; }
+
+.adv-plan button {
+  flex: 1;
+  font: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 6px 4px;
+  color: var(--gold);
+  background: transparent;
+  border: 2px solid var(--gold);
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.adv-plan button.active {
+  color: #2a0f08;
+  background: var(--gold);
 }
 
 /* 大冒險：選怪物 */
@@ -167,6 +207,17 @@ body {
   font-size: 13px;
   font-weight: bold;
   color: #4ade80;
+}
+
+.mp-item.lineup { cursor: default; }
+
+.mp-stage {
+  position: absolute;
+  top: 2px;
+  left: 5px;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--gold);
 }
 
 /* ---- 手機版精簡列（桌機隱藏） ---- */

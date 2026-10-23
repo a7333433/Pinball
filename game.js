@@ -16,6 +16,7 @@
   // ===== 彈珠台大冒險：怪物 =====
   const ADV_BALLS = 30;       // 每場冒險有幾顆彈珠
   const REFILL_MULT = 2;      // 補珠燈：中了得到 投珠數 × 2 顆彈珠
+  const CAMPAIGN_BONUS = 0;   // 連續闖關：每過一關額外補幾顆彈珠（0 = 不補，剩下的彈珠直接帶到下一關）
   // 12×12 像素圖：'.' 透明，其他字元對應 pal 的顏色
   // 防禦越高的怪物 HP 越少；實際傷害 = 倍率 × 投珠數 − 防禦（最少 0）
   // 數值依「30 顆彈珠、最佳打法」的勝率由易到難排：約 95% → 53%（落點平均的估算）
@@ -298,6 +299,15 @@
       btnMult: '投倍率孔', btnLock: '定燈', btnBet: '投珠孔', btnFire: '按住拉彈簧',
       langBtn: 'English', langShort: 'EN', close: '關閉',
       modeShort: '冒險', modeShortAdv: '經典', modeLong: '切換到大冒險', modeLongAdv: '切換到經典模式',
+      planFree: '自由挑戰', planCampaign: '連續闖關',
+      campaignIntro: '從第 1 關{first}一路打到第 {total} 關{last}。一開始有 {n} 顆彈珠，打倒怪物後剩下的彈珠會帶到下一關；失敗就要從第 1 關重來。最佳紀錄：打倒 {best} 隻。',
+      campaignStart: '開始闖關',
+      campaignWinTitle: '第 {stage} 關過關！', campaignWinText: '打倒了{name}，還有 {left} 顆彈珠帶到下一關。下一關：{next}。',
+      campaignNext: '前往第 {stage} 關',
+      campaignClearTitle: '全部通關！', campaignClearText: '你一路打倒了全部 {total} 隻怪物，最後還剩 {left} 顆彈珠！', campaignAgain: '再闖一次',
+      campaignLoseTitle: '闖關失敗…', campaignLoseText: '在第 {stage} 關被{name}擋下了，要從第 1 關重新開始。', campaignRetry: '從第 1 關重來',
+      campaignAppear: '第 {stage} 關：野生的{name}出現了！HP {hp}，防禦 {def}',
+      campaignOutTitle: '彈珠用完了…', campaignOutText: '打倒了第 {stage} 關的{name}，但彈珠剛好用完，沒辦法往下一關，要從第 1 關重新開始。',
       advTitle: '彈珠台大冒險', advStart: '開始冒險', advFight: '挑戰{name}', advCleared: '已擊敗',
       advIntro: '選一隻怪物來挑戰！每場有 {n} 顆彈珠，鋼珠落進亮燈的那一排就能造成「倍率 × 投珠數 − 防禦」點傷害。',
       advWinTitle: '勝利！', advWinText: '打倒了{name}，還剩 {left} 顆彈珠。', advAgain: '挑戰下一隻',
@@ -348,6 +358,15 @@
       btnMult: 'Multiply', btnLock: 'Lock', btnBet: 'Bet', btnFire: 'Hold to pull',
       langBtn: '中文', langShort: '中', close: 'Close',
       modeShort: 'Quest', modeShortAdv: 'Classic', modeLong: 'Pinball Quest', modeLongAdv: 'Classic mode',
+      planFree: 'Free fight', planCampaign: 'Campaign',
+      campaignIntro: 'Fight from stage 1 ({first}) all the way to stage {total} ({last}). You start with {n} balls and keep whatever is left after each win. Lose and you start over from stage 1. Best: {best} defeated.',
+      campaignStart: 'Start campaign',
+      campaignWinTitle: 'Stage {stage} cleared!', campaignWinText: 'You beat the {name} and carry {left} balls on. Next: {next}.',
+      campaignNext: 'Go to stage {stage}',
+      campaignClearTitle: 'Campaign cleared!', campaignClearText: 'You defeated all {total} monsters with {left} balls to spare!', campaignAgain: 'Play again',
+      campaignLoseTitle: 'Campaign failed…', campaignLoseText: 'The {name} stopped you at stage {stage}. Start over from stage 1.', campaignRetry: 'Restart from stage 1',
+      campaignAppear: 'Stage {stage}: a wild {name} appears! HP {hp}, DEF {def}',
+      campaignOutTitle: 'Out of balls…', campaignOutText: 'You beat the {name} on stage {stage}, but you have no balls left to go on. Start over from stage 1.',
       advTitle: 'Pinball Quest', advStart: 'Start', advFight: 'Fight the {name}', advCleared: 'Defeated',
       advIntro: 'Pick a monster to fight! You get {n} balls. Land in a lit lane to deal multiplier × bet − DEF damage.',
       advWinTitle: 'Victory!', advWinText: 'You defeated the {name} with {left} balls left.', advAgain: 'Next monster',
@@ -640,26 +659,61 @@
   // 難度星等：1～5 顆
   const monsterStars = i => 1 + Math.floor(i * 4 / (MONSTERS.length - 1));
 
+  // 大冒險的玩法：free = 自由挑戰（自己選怪物）、campaign = 連續闖關（從第 1 隻一路打到最後一隻）
+  let advPlan = 'free';
+  try { if (localStorage.getItem('candy-pinball-adv-plan') === 'campaign') advPlan = 'campaign'; } catch (e) { /* 無痕模式 */ }
+  function setPlan(p) {
+    advPlan = p;
+    try { localStorage.setItem('candy-pinball-adv-plan', p); } catch (e) { /* 無痕模式 */ }
+  }
+  // 連續闖關紀錄：一輪最多打倒幾隻、全部通關幾次
+  const campaign = {
+    best: loadRecord('candy-pinball-campaign-best'),
+    clears: loadRecord('candy-pinball-campaign-clears'),
+  };
+  const LAST_STAGE = MONSTERS.length - 1;
+  // 連續闖關打贏了、後面還有關卡
+  // 打倒最後一顆彈珠時沒有珠可以帶到下一關，就算闖關結束
+  const campaignBalls = () => state.credits + state.payoutQueue + CAMPAIGN_BONUS;
+  const campaignMidRun = () => adv.campaign && adv.status === 'won' && adv.monsterIdx < LAST_STAGE && campaignBalls() > 0;
+
   function startAdventure() {
+    if (advPlan === 'campaign') {
+      const cont = campaignMidRun();
+      adv.campaign = true;
+      startFight(cont ? adv.monsterIdx + 1 : 0, cont);
+    } else {
+      adv.campaign = false;
+      startFight(pickIdx, false);
+    }
+  }
+
+  // keepBalls：連續闖關的下一關，持珠不重置
+  function startFight(idx, keepBalls) {
     Sound.init();
     Sound.coin();
-    const m = MONSTERS[pickIdx];
+    const m = MONSTERS[idx];
     adv.monster = m;
-    adv.monsterIdx = pickIdx;
+    adv.monsterIdx = idx;
     adv.maxHp = adv.hp = Math.max(1, Math.round(m.hp * (0.9 + Math.random() * 0.2)));
     adv.status = 'playing';
     adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = 0;
     adv.pops.length = 0;
-    // 每場重新發彈珠
-    state.credits = 0;
+    if (keepBalls) {
+      state.payoutQueue += CAMPAIGN_BONUS;
+    } else {
+      // 新的一場（或闖關從第 1 關開始）重新發彈珠
+      state.credits = 0;
+      state.payoutQueue = ADV_BALLS;
+      tray.length = 0;
+      spills.length = 0;
+    }
     state.lastWin = null;
-    state.payoutQueue = ADV_BALLS;
     state.started = true;
-    tray.length = 0;
-    spills.length = 0;
     newRound();
     refreshOverlay();
-    say('advAppear', { name: monsterName(), hp: adv.hp, def: monsterDef() });
+    const info = { name: monsterName(), hp: adv.hp, def: monsterDef(), stage: idx + 1 };
+    say(adv.campaign ? 'campaignAppear' : 'advAppear', info);
   }
 
   const monsterDef = () => adv.monster ? adv.monster.def : 0;
@@ -695,6 +749,13 @@
       cleared.add(adv.monsterIdx);
       try { localStorage.setItem('candy-pinball-adv-cleared', JSON.stringify([...cleared])); } catch (e) { /* 無痕模式 */ }
       setPick(adv.monsterIdx + 1);      // 下一場預設挑戰下一隻（比較強的）
+      if (adv.campaign) {
+        if (adv.monsterIdx + 1 > campaign.best) {
+          campaign.best = adv.monsterIdx + 1;
+          saveRecord('candy-pinball-campaign-best', campaign.best);
+        }
+        if (adv.monsterIdx === LAST_STAGE) saveRecord('candy-pinball-campaign-clears', ++campaign.clears);
+      }
       say('advWinMsg', { name: monsterName() });
       setTimeout(() => Sound.win(), 350);
     }
@@ -2201,6 +2262,11 @@
         textBacking(S.x + S.w - ctx.measureText(label).width - 16, S.y + 4, ctx.measureText(label).width + 12, 20);
         if (adv.status === 'lost') { ctx.fillStyle = '#ef4444'; ctx.fillText(label, S.x + S.w - 10, S.y + 14); }
         else if (Math.floor(time * 4) % 2 === 0) { ctx.fillStyle = '#facc15'; ctx.fillText(label, S.x + S.w - 10, S.y + 14); }
+      } else if (adv.campaign) {
+        const label = `STAGE ${adv.monsterIdx + 1}/${MONSTERS.length}`;
+        textBacking(S.x + S.w - ctx.measureText(label).width - 16, S.y + 4, ctx.measureText(label).width + 12, 20);
+        ctx.fillStyle = '#facc15';
+        ctx.fillText(label, S.x + S.w - 10, S.y + 14);
       }
 
       // 怪物下面：HP 血條 + 盾牌（防禦）
@@ -2684,16 +2750,25 @@
   // ---- 遊戲模式的畫面切換 ----
   const ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('overlay-coin');
   const pickEl = $('monster-pick');
+  const planEl = $('adv-plan');
+  if (planEl) {
+    for (const b of planEl.querySelectorAll('[data-plan]')) {
+      b.addEventListener('click', () => { Sound.init(); Sound.clunk(); setPlan(b.dataset.plan); refreshOverlay(); });
+    }
+  }
 
   // 選怪物的按鈕：像素頭像、名字、HP、防禦、難度星等、已擊敗打勾
-  function renderPicker() {
+  // lineup = 連續闖關的關卡一覽（不能點，標出目前要打的那一關）
+  function renderPicker(lineup = false, target = 0) {
     pickEl.textContent = '';
     const dpr = window.devicePixelRatio || 1, P = 4;
     MONSTERS.forEach((m, i) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'mp-item' + (i === pickIdx ? ' selected' : '');
-      b.setAttribute('aria-pressed', String(i === pickIdx));
+      const sel = lineup ? i === target : i === pickIdx;
+      b.className = 'mp-item' + (sel ? ' selected' : '') + (lineup ? ' lineup' : '');
+      b.setAttribute('aria-pressed', String(sel));
+      if (lineup) b.tabIndex = -1;
       const cv = document.createElement('canvas');
       cv.width = cv.height = Math.round(12 * P * dpr);
       const c = cv.getContext('2d');
@@ -2713,14 +2788,20 @@
       stars.className = 'mp-stars';
       stars.textContent = '★'.repeat(monsterStars(i));
       b.append(cv, name, stats, stars);
-      if (cleared.has(i)) {
+      if (lineup) {
+        const no = document.createElement('span');
+        no.className = 'mp-stage';
+        no.textContent = String(i + 1);
+        b.append(no);
+      }
+      if (lineup ? i < campaign.best : cleared.has(i)) {
         const done = document.createElement('span');
         done.className = 'mp-done';
         done.textContent = '✓';
         done.title = t('advCleared');
         b.append(done);
       }
-      b.addEventListener('click', () => { Sound.init(); Sound.clunk(); setPick(i); refreshOverlay(); });
+      if (!lineup) b.addEventListener('click', () => { Sound.init(); Sound.clunk(); setPick(i); refreshOverlay(); });
       pickEl.append(b);
     });
   }
@@ -2729,21 +2810,50 @@
     if (mode === 'classic') {
       show = !state.started;
       title = t('title'); text = t('overlayText'); btn = t('overlayCoin');
-    } else if (adv.status === 'intro') {
+    } else if (adv.status === 'intro' || ((adv.status === 'won' || adv.status === 'lost') && adv.endT <= 0)) {
       show = true;
-      title = t('advTitle'); text = t('advIntro', { n: ADV_BALLS });
-    } else if (adv.status === 'won' && adv.endT <= 0) {
-      show = true;
-      title = t('advWinTitle'); text = t('advWinText', { name: monsterName(), left: state.credits });
-    } else if (adv.status === 'lost' && adv.endT <= 0) {
-      show = true;
-      title = t('advLoseTitle'); text = t('advLoseText', { name: monsterName(), hp: adv.hp });
     }
     const picking = show && mode === 'adv';
-    if (picking) btn = t('advFight', { name: MONSTERS[pickIdx].name[lang] });
-    if (pickEl) {
-      pickEl.hidden = !picking;
-      if (picking) renderPicker();
+    const midRun = picking && campaignMidRun();
+    if (picking) {
+      const name = monsterName(), stage = adv.monsterIdx + 1, total = MONSTERS.length;
+      // 結果只在「上一場的玩法」和目前選的玩法一樣時顯示，否則顯示該玩法的說明
+      const hasResult = adv.status !== 'intro' && (adv.campaign ? 'campaign' : 'free') === advPlan;
+      let target = 0;
+      if (midRun) {
+        target = adv.monsterIdx + 1;
+        title = t('campaignWinTitle', { stage });
+        text = t('campaignWinText', { name, left: state.credits, next: MONSTERS[target].name[lang] });
+        btn = t('campaignNext', { stage: target + 1 });
+      } else if (advPlan === 'campaign') {
+        if (hasResult && adv.status === 'won' && adv.monsterIdx < LAST_STAGE) {
+          // 打贏了但彈珠剛好用完，沒辦法往下一關
+          title = t('campaignOutTitle'); text = t('campaignOutText', { stage, name }); btn = t('campaignRetry');
+        } else if (hasResult && adv.status === 'won') {
+          title = t('campaignClearTitle'); text = t('campaignClearText', { total, left: state.credits }); btn = t('campaignAgain');
+        } else if (hasResult && adv.status === 'lost') {
+          title = t('campaignLoseTitle'); text = t('campaignLoseText', { stage, name }); btn = t('campaignRetry');
+        } else {
+          title = t('advTitle');
+          text = t('campaignIntro', { first: MONSTERS[0].name[lang], last: MONSTERS[LAST_STAGE].name[lang], total, n: ADV_BALLS, best: campaign.best });
+          btn = t('campaignStart');
+        }
+      } else {
+        if (hasResult && adv.status === 'won') {
+          title = t('advWinTitle'); text = t('advWinText', { name, left: state.credits });
+        } else if (hasResult && adv.status === 'lost') {
+          title = t('advLoseTitle'); text = t('advLoseText', { name, hp: adv.hp });
+        } else {
+          title = t('advTitle'); text = t('advIntro', { n: ADV_BALLS });
+        }
+        btn = t('advFight', { name: MONSTERS[pickIdx].name[lang] });
+      }
+      if (pickEl) renderPicker(advPlan === 'campaign' || midRun, target);
+    }
+    if (pickEl) pickEl.hidden = !picking;
+    if (planEl) {
+      planEl.hidden = !picking || midRun;
+      for (const b of planEl.querySelectorAll('[data-plan]')) b.classList.toggle('active', b.dataset.plan === advPlan);
     }
     overlay.classList.toggle('hidden', !show);
     overlay.classList.toggle('below-screen', mode === 'adv');
@@ -2790,7 +2900,10 @@
 
   function openHelp() {
     release();
-    const records = { bestWin: state.bestWin, best: state.best, advWins: adv.wins, advLosses: adv.losses };
+    const records = {
+      bestWin: state.bestWin, best: state.best, advWins: adv.wins, advLosses: adv.losses,
+      campaignBest: campaign.best, campaignClears: campaign.clears,
+    };
     for (const el of document.querySelectorAll('[data-record]')) el.textContent = records[el.dataset.record];
     helpDlg.showModal();
   }
