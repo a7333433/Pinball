@@ -15,7 +15,7 @@
 
   // ===== 彈珠台大冒險：怪物 =====
   const ADV_BALLS = 30;       // 每場冒險有幾顆彈珠
-  const REFILL_MULT = 2;      // 補珠燈：中了得到 投珠數 × 2 顆彈珠
+  const REFILL_MULT = 2;      // 補珠燈：中了退回倍率孔的珠，再得到 投珠數 × 2 顆彈珠
   const CAMPAIGN_BONUS = 20;  // 連續闖關：每過一關額外補幾顆彈珠（剩下的彈珠也會帶到下一關）
   // 12×12 像素圖：'.' 透明，其他字元對應 pal 的顏色
   // 防禦越高的怪物 HP 越少；實際傷害 = 倍率 × 投珠數 − 防禦（最少 0）
@@ -319,6 +319,7 @@
       hitMsg: '命中！{mult} 倍 × {bet} 顆，造成 {dmg} 點傷害',
       lockedAdv: '定燈！亮 {lit} 顆紅燈，綠燈是補珠燈。往投珠孔投珠，再拉彈簧發射',
       refillMsg: '命中補珠燈！補回 {n} 顆彈珠', refillPop: '+{n} 顆',
+      refillMsgMult: '命中補珠燈！退回倍率孔 {refund} 顆，再補 {bonus} 顆，共 {n} 顆',
       advMissMsg: '沒打中！{name}在嘲笑你', advWinMsg: '打倒了{name}！', advLoseMsg: '彈珠用完了…',
       dmgPop: '-{d} HP', advNoCoin: '大冒險模式不能投幣',
       advPressStart: '按「開始冒險」', laugh: '嘻嘻嘻',
@@ -379,6 +380,7 @@
       hitMsg: 'Hit! ×{mult} × {bet} = {dmg} damage',
       lockedAdv: 'Locked! {lit} red lights. Green = refill. Bet, then shoot',
       refillMsg: 'Refill light! +{n} balls', refillPop: '+{n} balls',
+      refillMsgMult: 'Refill light! {refund} multiplier balls back + {bonus} = {n} balls',
       advMissMsg: 'Missed! The {name} laughs', advWinMsg: 'Defeated the {name}!', advLoseMsg: 'Out of balls…',
       dmgPop: '-{d} HP', advNoCoin: 'No coins in Quest mode',
       advPressStart: 'Press Start', laugh: 'hehehe',
@@ -995,12 +997,12 @@
       say('winMsg', { mult: mult(), bet: round.bet, win });
       Sound.win();
     } else if (mode === 'adv' && slot === round.refill) {
-      // 補珠燈：不造成傷害，改成補回 投珠數 × 2 顆彈珠
-      const n = round.bet * REFILL_MULT;
+      // 補珠燈：不造成傷害，改成退回這局投進倍率孔的珠，再補 投珠數 × 2 顆
+      const refund = round.level * MULT_COST, bonus = round.bet * REFILL_MULT, n = refund + bonus;
       round.phase = 'win';
       state.payoutQueue += n;
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('refillPop', { n }), t: 0, color: '#4ade80' });
-      say('refillMsg', { n });
+      say(refund ? 'refillMsgMult' : 'refillMsg', { n, refund, bonus });
       Sound.coin();
       Sound.win();
     } else {
