@@ -403,7 +403,8 @@ kbd {
 .item-guide .item-icon { margin-right: 6px; }
 .ov-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .ov-item[hidden] { display: none; }
-.overlay-card.stage-clear .link { display: none; }
+/* 大冒險的卡片不放切換模式、說明、語系（上方列／右側面板都有） */
+body[data-mode="adv"] .overlay-card .link { display: none; }
 .ov-status {
   width: 100%;
   padding: 10px 12px;

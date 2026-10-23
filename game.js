@@ -3675,7 +3675,7 @@
 
   // ---- 遊戲模式的畫面切換 ----
   const ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('overlay-coin'), ovItem = $('ov-item');
-  const ovStatus = $('ov-status'), ovCard = overlay.querySelector('.overlay-card');
+  const ovStatus = $('ov-status');
 
   // 過關卡片的「目前狀態」：彈珠數、背包裡的道具
   function renderStatus() {
@@ -3828,8 +3828,6 @@
     if (ovTitle) ovTitle.textContent = title;
     if (ovText) { ovText.textContent = text; ovText.hidden = !text; }
     if (ovBtn) ovBtn.textContent = btn;
-    // 過關卡片不顯示切換模式、說明、語系
-    if (ovCard) ovCard.classList.toggle('stage-clear', midRun);
     if (ovStatus) {
       ovStatus.hidden = !midRun;
       if (midRun) renderStatus();
