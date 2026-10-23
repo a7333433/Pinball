@@ -3006,7 +3006,9 @@
       const b = HOLES.bet;
       if (state.credits > 0 && !(chestStage() && round.bet > 0)) hintCircle(time, b.x, b.y, b.r + 5);
       if (round.bet === 0) {
-        hintBubble(time, b.x - b.r - 8, b.y, 'left', t('hintBet'));
+        // 大冒險：投珠孔左邊是背包按鈕，提示改放在投珠孔上方
+        if (mode === 'adv') hintBubble(time, b.x, b.y - b.r - 10, 'above', t('hintBet'), 'end');
+        else hintBubble(time, b.x - b.r - 8, b.y, 'left', t('hintBet'));
       } else if (ballAtShooter()) {
         hintCircle(time, PLUNGER_X, KNOB_Y, 15);
         hintBubble(time, PLUNGER_X - 20, KNOB_Y, 'left', t('hintPull'));
