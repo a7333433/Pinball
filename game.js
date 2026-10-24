@@ -336,12 +336,12 @@
   // 12×12 像素圖：'.' 透明，其他字元對應 pal 的顏色
   // 實際傷害 = 倍率 × 投珠數 − 防禦（最少 0）；每回合最多投 BET_CAP 顆，所以前期沒辦法一發打死
   // （HP 最低 24，隨機 −10% 後仍高於 ×7 投 3 顆的 21 點）
-  // 數值依冒險模式模擬（起始 50 顆、每關補 30 顆、有過關獎勵、玩家想快點打完）調整：
-  // 每關過關率約 91% → 76%，全破約 30%，每關平均打 5～8 回合
+  // 數值依冒險模式模擬（14 關、起始 50 顆、每關補 30 顆、有過關獎勵、玩家想快點打完）調整：
+  // 每關過關率約 100% → 85%，全破約 25%（不計道具），每關平均打 6～12 回合
   const MONSTERS = [
     {
       bg: 'forest',
-      name: { zh: '史萊姆', en: 'Slime' }, hp: 24, def: 0,
+      name: { zh: '史萊姆', en: 'Slime' }, hp: 25, def: 0,
       pal: { K: '#0b1a0b', G: '#3ccf4e', L: '#a6f7ae', D: '#1f7a2b', W: '#ffffff', R: '#ff5d73' },
       map: [
         '............',
@@ -374,8 +374,42 @@
       ],
     },
     {
+      bg: 'forest',
+      name: { zh: '蘑菇怪', en: 'Mushroom' }, hp: 28, def: 0,
+      pal: { K: '#2b0f0f', R: '#e53935', W: '#ffffff', S: '#f5deb3', P: '#ff8fa3' },
+      map: [
+        '............',
+        '...KKKKKK...',
+        '..KRRWRRRK..',
+        '.KRWWRRWRRK.',
+        'KRRRRRRWWRRK',
+        'KRWRRRRRRRRK',
+        'KKKKKKKKKKKK',
+        '..KSSSSSSK..',
+        '..KSKSSKSK..',
+        '..KSSSSSSK..',
+        '..KSSKKSSK..',
+        '...KKKKKK...',
+      ],
+      // 竊笑時的表情：眼睛瞇起來、嘴巴張開
+      laugh: [
+        '............',
+        '...KKKKKK...',
+        '..KRRWRRRK..',
+        '.KRWWRRWRRK.',
+        'KRRRRRRWWRRK',
+        'KRWRRRRRRRRK',
+        'KKKKKKKKKKKK',
+        '..KSKSSKSK..',
+        '..KSSSSSSK..',
+        '..KSKKKKSK..',
+        '..KSKPPKSK..',
+        '...KKKKKK...',
+      ],
+    },
+    {
       bg: 'cave',
-      name: { zh: '蝙蝠', en: 'Bat' }, hp: 26, def: 1,
+      name: { zh: '蝙蝠', en: 'Bat' }, hp: 32, def: 1,
       pal: { K: '#120818', P: '#8a4fd8', W: '#ffe66b', R: '#ff4d6d' },
       map: [
         '............',
@@ -408,8 +442,42 @@
       ],
     },
     {
+      bg: 'cave',
+      name: { zh: '蜘蛛', en: 'Spider' }, hp: 37, def: 1,
+      pal: { K: '#111111', P: '#4a148c', V: '#7b1fa2', R: '#ff1744', W: '#ffffff' },
+      map: [
+        'K..........K',
+        '.K...KK...K.',
+        '..K.KPPK.K..',
+        'KK.KPPPPK.KK',
+        '..KPRPPRPK..',
+        '.KPPPPPPPPK.',
+        'K.KPVVVVPK.K',
+        '.K.KPPPPK.K.',
+        'K...KPPK...K',
+        '.K..KKKK..K.',
+        '..K......K..',
+        '............',
+      ],
+      // 竊笑時的表情：眼睛瞇起來、嘴巴張開
+      laugh: [
+        'K..........K',
+        '.K...KK...K.',
+        '..K.KPPK.K..',
+        'KK.KPPPPK.KK',
+        '..KPKPPKPK..',
+        '.KPPPPPPPPK.',
+        'K.KPKWWKPK.K',
+        '.K.KPKKPK.K.',
+        'K...KPPK...K',
+        '.K..KKKK..K.',
+        '..K......K..',
+        '............',
+      ],
+    },
+    {
       bg: 'graveyard',
-      name: { zh: '幽靈', en: 'Ghost' }, hp: 33, def: 2,
+      name: { zh: '幽靈', en: 'Ghost' }, hp: 42, def: 2,
       pal: { K: '#1a1a2e', W: '#e8f0ff', R: '#ff6b81' },
       map: [
         '....KKKK....',
@@ -443,7 +511,41 @@
     },
     {
       bg: 'graveyard',
-      name: { zh: '僵屍', en: 'Zombie' }, hp: 41, def: 3,
+      name: { zh: '南瓜頭', en: 'Pumpkin Head' }, hp: 48, def: 2,
+      pal: { K: '#3e1f00', O: '#ff8c00', D: '#cc5500', G: '#2e7d32', Y: '#ffeb3b' },
+      map: [
+        '.....GG.....',
+        '....GG......',
+        '..KKKKKKKK..',
+        '.KOODOODOOK.',
+        'KOODOODOOOOK',
+        'KOYYOOOOYYOK',
+        'KOYKOOOOKYOK',
+        'KOOOOYYOOOOK',
+        'KOYOYOOYOYOK',
+        'KOOYYYYYYOOK',
+        '.KOODOODOOK.',
+        '..KKKKKKKK..',
+      ],
+      // 竊笑時的表情：眼睛瞇起來、嘴巴張開
+      laugh: [
+        '.....GG.....',
+        '....GG......',
+        '..KKKKKKKK..',
+        '.KOODOODOOK.',
+        'KOODOODOOOOK',
+        'KOOOOOOOOOOK',
+        'KOYYYOOYYYOK',
+        'KOOOOYYOOOOK',
+        'KOYYYYYYYYOK',
+        'KOYKKKKKKYOK',
+        '.KOYYYYYYOK.',
+        '..KKKKKKKK..',
+      ],
+    },
+    {
+      bg: 'graveyard',
+      name: { zh: '僵屍', en: 'Zombie' }, hp: 55, def: 3,
       pal: { K: '#141a10', G: '#7fb069', D: '#4a6b3a', C: '#5b4b8a', W: '#f5f5f5', R: '#c0392b' },
       map: [
         '...KKKKKK...',
@@ -476,8 +578,42 @@
       ],
     },
     {
+      bg: 'ruins',
+      name: { zh: '木乃伊', en: 'Mummy' }, hp: 66, def: 3,
+      pal: { K: '#2b2b2b', W: '#e8e2d0', D: '#b8ae96', R: '#ff3b3b' },
+      map: [
+        '...KKKKKK...',
+        '..KWWDWWWK..',
+        '.KDWWWWDWWK.',
+        '.KWRKWWRKWK.',
+        '.KWWWWWWWDK.',
+        '.KDWWKKWWWK.',
+        '..KWWWWWDK..',
+        '.KWDWWWWWWK.',
+        'KWWWDWWWDWWK',
+        'KWDWWWWWWWDK',
+        '.KWWKWWKWWK.',
+        '..KK.KK.KK..',
+      ],
+      // 竊笑時的表情：眼睛瞇起來、嘴巴張開
+      laugh: [
+        '...KKKKKK...',
+        '..KWWDWWWK..',
+        '.KDWWWWDWWK.',
+        '.KWKKWWKKWK.',
+        '.KWWWWWWWDK.',
+        '.KDWKRRKWWK.',
+        '..KWWKKWDK..',
+        '.KWDWWWWWWK.',
+        'KWWWDWWWDWWK',
+        'KWDWWWWWWWDK',
+        '.KWWKWWKWWK.',
+        '..KK.KK.KK..',
+      ],
+    },
+    {
       bg: 'crypt',
-      name: { zh: '骷髏', en: 'Skeleton' }, hp: 48, def: 4,
+      name: { zh: '骷髏', en: 'Skeleton' }, hp: 78, def: 4,
       pal: { K: '#111111', W: '#f2efe6', R: '#e0465a' },
       map: [
         '...KKKKKK...',
@@ -510,8 +646,42 @@
       ],
     },
     {
+      bg: 'crypt',
+      name: { zh: '吸血鬼', en: 'Vampire' }, hp: 92, def: 4,
+      pal: { K: '#120012', S: '#e0d6e8', H: '#1a1a2e', R: '#d50000', C: '#4a0d1a', W: '#ffffff' },
+      map: [
+        '..KKKKKKKK..',
+        '.KHHHHHHHHK.',
+        '.KHHSSSSHHK.',
+        '.KHSSSSSSHK.',
+        '.KSRKSSRKSK.',
+        '.KSSSSSSSSK.',
+        '.KSSWKKWSSK.',
+        'KCKSSSSSSKCK',
+        'KCCKKKKKKCCK',
+        'KCRCCCCCCRCK',
+        'KCRCCCCCCRCK',
+        '.KKKKKKKKKK.',
+      ],
+      // 竊笑時的表情：眼睛瞇起來、嘴巴張開
+      laugh: [
+        '..KKKKKKKK..',
+        '.KHHHHHHHHK.',
+        '.KHHSSSSHHK.',
+        '.KHSSSSSSHK.',
+        '.KSKKSSKKSK.',
+        '.KSSSSSSSSK.',
+        '.KSWKRRKWSK.',
+        'KCKSKKKKSKCK',
+        'KCCKKKKKKCCK',
+        'KCRCCCCCCRCK',
+        'KCRCCCCCCRCK',
+        '.KKKKKKKKKK.',
+      ],
+    },
+    {
       bg: 'hell',
-      name: { zh: '小惡龍', en: 'Baby Dragon' }, hp: 60, def: 5,
+      name: { zh: '小惡龍', en: 'Baby Dragon' }, hp: 106, def: 5,
       pal: { K: '#2a0505', R: '#e6392f', W: '#ffffff', Y: '#ffd166', T: '#ff8fa3' },
       map: [
         '..K......K..',
@@ -544,8 +714,42 @@
       ],
     },
     {
+      bg: 'hell',
+      name: { zh: '地獄犬', en: 'Hellhound' }, hp: 120, def: 5,
+      pal: { K: '#1a0000', B: '#3d0c02', R: '#ff3d00', Y: '#ffd600', W: '#ffffff' },
+      map: [
+        '.K........K.',
+        'KRK......KRK',
+        'KBBK....KBBK',
+        'KBBBKKKKBBBK',
+        'KBYKBBBBKYBK',
+        'KBBBBBBBBBBK',
+        '.KBBBKKBBBK.',
+        '.KBWBBBBWBK.',
+        '..KBKKKKBK..',
+        '.KRBBBBBBRK.',
+        'KRK.KBBK.KRK',
+        'K...KKKK...K',
+      ],
+      // 竊笑時的表情：眼睛瞇起來、嘴巴張開
+      laugh: [
+        '.K........K.',
+        'KRK......KRK',
+        'KBBK....KBBK',
+        'KBBBKKKKBBBK',
+        'KBKKBBBBKKBK',
+        'KBBBBBBBBBBK',
+        '.KBBBKKBBBK.',
+        '.KWKRRRRKWK.',
+        '..KBKKKKBK..',
+        '.KRBBBBBBRK.',
+        'KRK.KBBK.KRK',
+        'K...KKKK...K',
+      ],
+    },
+    {
       bg: 'ruins',
-      name: { zh: '石像怪', en: 'Gargoyle' }, hp: 66, def: 6,
+      name: { zh: '石像怪', en: 'Gargoyle' }, hp: 134, def: 6,
       pal: { K: '#1f1f24', S: '#8b8f99', D: '#5f636c', R: '#ff3b3b' },
       map: [
         'K.K......K.K',
@@ -575,6 +779,40 @@
         'KSKSSSSSSKSK',
         'KK.KSKKSK.KK',
         '...KK..KK...',
+      ],
+    },
+    {
+      bg: 'crypt',
+      name: { zh: '巫妖', en: 'Lich' }, hp: 168, def: 7,
+      pal: { K: '#0a0a12', P: '#311b92', V: '#6a1b9a', B: '#e0e0e0', G: '#76ff03', Y: '#ffd600' },
+      map: [
+        '..Y.Y..Y.Y..',
+        '..YYYYYYYY..',
+        '..KBBBBBBK..',
+        '..KBGKKGBK..',
+        '..KBBKKBBK..',
+        '...KBBBBK...',
+        '.KPKBKBKKPK.',
+        'KPPVKKKKVPPK',
+        'KPVPPPPPPVPK',
+        'KPPVPPPPVPPK',
+        '.KPPPVVPPPK.',
+        '..KKKKKKKK..',
+      ],
+      // 竊笑時的表情：眼睛瞇起來、嘴巴張開
+      laugh: [
+        '..Y.Y..Y.Y..',
+        '..YYYYYYYY..',
+        '..KBBBBBBK..',
+        '..KKGBBGKK..',
+        '..KBBKKBBK..',
+        '...KKGGKK...',
+        '.KPKBKBKKPK.',
+        'KPPVKKKKVPPK',
+        'KPVPPPPPPVPK',
+        'KPPVPPPPVPPK',
+        '.KPPPVVPPPK.',
+        '..KKKKKKKK..',
       ],
     },
   ];
@@ -1088,12 +1326,20 @@
   const monsterName = () => adv.monster ? adv.monster.name[lang] : '';
 
   // 玩家自己選要挑戰的怪物；打倒過的怪物會打勾（存在瀏覽器）
-  let pickIdx = Math.min(MONSTERS.length - 1, loadRecord('candy-pinball-adv-pick'));
+  // v1.2 以前只有 7 隻怪物（現在 14 隻）：舊的「已擊敗」和上次選的怪物換到新的位置
+  const OLD_MONSTER_IDX = [0, 2, 4, 6, 8, 10, 12];
+  let hasNewRecords = false;
+  try { hasNewRecords = localStorage.getItem('candy-pinball-adv-cleared2') !== null || localStorage.getItem('candy-pinball-adv-pick2') !== null; } catch (e) { /* 無痕模式 */ }
+  let pickIdx = Math.min(MONSTERS.length - 1, hasNewRecords ? loadRecord('candy-pinball-adv-pick2')
+    : OLD_MONSTER_IDX[Math.min(6, loadRecord('candy-pinball-adv-pick'))]);
   const cleared = new Set();
-  try { (JSON.parse(localStorage.getItem('candy-pinball-adv-cleared') || '[]')).forEach(i => cleared.add(i)); } catch (e) { /* 無痕模式 */ }
+  try {
+    if (hasNewRecords) (JSON.parse(localStorage.getItem('candy-pinball-adv-cleared2') || '[]')).forEach(i => cleared.add(i));
+    else (JSON.parse(localStorage.getItem('candy-pinball-adv-cleared') || '[]')).forEach(i => { if (OLD_MONSTER_IDX[i] !== undefined) cleared.add(OLD_MONSTER_IDX[i]); });
+  } catch (e) { /* 無痕模式 */ }
   function setPick(i) {
     pickIdx = Math.max(0, Math.min(MONSTERS.length - 1, i));
-    saveRecord('candy-pinball-adv-pick', pickIdx);
+    saveRecord('candy-pinball-adv-pick2', pickIdx);
   }
   // 難度星等：1～5 顆
   const monsterStars = i => 1 + Math.floor(i * 4 / (MONSTERS.length - 1));
@@ -1222,7 +1468,7 @@
     adv.wins++;
     saveRecord('candy-pinball-adv-wins', adv.wins);
     cleared.add(adv.monsterIdx);
-    try { localStorage.setItem('candy-pinball-adv-cleared', JSON.stringify([...cleared])); } catch (e) { /* 無痕模式 */ }
+    try { localStorage.setItem('candy-pinball-adv-cleared2', JSON.stringify([...cleared])); } catch (e) { /* 無痕模式 */ }
     setPick(adv.monsterIdx + 1);      // 下一場預設挑戰下一隻（比較強的）
     // 冒險模式：打倒怪物（最後一隻除外）後先選過關獎勵
     if (adv.campaign && adv.monsterIdx < LAST_STAGE) {
