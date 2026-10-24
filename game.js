@@ -22,9 +22,10 @@
 
 
   // ===== 彈珠台大冒險：怪物 =====
-  const ADV_BALLS = 30;       // 每場冒險有幾顆彈珠
+  const ADV_BALLS = 50;       // 每場冒險有幾顆彈珠
+  const BET_CAP = 3;          // 大冒險每回合最多投幾顆珠（過關獎勵「投珠上限」可以提高）
   const REFILL_MULT = 2;      // 補珠燈：中了退回倍率孔的珠，再得到 投珠數 × 2 顆彈珠
-  const CAMPAIGN_BONUS = 20;  // 連續闖關：每過一關額外補幾顆彈珠（剩下的彈珠也會帶到下一關）
+  const CAMPAIGN_BONUS = 30;  // 冒險模式：每過一關額外補幾顆彈珠（剩下的彈珠也會帶到下一關）
   // ===== 寶箱與道具 =====
   // 道具等級：白燈一般、藍燈稀有、紫燈史詩、橘燈傳說
   const TIERS = [
@@ -121,6 +122,7 @@
     chestRare: { name: { zh: '寶箱升級', en: 'Better Chests' }, desc: { zh: '寶箱關卡的稀有（藍）燈 +1、一般（白）燈 −1', en: 'Chests get +1 rare (blue) lane, −1 common (white) lane' } },
     critRate: { name: { zh: '暴擊率', en: 'Crit Rate' }, desc: { zh: '暴擊機率增加 1%', en: 'Crit chance +1%' } },
     critDmg: { name: { zh: '暴擊傷害', en: 'Crit Damage' }, desc: { zh: '暴擊傷害倍率增加 10%', en: 'Crit damage +10%' } },
+    betCap: { name: { zh: '投珠上限', en: 'Bet Limit' }, desc: { zh: '每回合投珠上限 +1', en: '+1 max bet per round' } },
   };
   const BOON_IDS = Object.keys(BOONS);
   // 道具的 12×12 像素圖示（背包、寶箱結果、說明、怪物螢幕都用這個）
@@ -332,13 +334,14 @@
   CHEST.laugh = CHEST.map;
 
   // 12×12 像素圖：'.' 透明，其他字元對應 pal 的顏色
-  // 防禦越高的怪物 HP 越少；實際傷害 = 倍率 × 投珠數 − 防禦（最少 0）
-  // 數值依「30 顆彈珠、最佳打法」的勝率由易到難排：約 95% → 53%（落點平均的估算）
-  // 後面幾隻一擊所需的攻擊超過 ×2 全押（60），一定要用倍率孔才打得倒
+  // 實際傷害 = 倍率 × 投珠數 − 防禦（最少 0）；每回合最多投 BET_CAP 顆，所以前期沒辦法一發打死
+  // （HP 最低 24，隨機 −10% 後仍高於 ×7 投 3 顆的 21 點）
+  // 數值依冒險模式模擬（起始 50 顆、每關補 30 顆、有過關獎勵、玩家想快點打完）調整：
+  // 每關過關率約 91% → 76%，全破約 30%，每關平均打 5～8 回合
   const MONSTERS = [
     {
       bg: 'forest',
-      name: { zh: '史萊姆', en: 'Slime' }, hp: 25, def: 0,
+      name: { zh: '史萊姆', en: 'Slime' }, hp: 24, def: 0,
       pal: { K: '#0b1a0b', G: '#3ccf4e', L: '#a6f7ae', D: '#1f7a2b', W: '#ffffff', R: '#ff5d73' },
       map: [
         '............',
@@ -372,7 +375,7 @@
     },
     {
       bg: 'cave',
-      name: { zh: '蝙蝠', en: 'Bat' }, hp: 24, def: 1,
+      name: { zh: '蝙蝠', en: 'Bat' }, hp: 26, def: 1,
       pal: { K: '#120818', P: '#8a4fd8', W: '#ffe66b', R: '#ff4d6d' },
       map: [
         '............',
@@ -406,7 +409,7 @@
     },
     {
       bg: 'graveyard',
-      name: { zh: '幽靈', en: 'Ghost' }, hp: 23, def: 5,
+      name: { zh: '幽靈', en: 'Ghost' }, hp: 33, def: 2,
       pal: { K: '#1a1a2e', W: '#e8f0ff', R: '#ff6b81' },
       map: [
         '....KKKK....',
@@ -440,7 +443,7 @@
     },
     {
       bg: 'graveyard',
-      name: { zh: '僵屍', en: 'Zombie' }, hp: 22, def: 12,
+      name: { zh: '僵屍', en: 'Zombie' }, hp: 41, def: 3,
       pal: { K: '#141a10', G: '#7fb069', D: '#4a6b3a', C: '#5b4b8a', W: '#f5f5f5', R: '#c0392b' },
       map: [
         '...KKKKKK...',
@@ -474,7 +477,7 @@
     },
     {
       bg: 'crypt',
-      name: { zh: '骷髏', en: 'Skeleton' }, hp: 21, def: 22,
+      name: { zh: '骷髏', en: 'Skeleton' }, hp: 48, def: 4,
       pal: { K: '#111111', W: '#f2efe6', R: '#e0465a' },
       map: [
         '...KKKKKK...',
@@ -508,7 +511,7 @@
     },
     {
       bg: 'hell',
-      name: { zh: '小惡龍', en: 'Baby Dragon' }, hp: 20, def: 33,
+      name: { zh: '小惡龍', en: 'Baby Dragon' }, hp: 60, def: 5,
       pal: { K: '#2a0505', R: '#e6392f', W: '#ffffff', Y: '#ffd166', T: '#ff8fa3' },
       map: [
         '..K......K..',
@@ -542,7 +545,7 @@
     },
     {
       bg: 'ruins',
-      name: { zh: '石像怪', en: 'Gargoyle' }, hp: 19, def: 44,
+      name: { zh: '石像怪', en: 'Gargoyle' }, hp: 66, def: 6,
       pal: { K: '#1f1f24', S: '#8b8f99', D: '#5f636c', R: '#ff3b3b' },
       map: [
         'K.K......K.K',
@@ -589,8 +592,9 @@
       betBeforeLock: '燈還在閃，先按藍色按鈕定燈才能投珠',
       inPlay: '鋼珠已發射，請等這一局結束',
       betInfo: '投珠 {bet} 顆 × {mult} 倍，中了得 {win} 顆',
-      betInfoAdv: '投珠 {bet} 顆 × {mult} 倍，中了造成 {win} 點傷害',
-      betInfoAdvDef: '投珠 {bet} 顆 × {mult} 倍，扣掉防禦 {def}，中了造成 {win} 點傷害',
+      betInfoAdv: '投珠 {bet}/{cap} 顆 × {mult} 倍，中了造成 {win} 點傷害',
+      betInfoAdvDef: '投珠 {bet}/{cap} 顆 × {mult} 倍，扣掉防禦 {def}，中了造成 {win} 點傷害',
+      betCapMsg: '每回合最多投 {n} 顆珠（過關獎勵可以提高上限）', itemBetCap: '投珠已經到上限了',
       multLocked: '燈已經定了，這一局不能再投倍率孔',
       multMax: '倍率最高 {max} 倍',
       multShort: '彈珠不足 {cost} 顆，不能提升倍率',
@@ -686,8 +690,9 @@
       betBeforeLock: 'Press blue to lock before betting',
       inPlay: 'Ball in play. Wait for the result',
       betInfo: 'Bet {bet} × {mult}: win pays {win}',
-      betInfoAdv: 'Bet {bet} × {mult}: a hit deals {win} damage',
-      betInfoAdvDef: 'Bet {bet} × {mult} − DEF {def}: a hit deals {win} damage',
+      betInfoAdv: 'Bet {bet}/{cap} × {mult}: a hit deals {win} damage',
+      betInfoAdvDef: 'Bet {bet}/{cap} × {mult} − DEF {def}: a hit deals {win} damage',
+      betCapMsg: 'You can bet at most {n} balls per round (rewards can raise this)', itemBetCap: 'Your bet is already at the limit',
       multLocked: 'Locked. No more multiplier this round',
       multMax: 'Max multiplier is ×{max}',
       multShort: 'Need {cost} balls to raise the multiplier',
@@ -1065,6 +1070,8 @@
   const boon = id => adv.boons[id] || 0;
   const critRate = () => CRIT_BASE_RATE + 0.01 * boon('critRate');
   const critMult = () => CRIT_BASE_MULT + 0.1 * boon('critDmg');
+  // 每回合投珠上限：寶箱只能投 1 顆
+  const betCap = () => chestStage() ? 1 : BET_CAP + boon('betCap');
   const chestStage = () => mode === 'adv' && adv.chest;
   // 寶藏圖鑑：取得過哪些道具（存在瀏覽器，重新闖關也會保留）
   const itemsSeen = new Set();
@@ -1324,6 +1331,9 @@
       case 'hourglass': if (round.hourglass) return 'itemActive'; break;
       case 'drink': if (!round.lit.size) return 'itemNoLit'; break;
       case 'key': if (adv.lost <= 0) return 'itemKeyEmpty'; break;
+      case 'fake':
+        if (round.bet >= betCap() && !(round.phase === 'select' && round.level < multRule().mults.length - 1)) return 'itemBetCap';
+        break;
       case 'shake':
         if (round.bet === 0) return 'itemNeedBet';
         if (!ballAtShooter()) return 'itemNotNow';
@@ -1363,7 +1373,8 @@
     fake() {
       // 定燈前：倍率、投珠隨機加 1（倍率已經最高或手上沒珠時直接加投珠）
       const canMult = round.phase === 'select' && round.level < multRule().mults.length - 1 && !(state.credits === 0 && round.bet === 0);
-      if (canMult && Math.random() < 0.5) {
+      const canBet = round.bet < betCap();
+      if (canMult && (!canBet || Math.random() < 0.5)) {
         round.level++;
         say('useFakeMult', { mult: mult() });
       } else {
@@ -1629,7 +1640,11 @@
     if (advLocked()) return false;
     if (round.phase === 'select') { say('betBeforeLock'); Sound.error(); return false; }
     if (round.phase !== 'bet') { say('inPlay'); Sound.error(); return false; }
-    if (chestStage() && round.bet >= 1) { say('chestBetOne'); Sound.error(); return false; }
+    if (mode === 'adv' && round.bet >= betCap()) {
+      say(chestStage() ? 'chestBetOne' : 'betCapMsg', { n: betCap() });
+      Sound.error();
+      return false;
+    }
     if (!hasCredits()) return false;
     takeBall(HOLES.bet);
     round.bet++;
@@ -1639,7 +1654,7 @@
     if (chestStage()) {
       say('chestBetMsg');
     } else if (mode === 'adv') {
-      say(monsterDef() > 0 ? 'betInfoAdvDef' : 'betInfoAdv', { bet: round.bet, mult: mult(), win: computeHit(false).dmg, def: monsterDef() });
+      say(monsterDef() > 0 ? 'betInfoAdvDef' : 'betInfoAdv', { bet: round.bet, cap: betCap(), mult: mult(), win: computeHit(false).dmg, def: monsterDef() });
     } else {
       say('betInfo', { bet: round.bet, mult: mult(), win: raw });
     }
@@ -3300,7 +3315,7 @@
       hintBubble(time, BUTTON.x, BUTTON.y - BUTTON.r - 12, 'above', t('hintLock'), 'end');
     } else if (round.phase === 'bet') {
       const b = HOLES.bet;
-      if (state.credits > 0 && !(chestStage() && round.bet > 0)) hintCircle(time, b.x, b.y, b.r + 5);
+      if (state.credits > 0 && !(mode === 'adv' && round.bet >= betCap())) hintCircle(time, b.x, b.y, b.r + 5);
       if (round.bet === 0) {
         // 大冒險：投珠孔左邊是背包按鈕，提示改放在投珠孔上方
         if (mode === 'adv') hintBubble(time, b.x, b.y - b.r - 10, 'above', t('hintBet'), 'end');
