@@ -112,7 +112,7 @@
   // 每打倒一隻怪物（最後一隻除外）從這裡隨機抽 3 樣選 1 樣，效果持續整個冒險、可以疊加
   const BOONS = {
     balls: { name: { zh: '彈珠補給', en: 'Ball Supply' }, desc: { zh: '持有彈珠數增加 5', en: '+5 balls' } },
-    perBall: { name: { zh: '每珠增傷', en: 'Per-ball Damage' }, desc: { zh: '每顆投珠增加最終傷害 1', en: '+1 final damage per ball bet' } },
+    perBall: { name: { zh: '每珠增傷', en: 'Per-ball Damage' }, desc: { zh: '每顆投珠增加攻擊力 1（扣防禦前）', en: '+1 attack per ball bet (before DEF)' } },
     multPct: { name: { zh: '倍率強化', en: 'Multiplier Up' }, desc: { zh: '倍率孔的倍率增加 1%', en: 'Multiplier +1%' } },
     pierce: { name: { zh: '穿透傷害', en: 'Piercing' }, desc: { zh: '每次攻擊追加 1 點忽視防禦的傷害', en: '+1 damage that ignores DEF on every hit' } },
     weight: { name: { zh: '加重彈珠', en: 'Heavier Marble' }, desc: { zh: '彈珠重量增加 0.1（撞釘子彈得比較低、比較不會亂跳）', en: 'Marble weight +0.1 (bounces lower and jitters less)' } },
@@ -1172,11 +1172,11 @@
   // 攻擊力扣掉防禦才是實際傷害
   const dmgAfterDef = raw => Math.max(0, raw - monsterDef());
   // 加上過關獎勵、暴擊後的傷害：
-  // 攻擊 = 倍率 ×（1 + 倍率強化%）× 投珠數 × 基本傷害 → 扣防禦 → + 每珠增傷 → × 暴擊 → + 穿透傷害
+  // 攻擊 = 倍率 ×（1 + 倍率強化%）× 投珠數 × 基本傷害 + 每珠增傷 × 投珠數 → 扣防禦 → × 暴擊 → + 穿透傷害
   function computeHit(crit) {
     const def = monsterDef();
-    const raw = Math.round(mult() * (1 + 0.01 * boon('multPct')) * round.bet * (1 + round.heavy));
-    let dmg = Math.max(0, raw - def) + boon('perBall') * round.bet;
+    const raw = Math.round(mult() * (1 + 0.01 * boon('multPct')) * round.bet * (1 + round.heavy)) + boon('perBall') * round.bet;
+    let dmg = Math.max(0, raw - def);
     if (crit) dmg = Math.round(dmg * critMult());
     dmg += boon('pierce');
     return { raw, def, dmg };
