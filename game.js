@@ -12,8 +12,8 @@
     classic: { mults: [2, 4, 6, 8, 10], cost: 2 },
     adv: { mults: [1, 2, 3, 4, 5, 6, 7], cost: 1 },
   };
-  // 寶箱關卡：燈全亮、不加倍，也不能投倍率孔
-  const CHEST_RULE = { mults: [1], cost: 1 };
+  // 寶箱關卡：燈全亮、不加倍；倍率孔每投 1 顆升一級寶箱（最多 3 顆）
+  const CHEST_RULE = { mults: [1, 1, 1, 1], cost: 1 };
   const multRule = () => chestStage() ? CHEST_RULE : MULT_RULES[mode];
   const litFor = level => multRule().mults.length - level;
   const COIN_BALLS = 20;      // 投一次幣換幾顆彈珠
@@ -34,7 +34,7 @@
     { name: { zh: '史詩', en: 'Epic' }, color: '#c084fc', led: 'purple' },
     { name: { zh: '傳說', en: 'Legendary' }, color: '#fb923c', led: 'orange' },
   ];
-  // 寶箱關卡固定有幾排白 / 藍 / 紫 / 橘燈（其餘都是白燈）
+  // 寶箱投 1 / 2 / 3 顆倍率珠時，累加幾排藍 / 紫 / 橘燈（其餘都是白燈）
   const CHEST_LANES = [0, 3, 2, 1];
   // when：pre = 定燈前、post = 定燈後（發射前）、both = 兩者都可
   const ITEMS = {
@@ -96,7 +96,7 @@
       tier: 3, when: 'both',
       name: { zh: '柑仔店老闆的鑰匙', en: 'The Shopkeeper\'s Key' },
       quote: { zh: '好像可以開啟某個重要的鎖。', en: 'Looks like it opens something important.' },
-      effect: { zh: '拿回這次闖關已失去的彈珠（目前 {n} 顆）', en: 'Get back the balls lost this run (now {n})' },
+      effect: { zh: '拿回這一關已失去的彈珠（目前 {n} 顆）', en: 'Get back the balls lost in this stage (now {n})' },
     },
     shake: {
       tier: 3, when: 'post',
@@ -116,8 +116,8 @@
     perBall: { name: { zh: '每珠增傷', en: 'Per-ball Damage' }, desc: { zh: '每顆投珠增加攻擊力 1（扣防禦前）', en: '+1 attack per ball bet (before DEF)' } },
     multPct: { name: { zh: '倍率強化', en: 'Multiplier Up' }, desc: { zh: '倍率孔的倍率增加 1%', en: 'Multiplier +1%' } },
     pierce: { name: { zh: '穿透傷害', en: 'Piercing' }, desc: { zh: '每次攻擊追加 1 點忽視防禦的傷害', en: '+1 damage that ignores DEF on every hit' } },
-    weight: { name: { zh: '加重彈珠', en: 'Heavier Marble' }, desc: { zh: '彈珠重量增加 0.1（撞釘子彈得比較低、比較不會亂跳）', en: 'Marble weight +0.1 (bounces lower and jitters less)' } },
-    pin: { name: { zh: '拔釘子', en: 'Fewer Pins' }, desc: { zh: '落珠區的釘子隨機減少 1 根', en: 'Removes 1 random pin from the board' } },
+    weight: { name: { zh: '加重彈珠', en: 'Heavier Marble' }, desc: { zh: '彈珠重量增加 0.2（撞釘子彈得比較低、比較不會亂跳）', en: 'Marble weight +0.2 (bounces lower and jitters less)' } },
+    pin: { name: { zh: '拔釘子', en: 'Fewer Pins' }, desc: { zh: '落珠區的釘子隨機減少 2 根', en: 'Removes 2 random pins from the board' } },
     refill: { name: { zh: '補珠加量', en: 'Bigger Refills' }, desc: { zh: '補珠燈補珠時多得 1 顆', en: '+1 ball on every refill light' } },
     chestRare: { name: { zh: '寶箱升級', en: 'Better Chests' }, desc: { zh: '寶箱關卡的稀有（藍）燈 +1、一般（白）燈 −1', en: 'Chests get +1 rare (blue) lane, −1 common (white) lane' } },
     critRate: { name: { zh: '暴擊率', en: 'Crit Rate' }, desc: { zh: '暴擊機率增加 1%', en: 'Crit chance +1%' } },
@@ -885,8 +885,10 @@
       rewardTitle: '選擇過關獎勵', rewardReroll: '重骰（{n} 顆彈珠）', rewardHave: '已有 ×{n}',
       statusBoons: '過關獎勵',
       chestName: '寶箱',
-      chestAppear: '寶箱出現了！有 3 排藍燈、2 排紫燈、1 排橘燈，按藍色按鈕定燈，再投 1 顆珠打開它',
-      chestNoMult: '寶箱關卡不用投倍率孔，直接按藍色按鈕定燈',
+      chestAppear: '寶箱出現了！投倍率孔提升寶箱等級（最多 3 顆），定燈後投 1 顆珠打開它',
+      chestTierUp: '寶箱升級！{desc}。按藍色按鈕定燈',
+      chestDesc1: '藍燈 3 顆', chestDesc2: '藍燈 3 顆、紫燈 2 顆', chestDesc3: '藍燈 3 顆、紫燈 2 顆、橘燈 1 顆',
+      chestMultMax: '寶箱最多投 3 顆倍率珠',
       lockedChest: '定燈！投 1 顆珠，再拉彈簧打開寶箱',
       chestBetOne: '寶箱關卡只能投 1 顆珠', chestBetMsg: '投珠 1 顆，拉彈簧發射打開寶箱！',
       chestOpenMsg: '打開寶箱！獲得{tier}道具「{item}」',
@@ -983,8 +985,10 @@
       rewardTitle: 'Choose a reward', rewardReroll: 'Reroll ({n} balls)', rewardHave: 'Have ×{n}',
       statusBoons: 'Rewards',
       chestName: 'Treasure Chest',
-      chestAppear: 'A treasure chest! 3 blue, 2 purple and 1 orange lane. Press blue to lock, then bet 1 ball to open it',
-      chestNoMult: 'No multiplier on the chest. Just press blue to lock',
+      chestAppear: 'A treasure chest! Use the multiplier hole to upgrade it (up to 3 balls), lock, then bet 1 ball to open it',
+      chestTierUp: 'Chest upgraded! {desc}. Press blue to lock',
+      chestDesc1: '3 blue', chestDesc2: '3 blue, 2 purple', chestDesc3: '3 blue, 2 purple, 1 orange',
+      chestMultMax: 'The chest takes at most 3 multiplier balls',
       lockedChest: 'Locked! Bet 1 ball, then shoot to open the chest',
       chestBetOne: 'Only 1 ball can be bet on the chest', chestBetMsg: 'Bet 1 ball. Shoot to open the chest!',
       chestOpenMsg: 'Chest opened! Got a {tier} item: {item}',
@@ -1394,6 +1398,7 @@
     adv.pops.length = 0;
     adv.defDown = 0;
     adv.loot = null;
+    adv.lost = 0;           // 老闆的鑰匙只拿回這一關失去的彈珠
     if (keepBalls) {
       if (bonus) state.payoutQueue += CAMPAIGN_BONUS;
     } else {
@@ -1403,7 +1408,6 @@
       tray.length = 0;
       spills.length = 0;
       adv.items = {};
-      adv.lost = 0;
       adv.boons = {};
       adv.rewards = null;
       adv.removedPins.clear();
@@ -1518,7 +1522,7 @@
     adv.boons[id] = boon(id) + 1;
     adv.rewards = null;
     if (id === 'balls') state.payoutQueue += 5;
-    if (id === 'pin') removeRandomPin();
+    if (id === 'pin') { removeRandomPin(); removeRandomPin(); }
     Sound.coin();
     refreshOverlay();
   }
@@ -1784,12 +1788,13 @@
       [slots[i], slots[j]] = [slots[j], slots[i]];
     }
     round.lit = new Set(slots.slice(0, n));
-    // 寶箱：燈全亮，隨機挑 3 排藍燈、2 排紫燈、1 排橘燈
+    // 寶箱：燈全亮；投 1 顆倍率珠出 3 排藍燈、2 顆再加 2 排紫燈、3 顆再加 1 排橘燈
     round.tiers.fill(0);
     if (chestStage()) {
       let k = 0;
       for (let tier = 1; tier < CHEST_LANES.length; tier++) {
-        const n = CHEST_LANES[tier] + (tier === 1 ? boon('chestRare') : 0);   // 寶箱升級：藍燈多、白燈少
+        // 寶箱升級（過關獎勵）：沒投倍率珠也會多出藍燈
+        const n = (tier <= round.level ? CHEST_LANES[tier] : 0) + (tier === 1 ? boon('chestRare') : 0);
         for (let j = 0; j < n && k < SLOT_COUNT; j++) round.tiers[slots[k++]] = tier;
       }
     }
@@ -1937,7 +1942,7 @@
     if (advLocked()) return;
     if (round.phase !== 'select') { say('multLocked'); Sound.error(); return; }
     if (round.level >= multRule().mults.length - 1) {
-      if (chestStage()) say('chestNoMult');
+      if (chestStage()) say('chestMultMax');
       else say('multMax', { max: multRule().mults[multRule().mults.length - 1] });
       Sound.error();
       return;
@@ -1952,7 +1957,8 @@
     Sound.clunk();
     round.level++;
     round.multPaid += multRule().cost;
-    say('multUp', { mult: mult(), lit: litCount() });
+    if (chestStage()) say('chestTierUp', { desc: t('chestDesc' + round.level) });
+    else say('multUp', { mult: mult(), lit: litCount() });
   }
 
   function insertCoin() {
@@ -2055,7 +2061,7 @@
   }
 
   // ===== 物理 =====
-  let ballWeight = 1;     // 加重彈珠：撞到東西時反彈係數、隨機抖動都除以重量
+  let ballWeight = 1;     // 加重彈珠（每層 +0.2）：撞到東西時反彈係數、隨機抖動都除以重量
   function collideCircle(b, px, py, rad, e, jitter = true) {
     e /= ballWeight;
     const dx = b.x - px, dy = b.y - py;
@@ -2086,7 +2092,7 @@
 
   function stepBall(h) {
     const b = ball;
-    ballWeight = mode === 'adv' ? 1 + 0.1 * boon('weight') : 1;
+    ballWeight = mode === 'adv' ? 1 + 0.2 * boon('weight') : 1;
     b.vy += GRAVITY * h;
     const damp = 1 - 0.1 * h;
     b.vx *= damp; b.vy *= damp;
