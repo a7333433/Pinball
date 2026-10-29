@@ -114,14 +114,14 @@
   const BOONS = {
     balls: { name: { zh: '彈珠補給', en: 'Ball Supply' }, desc: { zh: '持有彈珠數增加 5', en: '+5 balls' } },
     perBall: { name: { zh: '每珠增傷', en: 'Per-ball Damage' }, desc: { zh: '每顆投珠增加攻擊力 1（扣防禦前）', en: '+1 attack per ball bet (before DEF)' } },
-    multPct: { name: { zh: '倍率強化', en: 'Multiplier Up' }, desc: { zh: '倍率孔的倍率增加 1%', en: 'Multiplier +1%' } },
-    pierce: { name: { zh: '穿透傷害', en: 'Piercing' }, desc: { zh: '每次攻擊追加 1 點忽視防禦的傷害', en: '+1 damage that ignores DEF on every hit' } },
+    multPct: { name: { zh: '倍率強化', en: 'Multiplier Up' }, desc: { zh: '倍率孔的倍率增加 10%', en: 'Multiplier +10%' } },
+    pierce: { name: { zh: '穿透傷害', en: 'Piercing' }, desc: { zh: '攻擊打破防禦時，追加 1 點忽視防禦的傷害', en: '+1 damage that ignores DEF on hits that break DEF' } },
     weight: { name: { zh: '加重彈珠', en: 'Heavier Marble' }, desc: { zh: '彈珠重量增加 0.2（撞釘子彈得比較低、比較不會亂跳）', en: 'Marble weight +0.2 (bounces lower and jitters less)' } },
     pin: { name: { zh: '拔釘子', en: 'Fewer Pins' }, desc: { zh: '落珠區的釘子隨機減少 2 根', en: 'Removes 2 random pins from the board' } },
-    refill: { name: { zh: '補珠加量', en: 'Bigger Refills' }, desc: { zh: '補珠燈補珠時多得 1 顆', en: '+1 ball on every refill light' } },
+    refill: { name: { zh: '補珠加量', en: 'Bigger Refills' }, desc: { zh: '補珠燈補珠時多得 2 顆', en: '+2 balls on every refill light' } },
     chestRare: { name: { zh: '寶箱升級', en: 'Better Chests' }, desc: { zh: '寶箱關卡的稀有（藍）燈 +1、一般（白）燈 −1', en: 'Chests get +1 rare (blue) lane, −1 common (white) lane' } },
-    critRate: { name: { zh: '暴擊率', en: 'Crit Rate' }, desc: { zh: '暴擊機率增加 1%', en: 'Crit chance +1%' } },
-    critDmg: { name: { zh: '暴擊傷害', en: 'Crit Damage' }, desc: { zh: '暴擊傷害倍率增加 10%', en: 'Crit damage +10%' } },
+    critRate: { name: { zh: '暴擊率', en: 'Crit Rate' }, desc: { zh: '暴擊機率增加 10%', en: 'Crit chance +10%' } },
+    critDmg: { name: { zh: '暴擊傷害', en: 'Crit Damage' }, desc: { zh: '暴擊傷害倍率增加 25%', en: 'Crit damage +25%' } },
     betCap: { name: { zh: '投珠上限', en: 'Bet Limit' }, desc: { zh: '每回合投珠上限 +1', en: '+1 max bet per round' } },
   };
   const BOON_IDS = Object.keys(BOONS);
@@ -1310,8 +1310,8 @@
     removedPins: new Set(),   // 「拔釘子」拔掉的釘子（ALL_PINS 的索引）
   };
   const boon = id => adv.boons[id] || 0;
-  const critRate = () => CRIT_BASE_RATE + 0.01 * boon('critRate');
-  const critMult = () => CRIT_BASE_MULT + 0.1 * boon('critDmg');
+  const critRate = () => Math.min(1, CRIT_BASE_RATE + 0.1 * boon('critRate'));
+  const critMult = () => CRIT_BASE_MULT + 0.25 * boon('critDmg');
   // 每回合投珠上限：寶箱只能投 1 顆
   const betCap = () => chestStage() ? 1 : BET_CAP + boon('betCap');
   const chestStage = () => mode === 'adv' && adv.chest;
@@ -1429,17 +1429,18 @@
   // 攻擊力扣掉防禦才是實際傷害
   const dmgAfterDef = raw => Math.max(0, raw - monsterDef());
   // 加上過關獎勵、暴擊後的傷害：
-  // 攻擊 = 倍率 ×（1 + 倍率強化%）× 投珠數 × 基本傷害 + 每珠增傷 × 投珠數 → 扣防禦 → × 暴擊 → + 穿透傷害
+  // 攻擊 = 倍率 ×（1 + 倍率強化 10%／層）× 投珠數 × 基本傷害 + 每珠增傷 × 投珠數 → 扣防禦 → × 暴擊
+  // → 有打破防禦才加穿透傷害（不然可以每次投 1 顆、只靠穿透慢慢磨死高防禦怪物）
   function computeHit(crit) {
     const def = monsterDef();
-    const raw = Math.round(mult() * (1 + 0.01 * boon('multPct')) * round.bet * (1 + round.heavy)) + boon('perBall') * round.bet;
+    const raw = Math.round(mult() * (1 + 0.1 * boon('multPct')) * round.bet * (1 + round.heavy)) + boon('perBall') * round.bet;
     let dmg = Math.max(0, raw - def);
     if (crit) dmg = Math.round(dmg * critMult());
-    dmg += boon('pierce');
+    if (dmg > 0) dmg += boon('pierce');
     return { raw, def, dmg };
   }
   const hitBonused = () => round.heavy > 0 || boon('multPct') > 0 || boon('perBall') > 0 || boon('pierce') > 0;
-  const refillBonus = () => round.bet * REFILL_MULT + boon('refill');
+  const refillBonus = () => round.bet * REFILL_MULT + 2 * boon('refill');
 
   function damageMonster(px) {
     const crit = Math.random() < critRate();
