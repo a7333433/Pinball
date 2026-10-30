@@ -1223,6 +1223,14 @@
       this.noise(0.15, 0.3);
       this.tone(420, 0.25, 'square', 0.08, 0, 70);
     },
+    crit() {
+      // 暴擊：更重的一擊，接著往上竄的「鏘──」
+      this.noise(0.25, 0.5);
+      this.tone(160, 0.35, 'sawtooth', 0.12, 0, 45);
+      this.tone(1200, 0.14, 'square', 0.07, 0.03, 3200);
+      this.tone(2400, 0.4, 'triangle', 0.09, 0.15);
+      this.tone(3600, 0.3, 'triangle', 0.05, 0.15);
+    },
     floor() {
       // 掉到地上：一聲悶響加一點金屬聲
       if (!this.ctx) return;
@@ -1478,11 +1486,16 @@
     adv.hp = Math.max(0, adv.hp - dmg);
     round.dmg += dmg;
     adv.hitT = 0.5;
-    adv.pops.push({ text: '-' + dmg, t: 0 });
-    popups.push({ x: px, y: SLOT_TOP - 16, text: t(crit ? 'critPop' : 'dmgPop', { d: dmg }), t: 0, color: crit ? '#ffd166' : '#ff6b6b' });
+    adv.pops.push({ text: '-' + dmg, t: 0, color: crit ? '#ffd166' : undefined, big: crit });
+    popups.push({ x: px, y: SLOT_TOP - 16, text: t(crit ? 'critPop' : 'dmgPop', { d: dmg }), t: 0, color: crit ? '#ffd166' : '#ff6b6b', big: crit });
     const key = crit ? 'critMsg' : hitBonused() ? 'hitMsgTotal' : def > 0 ? 'hitMsgDef' : 'hitMsg';
     say(key, { mult: mult(), bet: round.bet, raw, def, dmg });
-    Sound.hit();
+    if (crit) {
+      state.shakeT = Math.max(state.shakeT, 0.25);   // 暴擊時機台晃一下
+      Sound.crit();
+    } else {
+      Sound.hit();
+    }
     if (adv.hp === 0) defeatMonster();
   }
 
@@ -3511,6 +3524,7 @@
       for (const p of adv.pops) {
         ctx.globalAlpha = Math.max(0, 1 - p.t / 1.2);
         ctx.fillStyle = p.color || '#ff5c5c';
+        ctx.font = `bold ${p.big ? 34 : 22}px ${PIXEL_FONT}`;
         ctx.fillText(p.text, cx, S.y + 32 - p.t * 26);
       }
       ctx.globalAlpha = 1;
@@ -3894,11 +3908,29 @@
     for (const p of popups) {
       const a = Math.max(0, 1 - p.t / 1.4);
       ctx.globalAlpha = a;
-      ctx.font = `900 22px ${SANS}`;
       ctx.lineWidth = 4;
       ctx.strokeStyle = '#1a0d05';
       const y = p.y - p.t * 30;
       const x = Math.max(60, Math.min(LANE_X - 50, p.x));
+      if (p.big) {
+        // 暴擊：先放大彈出再縮回，金色發光、橘色粗框
+        const s = p.t < 0.12 ? 1 + 1.2 * (p.t / 0.12) : 1.4 + 0.8 * Math.max(0, 0.3 - p.t);
+        ctx.save();
+        ctx.translate(Math.max(90, Math.min(LANE_X - 80, p.x)), y - 6);
+        ctx.scale(s, s);
+        ctx.rotate(-0.06);
+        ctx.font = `900 24px ${SANS}`;
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = '#7c2d12';
+        ctx.strokeText(p.text, 0, 0);
+        ctx.shadowColor = '#ffb703';
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = Math.floor(p.t * 16) % 2 ? '#fff3b0' : p.color;
+        ctx.fillText(p.text, 0, 0);
+        ctx.restore();
+        continue;
+      }
+      ctx.font = `900 22px ${SANS}`;
       ctx.strokeText(p.text, x, y);
       ctx.fillStyle = p.color;
       ctx.fillText(p.text, x, y);
