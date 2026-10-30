@@ -24,7 +24,7 @@
   // ===== 彈珠台大冒險：怪物 =====
   const ADV_BALLS = 50;       // 每場冒險有幾顆彈珠
   const BET_CAP = 3;          // 大冒險每回合最多投幾顆珠（過關獎勵「投珠上限」可以提高）
-  const REFILL_MULT = 2;      // 補珠燈：中了退回倍率孔的珠，再得到 投珠數 × 2 顆彈珠
+  const REFILL_MULT = 2;      // 補珠燈：每顆落進補珠燈的珠補 2 顆彈珠（這回合第一次中還會退回倍率孔的珠）
   const CAMPAIGN_BONUS = 30;  // 冒險模式：每過一關額外補幾顆彈珠（剩下的彈珠也會帶到下一關）
   // ===== 寶箱與道具 =====
   // 道具等級：白燈一般、藍燈稀有、紫燈史詩、橘燈傳說
@@ -84,7 +84,7 @@
       tier: 2, when: 'both',
       name: { zh: '沙漏', en: 'Hourglass' },
       quote: { zh: '現在放的是正的還是反的？', en: 'Is it right side up or upside down right now?' },
-      effect: { zh: '這回合鋼珠落下後，可以選擇保留結果或返回上回合', en: 'After the ball lands this round, keep the result or rewind the round' },
+      effect: { zh: '這回合的鋼珠全部落下後，先預告每顆的結果，可以選擇保留或返回上回合', en: 'After every ball lands this round, preview the results, then keep them or rewind the round' },
     },
     drink: {
       tier: 2, when: 'post',
@@ -102,7 +102,7 @@
       tier: 3, when: 'post',
       name: { zh: '搖晃機台', en: 'Shake the Machine' },
       quote: { zh: '「你不能那樣做！」── 柑仔店老闆', en: '"You can\'t do that!" — The shopkeeper' },
-      effect: { zh: '把彈珠直接放在檯面上任何地方，讓它從那裡落下', en: 'Drop the ball anywhere on the board' },
+      effect: { zh: '把 1 顆彈珠直接放在檯面上任何地方，讓它從那裡落下（其他的珠照常發射）', en: 'Drop 1 ball anywhere on the board (the rest are shot as usual)' },
     },
   };
   const ITEM_IDS = Object.keys(ITEMS);
@@ -334,8 +334,9 @@
   CHEST.laugh = CHEST.map;
 
   // 12×12 像素圖：'.' 透明，其他字元對應 pal 的顏色
-  // 實際傷害 = 倍率 × 投珠數 − 防禦（最少 0）；每回合最多投 BET_CAP 顆，所以前期沒辦法一發打死
-  // （HP 最低 24，隨機 −10% 後仍高於 ×7 投 3 顆的 21 點）
+  // 投幾顆珠就一次發射幾顆，每顆各自結算：實際傷害 = 倍率 − 防禦（最少 0）
+  // 每回合最多投 BET_CAP 顆，前期沒辦法一發打死
+  // TODO：改成多顆發射後還沒重新平衡；以下是舊版（倍率 × 投珠數 − 防禦）的模擬結果
   // 數值依冒險模式模擬（14 關、起始 50 顆、每關補 30 顆、有過關獎勵、玩家想快點打完）調整：
   // 每關過關率約 100% → 85%，全破約 25%（不計道具），每關平均打 6～12 回合
   const MONSTERS = [
@@ -830,8 +831,8 @@
       betBeforeLock: '燈還在閃，先按藍色按鈕定燈才能投珠',
       inPlay: '鋼珠已發射，請等這一局結束',
       betInfo: '投珠 {bet} 顆 × {mult} 倍，中了得 {win} 顆',
-      betInfoAdv: '投珠 {bet}/{cap} 顆 × {mult} 倍，中了造成 {win} 點傷害',
-      betInfoAdvDef: '投珠 {bet}/{cap} 顆 × {mult} 倍，扣掉防禦 {def}，中了造成 {win} 點傷害',
+      betInfoAdv: '投珠 {bet}/{cap} 顆，發射時一次射出 {bet} 顆；每顆 {mult} 倍，中了造成 {win} 點傷害',
+      betInfoAdvDef: '投珠 {bet}/{cap} 顆，發射時一次射出 {bet} 顆；每顆 {mult} 倍扣掉防禦 {def}，中了造成 {win} 點傷害',
       betCapMsg: '每回合最多投 {n} 顆珠（過關獎勵可以提高上限）', itemBetCap: '投珠已經到上限了',
       multLocked: '燈已經定了，這一局不能再投倍率孔',
       multMax: '倍率最高 {max} 倍',
@@ -845,7 +846,7 @@
       rolledBack: '力道不夠，鋼珠滾回來了，再按一次發射',
       lockFirst: '先按藍色按鈕定燈，再投珠發射',
       betFirst: '請先投珠再按發射鈕',
-      fired: '發射！',
+      fired: '發射！', firedN: '發射！{n} 顆鋼珠一起出發',
       moreBalls: '另有 {n} 顆',
       hintMult: '加倍', hintLock: '定燈', hintBet: '投珠', hintPull: '拉桿發射',
       cvBet: '投珠', cvBalls: '顆', cvLit: '亮{n}燈', cvMultHole: '倍率孔', cvBetHole: '投珠孔', cvCoinSlot: '投幣口',
@@ -870,10 +871,13 @@
       advWinTitle: '勝利！', advWinText: '打倒了{name}，還剩 {left} 顆彈珠。', advAgain: '挑戰下一隻',
       advLoseTitle: '落敗…', advLoseText: '彈珠用完了，{name}還剩 {hp} HP。', advRetry: '再試一次',
       advAppear: '野生的{name}出現了！HP {hp}，防禦 {def}',
-      hitMsgDef: '命中！{mult} 倍 × {bet} 顆 = {raw}，扣掉防禦 {def}，造成 {dmg} 點傷害',
+      hitMsgDef: '命中！{mult} 倍扣掉防禦 {def}，造成 {dmg} 點傷害',
       blockMsg: '被擋下了！{raw} 點攻擊打不破防禦 {def}，造成 0 傷害', blockPop: '擋下！', blockScreen: '0',
-      hitMsg: '命中！{mult} 倍 × {bet} 顆，造成 {dmg} 點傷害',
-      lockedAdv: '定燈！亮 {lit} 顆紅燈，綠燈是補珠燈。往投珠孔投珠，再拉彈簧發射',
+      hitMsg: '命中！{mult} 倍，造成 {dmg} 點傷害',
+      lockedAdv: '定燈！亮 {lit} 顆紅燈，綠燈是補珠燈。往投珠孔投珠，投幾顆就一次發射幾顆',
+      roundSumDmg: '這回合 {n} 顆珠打中 {hit} 顆，共造成 {dmg} 點傷害',
+      roundSumGain: '這回合 {n} 顆珠打中 {hit} 顆，補回 {gain} 顆彈珠',
+      roundSumBoth: '這回合 {n} 顆珠打中 {hit} 顆，共造成 {dmg} 點傷害、補回 {gain} 顆彈珠',
       refillMsg: '命中補珠燈！補回 {n} 顆彈珠', refillPop: '+{n} 顆',
       refillMsgMult: '命中補珠燈！退回倍率孔 {refund} 顆，再補 {bonus} 顆，共 {n} 顆',
       advMissMsg: '沒打中！{name}在嘲笑你', advWinMsg: '打倒了{name}！', advLoseMsg: '彈珠用完了…',
@@ -911,11 +915,13 @@
       useDrink: '嘶～～～ 紅燈全部變成補珠燈了！', useKey: '用老闆的鑰匙打開珠箱，拿回 {n} 顆彈珠！',
       useShake: '搖晃機台！點檯面上任何地方放下彈珠', shakeWhere: '點檯面上（釘子區）放下彈珠',
       shakeHint: '點檯面放珠', shakePlaced: '「你不能那樣做！」彈珠放下去了',
+      shakePlacedMore: '「你不能那樣做！」彈珠放下去了，剩下 {n} 顆拉彈簧發射',
       outUseItem: '彈珠用完了！背包裡還有能用的道具',
       hgTitle: '沙漏', hgKeep: '保留結果', hgRewindBtn: '返回上回合',
       hgHit: '鋼珠落進亮燈的那一排，將造成 {dmg} 點傷害。',
       hgBlock: '鋼珠落進亮燈的那一排，但 {raw} 點攻擊打不破防禦 {def}，造成 0 傷害。',
       hgRefill: '鋼珠落進補珠燈，將補回 {n} 顆彈珠。', hgMiss: '鋼珠沒落在亮燈的那一排。',
+      hgOut: '鋼珠掉出機台了。', hgBall: '第 {i} 顆：{text}',
       hgAsk: '要保留這個結果，還是返回這回合開始前？返回會退回這回合投的彈珠，用掉的道具不會退還。',
       hgRewind: '時間倒轉！退回這回合投的 {n} 顆彈珠',
     },
@@ -930,8 +936,8 @@
       betBeforeLock: 'Press blue to lock before betting',
       inPlay: 'Ball in play. Wait for the result',
       betInfo: 'Bet {bet} × {mult}: win pays {win}',
-      betInfoAdv: 'Bet {bet}/{cap} × {mult}: a hit deals {win} damage',
-      betInfoAdvDef: 'Bet {bet}/{cap} × {mult} − DEF {def}: a hit deals {win} damage',
+      betInfoAdv: 'Bet {bet}/{cap}: {bet} balls fire together. ×{mult} each, a hit deals {win} damage',
+      betInfoAdvDef: 'Bet {bet}/{cap}: {bet} balls fire together. ×{mult} − DEF {def} each, a hit deals {win} damage',
       betCapMsg: 'You can bet at most {n} balls per round (rewards can raise this)', itemBetCap: 'Your bet is already at the limit',
       multLocked: 'Locked. No more multiplier this round',
       multMax: 'Max multiplier is ×{max}',
@@ -945,7 +951,7 @@
       rolledBack: 'Too weak, ball rolled back. Shoot again',
       lockFirst: 'Press blue to lock first',
       betFirst: 'Bet first, then shoot',
-      fired: 'Fire!',
+      fired: 'Fire!', firedN: 'Fire! {n} balls are on their way',
       moreBalls: '+{n} more',
       hintMult: 'Multiply', hintLock: 'Lock', hintBet: 'Bet', hintPull: 'Pull to shoot',
       cvBet: 'BET', cvBalls: 'balls', cvLit: '{n} lit', cvMultHole: 'MULTIPLY', cvBetHole: 'BET', cvCoinSlot: 'COIN',
@@ -970,10 +976,13 @@
       advWinTitle: 'Victory!', advWinText: 'You defeated the {name} with {left} balls left.', advAgain: 'Next monster',
       advLoseTitle: 'Defeated…', advLoseText: 'Out of balls. The {name} still has {hp} HP.', advRetry: 'Try again',
       advAppear: 'A wild {name} appears! HP {hp}, DEF {def}',
-      hitMsgDef: 'Hit! ×{mult} × {bet} = {raw} − DEF {def} = {dmg} damage',
+      hitMsgDef: 'Hit! ×{mult} − DEF {def} = {dmg} damage',
       blockMsg: 'Blocked! {raw} attack can\'t break DEF {def}. 0 damage', blockPop: 'Blocked!', blockScreen: '0',
-      hitMsg: 'Hit! ×{mult} × {bet} = {dmg} damage',
-      lockedAdv: 'Locked! {lit} red lights. Green = refill. Bet, then shoot',
+      hitMsg: 'Hit! ×{mult} = {dmg} damage',
+      lockedAdv: 'Locked! {lit} red lights. Green = refill. Every ball you bet is fired at once',
+      roundSumDmg: '{hit} of {n} balls hit: {dmg} damage in total',
+      roundSumGain: '{hit} of {n} balls hit: {gain} balls back',
+      roundSumBoth: '{hit} of {n} balls hit: {dmg} damage and {gain} balls back',
       refillMsg: 'Refill light! +{n} balls', refillPop: '+{n} balls',
       refillMsgMult: 'Refill light! {refund} multiplier balls back + {bonus} = {n} balls',
       advMissMsg: 'Missed! The {name} laughs', advWinMsg: 'Defeated the {name}!', advLoseMsg: 'Out of balls…',
@@ -1011,11 +1020,13 @@
       useDrink: 'Slurrrp~ Every red light is now a refill light!', useKey: 'The shopkeeper\'s key opened the ball box: {n} balls back!',
       useShake: 'Shake the machine! Tap anywhere on the board to drop the ball', shakeWhere: 'Tap the pin area of the board to drop the ball',
       shakeHint: 'Tap to drop', shakePlaced: '"You can\'t do that!" Ball dropped',
+      shakePlacedMore: '"You can\'t do that!" Ball dropped. Shoot the other {n}',
       outUseItem: 'Out of balls! Your backpack still has items that can help',
       hgTitle: 'Hourglass', hgKeep: 'Keep result', hgRewindBtn: 'Rewind',
       hgHit: 'The ball landed in a lit lane: {dmg} damage.',
       hgBlock: 'The ball landed in a lit lane, but {raw} attack can\'t break DEF {def}: 0 damage.',
       hgRefill: 'The ball landed on a refill light: {n} balls back.', hgMiss: 'The ball missed the lit lanes.',
+      hgOut: 'The ball fell out of the machine.', hgBall: 'Ball {i}: {text}',
       hgAsk: 'Keep this result, or rewind to the start of the round? Rewinding returns the balls you put in this round; used items are not returned.',
       hgRewind: 'Time rewinds! {n} balls returned',
     },
@@ -1260,9 +1271,19 @@
     heavy: 0,             // 沉重彈珠：每顆珠的基本傷害多幾點
     hourglass: false,     // 沙漏：落點後可以選擇保留或返回
     placing: false,       // 搖晃機台：等玩家點檯面放珠
-    pendingSlot: -1,
+    landed: [],           // 這回合每顆鋼珠落在哪一排（-1 是掉出機台）
+    launched: 0,          // 這回合已經發射（或放下）幾顆
+    burst: 0,             // 大冒險連發：還有幾顆要自動接著發射
+    burstT: 0,
+    burstP: 0,            // 連發用的彈簧力道
+    hits: 0,              // 這回合打中攻擊燈幾顆、造成多少傷害、補回幾顆（結算訊息用）
+    dmg: 0,
+    gain: 0,
+    refunded: false,      // 補珠燈退回倍率珠：一回合只退一次
   };
-  let ball = null;        // 機台內那顆發射用的鋼珠
+  const balls = [];       // 機台內的鋼珠：大冒險投幾顆就一次發射幾顆，其他時候只有一顆
+  const restBall = () => ({ x: PLUNGER_X, y: SHOOTER_FLOOR - BALL_R - 1, vx: 0, vy: 0, still: 0, fired: false });
+  const atShooter = b => b.x > LANE_X && b.y > SHOOTER_FLOOR - 30;
   const tray = [];        // 托盤裡看得到的彈珠
   const tweens = [];      // 投珠時飛進洞裡的動畫
   const popups = [];
@@ -1424,23 +1445,23 @@
 
   // 鹽酸會把防禦往下降
   const monsterDef = () => adv.monster ? Math.max(0, adv.monster.def - adv.defDown) : 0;
-  // 攻擊力 = 倍率 × 投珠數 × 每顆的基本傷害（平常 1，沉重彈珠每用一次 +1）
+  // 經典模式得珠 = 倍率 × 投珠數 × 每顆的基本傷害（平常 1，沉重彈珠每用一次 +1）
   const attackRaw = () => mult() * round.bet * (1 + round.heavy);
   // 攻擊力扣掉防禦才是實際傷害
   const dmgAfterDef = raw => Math.max(0, raw - monsterDef());
-  // 加上過關獎勵、暴擊後的傷害：
-  // 攻擊 = 倍率 ×（1 + 倍率強化 10%／層）× 投珠數 × 基本傷害 + 每珠增傷 × 投珠數 → 扣防禦 → × 暴擊
+  // 大冒險每顆珠各自計算，加上過關獎勵、暴擊後的傷害：
+  // 攻擊 = 倍率 ×（1 + 倍率強化 10%／層）× 基本傷害 + 每珠增傷 → 扣防禦 → × 暴擊
   // → 有打破防禦才加穿透傷害（不然可以每次投 1 顆、只靠穿透慢慢磨死高防禦怪物）
   function computeHit(crit) {
     const def = monsterDef();
-    const raw = Math.round(mult() * (1 + 0.1 * boon('multPct')) * round.bet * (1 + round.heavy)) + boon('perBall') * round.bet;
+    const raw = Math.round(mult() * (1 + 0.1 * boon('multPct')) * (1 + round.heavy)) + boon('perBall');
     let dmg = Math.max(0, raw - def);
     if (crit) dmg = Math.round(dmg * critMult());
     if (dmg > 0) dmg += boon('pierce');
     return { raw, def, dmg };
   }
   const hitBonused = () => round.heavy > 0 || boon('multPct') > 0 || boon('perBall') > 0 || boon('pierce') > 0;
-  const refillBonus = () => round.bet * REFILL_MULT + 2 * boon('refill');
+  const refillBonus = () => REFILL_MULT + 2 * boon('refill');   // 每顆珠
 
   function damageMonster(px) {
     const crit = Math.random() < critRate();
@@ -1457,6 +1478,7 @@
       return;
     }
     adv.hp = Math.max(0, adv.hp - dmg);
+    round.dmg += dmg;
     adv.hitT = 0.5;
     adv.pops.push({ text: '-' + dmg, t: 0 });
     popups.push({ x: px, y: SLOT_TOP - 16, text: t(crit ? 'critPop' : 'dmgPop', { d: dmg }), t: 0, color: crit ? '#ffd166' : '#ff6b6b' });
@@ -1701,10 +1723,16 @@
   function placeBall(p) {
     if (!inPlaceZone(p)) { say('shakeWhere'); Sound.error(); return; }
     round.placing = false;
-    ball = { x: p.x, y: p.y, vx: 0, vy: 0, still: 0 };
+    // 拿發射口那顆來放，剩下的珠還是要拉彈簧發射
+    const i = balls.findIndex(atShooter);
+    if (i >= 0) balls.splice(i, 1);
+    balls.push({ x: p.x, y: p.y, vx: 0, vy: 0, still: 0, fired: true });
+    round.launched++;
+    const left = shots() - round.launched;
+    if (left > 0) balls.push(restBall());
     round.phase = 'flying';
     state.shakeT = 0.3;
-    say('shakePlaced');
+    say(left > 0 ? 'shakePlacedMore' : 'shakePlaced', { n: left });
     Sound.clunk();
   }
 
@@ -1771,7 +1799,7 @@
     spills.length = 0;
     popups.length = 0;
     rebuildTray();
-    ball = null;
+    balls.length = 0;
     newRound();
     applyMode();
   }
@@ -1779,8 +1807,12 @@
   const mult = () => multRule().mults[round.level];
 
   function ballAtShooter() {
-    return ball && ball.x > LANE_X && ball.y > SHOOTER_FLOOR - 30;
+    return balls.some(atShooter);
   }
+
+  // 這回合要發射幾顆：大冒險（寶箱除外）投幾顆就一次發射幾顆，其他時候一顆
+  const multiBall = () => mode === 'adv' && !chestStage();
+  const shots = () => multiBall() ? Math.max(1, round.bet) : 1;
 
   function rollLit(n) {
     const slots = [...Array(SLOT_COUNT).keys()];
@@ -1816,10 +1848,13 @@
     round.betPaid = round.multPaid = 0;
     round.extraLit = round.extraRefill = round.heavy = 0;
     round.hourglass = round.placing = false;
-    round.pendingSlot = -1;
+    round.landed = [];
+    round.launched = round.burst = 0;
+    round.hits = round.dmg = round.gain = 0;
+    round.refunded = false;
     adv.rescueSaid = false;
     rollLit(litCount());
-    if (!ball) ball = { x: PLUNGER_X, y: SHOOTER_FLOOR - BALL_R - 1, vx: 0, vy: 0, still: 0 };
+    if (!balls.length) balls.push(restBall());
     if (mode === 'adv') {
       if (adv.status === 'playing') {
         say(state.credits > 0 || state.payoutQueue > 0 ? 'selectHint' : 'advLoseMsg');
@@ -1972,19 +2007,81 @@
     if (round.phase === 'select') say('selectHint');
   }
 
-  function land(slot) {
-    ball = null;
-    round.landSlot = slot;
-    round.resetT = 1.6;
-    // 沙漏：先讓玩家看結果，再決定保留還是返回
-    if (mode === 'adv' && round.hourglass && !adv.chest) {
-      round.phase = 'choose';
-      round.pendingSlot = slot;
-      Sound.lock();
-      openChoice(slot);
+  // 一顆鋼珠落進第 slot 排（-1 是掉出機台）
+  function land(b, slot) {
+    balls.splice(balls.indexOf(b), 1);
+    round.landed.push(slot);
+    if (!multiBall()) {
+      round.landSlot = slot;
+      round.resetT = 1.6;
+      resolveLanding(slot);
       return;
     }
-    resolveLanding(slot);
+    // 大冒險：每顆落下就結算（用了沙漏就等全部落下再一起預告）
+    if (!round.hourglass && slot >= 0 && adv.status === 'playing') resolveBall(slot);
+    if (adv.status === 'won') { endEarly(); return; }
+    if (round.launched < shots() || balls.length) return;    // 還有珠沒發射或還在檯面上
+    if (round.hourglass) {
+      round.phase = 'choose';
+      Sound.lock();
+      openChoice();
+      return;
+    }
+    finishRound();
+  }
+
+  // 大冒險一顆珠的結果：攻擊燈造成傷害、補珠燈補珠、其他沒中
+  function resolveBall(slot) {
+    const px = B.left + (slot + 0.5) * SLOT_W;
+    if (round.lit.has(slot)) {
+      round.hits++;
+      damageMonster(px);
+    } else if (round.refills.has(slot)) {
+      // 補珠燈：每顆補 2 顆；這回合第一次中還會退回投進倍率孔的珠
+      const refund = round.refunded ? 0 : round.multPaid, bonus = refillBonus(), n = refund + bonus;
+      round.refunded = true;
+      round.hits++;
+      round.gain += n;
+      state.payoutQueue += n;
+      adv.lost = Math.max(0, adv.lost - n);
+      popups.push({ x: px, y: SLOT_TOP - 16, text: t('refillPop', { n }), t: 0, color: '#4ade80' });
+      say(refund ? 'refillMsgMult' : 'refillMsg', { n, refund, bonus });
+      Sound.coin();
+    } else {
+      popups.push({ x: px, y: SLOT_TOP - 16, text: t('losePop'), t: 0, color: '#cbd5e1' });
+      if (shots() === 1) say('advMissMsg', { name: monsterName() });
+      Sound.thud();
+    }
+  }
+
+  // 怪物在這回合中途被打倒：檯面上剩下的珠收掉，還沒發射的退回
+  function endEarly() {
+    const unfired = Math.min(round.betPaid, shots() - round.launched);
+    if (unfired > 0) state.payoutQueue += unfired;
+    balls.length = 0;
+    round.burst = 0;
+    round.phase = 'win';
+    round.resetT = 1.6;
+  }
+
+  // 大冒險這回合的珠全部落下：顯示總結
+  function finishRound() {
+    round.resetT = 1.6;
+    const anyHit = round.landed.some(s => round.lit.has(s) || round.refills.has(s));
+    round.phase = anyHit ? 'win' : 'lose';
+    if (!anyHit) {
+      state.lastWin = 0;
+      adv.laughT = 1.3;
+      setTimeout(() => Sound.snicker(), 250);
+      say('advMissMsg', { name: monsterName() });
+      Sound.lose();
+      return;
+    }
+    if (shots() > 1) {
+      const key = round.dmg && round.gain ? 'roundSumBoth' : round.gain ? 'roundSumGain' : 'roundSumDmg';
+      say(key, { n: shots(), hit: round.hits, dmg: round.dmg, gain: round.gain });
+    }
+    if (round.dmg || round.gain) Sound.win();
   }
 
   function resolveLanding(slot) {
@@ -2034,20 +2131,31 @@
     }
   }
 
-  // 沙漏：預告這次落點的結果
-  function landingPreview(slot) {
-    if (round.lit.has(slot)) {
-      const { raw, def, dmg } = computeHit(false);
-      return dmg > 0 ? t('hgHit', { dmg }) : t('hgBlock', { raw, def });
-    }
-    if (round.refills.has(slot)) return t('hgRefill', { n: round.multPaid + refillBonus() });
-    return t('hgMiss');
+  // 沙漏：預告這回合每顆珠的落點結果
+  function landingPreview() {
+    let refund = round.multPaid;
+    const lines = round.landed.map((slot, i) => {
+      let text;
+      if (round.lit.has(slot)) {
+        const { raw, def, dmg } = computeHit(false);
+        text = dmg > 0 ? t('hgHit', { dmg }) : t('hgBlock', { raw, def });
+      } else if (round.refills.has(slot)) {
+        text = t('hgRefill', { n: refund + refillBonus() });
+        refund = 0;
+      } else {
+        text = t(slot < 0 ? 'hgOut' : 'hgMiss');
+      }
+      return round.landed.length > 1 ? t('hgBall', { i: i + 1, text }) : text;
+    });
+    return lines.join('\n');
   }
 
   function chooseHourglass(keep) {
     if (round.phase !== 'choose') return;
     if (keep) {
-      resolveLanding(round.pendingSlot);
+      for (const slot of round.landed) if (slot >= 0 && adv.status === 'playing') resolveBall(slot);
+      if (adv.status === 'won') endEarly();
+      else finishRound();
       return;
     }
     // 返回上回合：退回這局投的珠（用掉的道具不退）
@@ -2057,6 +2165,7 @@
     round.phase = 'rewind';
     round.resetT = 0.6;
     round.landSlot = -1;
+    round.landed = [];
     say('hgRewind', { n });
     Sound.coin();
   }
@@ -2091,8 +2200,28 @@
     return collideCircle(b, s.ax + dx * t, s.ay + dy * t, s.rad, 0.4);
   }
 
-  function stepBall(h) {
-    const b = ball;
+  // 鋼珠互撞（大冒險同時好幾顆在檯面上）
+  function collideBalls() {
+    const min = BALL_R * 2;
+    for (let i = 0; i < balls.length; i++) {
+      for (let j = i + 1; j < balls.length; j++) {
+        const a = balls[i], b = balls[j];
+        const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+        if (d2 >= min * min || d2 === 0) continue;
+        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, push = (min - d) / 2;
+        a.x -= nx * push; a.y -= ny * push;
+        b.x += nx * push; b.y += ny * push;
+        const vn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+        if (vn >= 0) continue;
+        const k = -(1 + 0.8) * vn / 2;
+        a.vx -= k * nx; a.vy -= k * ny;
+        b.vx += k * nx; b.vy += k * ny;
+        if (-vn > 60) Sound.clink(-vn * 0.5);
+      }
+    }
+  }
+
+  function stepBall(b, h) {
     ballWeight = mode === 'adv' ? 1 + 0.2 * boon('weight') : 1;
     b.vy += GRAVITY * h;
     const damp = 1 - 0.1 * h;
@@ -2127,9 +2256,10 @@
     if (impact) Sound.clink(impact);
 
     if (b.x < LANE_X && b.y > SLOT_FLOOR - BALL_R - 2.5) {
-      land(Math.max(0, Math.min(SLOT_COUNT - 1, Math.floor((b.x - B.left) / SLOT_W))));
+      land(b, Math.max(0, Math.min(SLOT_COUNT - 1, Math.floor((b.x - B.left) / SLOT_W))));
     } else if (b.y > H || b.x < 0 || b.x > W) {
-      ball = null;
+      if (multiBall() && b.fired) { land(b, -1); return; }
+      balls.splice(balls.indexOf(b), 1);
       newRound();
     }
   }
@@ -2195,16 +2325,35 @@
     if (state.charging) state.power = Math.min(1, state.power + dt / 1.1);
     state.floorY = SHOOTER_FLOOR + state.power * SPRING_TRAVEL;
 
+    // 大冒險連發：拉一次彈簧，剩下的珠用同樣力道一顆接一顆發射
+    if (round.burst > 0) {
+      round.burstT -= dt;
+      if (round.burstT <= 0) {
+        const b = restBall();
+        b.vy = -(600 + 640 * round.burstP) * (0.98 + Math.random() * 0.04);
+        b.fired = true;
+        balls.push(b);
+        round.launched++;
+        round.burst--;
+        round.burstT = BURST_GAP;
+        Sound.spring(round.burstP);
+      }
+    }
+
     const h = dt / SUBSTEPS;
-    for (let s = 0; s < SUBSTEPS && ball; s++) stepBall(h);
+    for (let s = 0; s < SUBSTEPS && balls.length; s++) {
+      for (const b of [...balls]) if (balls.includes(b)) stepBall(b, h);
+      if (balls.length > 1) collideBalls();
+    }
 
     // 卡住偵測：太久沒動就輕推一下
-    if (ball && !ballAtShooter()) {
-      if (Math.hypot(ball.vx, ball.vy) < 10) ball.still += dt; else ball.still = 0;
-      if (ball.still > 1.2) {
-        ball.vx += (Math.random() - 0.5) * 160;
-        ball.vy -= 100;
-        ball.still = 0;
+    for (const b of balls) {
+      if (atShooter(b)) continue;
+      if (Math.hypot(b.vx, b.vy) < 10) b.still += dt; else b.still = 0;
+      if (b.still > 1.2) {
+        b.vx += (Math.random() - 0.5) * 160;
+        b.vy -= 100;
+        b.still = 0;
       }
     }
 
@@ -2305,14 +2454,28 @@
     state.power = 0;
     state.floorY = SHOOTER_FLOOR;
     if (ballAtShooter()) {
-      ball.y = Math.min(ball.y, SHOOTER_FLOOR - BALL_R);
-      ball.vy = -(600 + 640 * p);
-      ball.vx = 0;
+      let n = 0;
+      for (const b of balls) {
+        if (!atShooter(b)) continue;
+        b.y = Math.min(b.y, SHOOTER_FLOOR - BALL_R);
+        b.vy = -(600 + 640 * p);
+        b.vx = 0;
+        if (!b.fired) { b.fired = true; round.launched++; }
+        n++;
+      }
       round.phase = 'flying';
+      // 大冒險：投幾顆就發射幾顆，剩下的接著自動發射
+      if (multiBall() && round.launched < shots()) {
+        round.burst = shots() - round.launched;
+        round.burstP = p;
+        round.burstT = BURST_GAP;
+      }
+      n += round.burst;
       Sound.spring(p);
-      say('fired');
+      say(n > 1 ? 'firedN' : 'fired', { n });
     }
   }
+  const BURST_GAP = 0.2;   // 連發每顆間隔幾秒
 
   // ===== 繪圖 =====
   const canvas = document.getElementById('board');
@@ -3438,17 +3601,21 @@
     if (mode === 'classic') led(ctx, multColX(round.level), 146, 5, true);
     // 檯面每一排的 LED
     const chest = chestStage();
+    // 落到珠的那幾排：中了閃燈、沒中蓋一層淡白
+    const showLand = round.phase === 'win' || round.phase === 'lose' || round.phase === 'flying';
+    const landed = new Set(showLand ? round.landed : []);
     for (const i of round.lit) {
-      const on = round.phase === 'win' && i === round.landSlot ? blink : true;
+      const on = landed.has(i) ? blink : true;
       led(ctx, B.left + (i + 0.5) * SLOT_W, LED_Y, 6, on, chest ? TIERS[round.tiers[i]].led : 'red');
     }
     for (const i of round.refills) {
-      const on = round.phase === 'win' && i === round.landSlot ? blink : true;
+      const on = landed.has(i) ? blink : true;
       led(ctx, B.left + (i + 0.5) * SLOT_W, LED_Y, 6, on, 'green');
     }
-    if (round.phase === 'lose' && round.landSlot >= 0) {
-      ctx.fillStyle = 'rgba(255,255,255,0.08)';
-      ctx.fillRect(B.left + round.landSlot * SLOT_W + 4, SLOT_TOP, SLOT_W - 8, SLOT_FLOOR - SLOT_TOP);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    for (const i of landed) {
+      if (i < 0 || round.lit.has(i) || round.refills.has(i)) continue;
+      ctx.fillRect(B.left + i * SLOT_W + 4, SLOT_TOP, SLOT_W - 8, SLOT_FLOOR - SLOT_TOP);
     }
   }
 
@@ -3823,9 +3990,9 @@
     drawLeds(t);
     if (mode === 'adv') drawAdvScreen(t);
     drawShooter();
-    if (ball) {
-      drawShadow(ball.x + 2.5, ball.y + 3.5, 0.9);
-      drawBall(ball.x, ball.y, sprites.board);
+    for (const b of balls) {
+      drawShadow(b.x + 2.5, b.y + 3.5, 0.9);
+      drawBall(b.x, b.y, sprites.board);
     }
     drawPopups();
     if (mode === 'adv') drawAdvMessage(t);
@@ -4028,10 +4195,10 @@
   }
 
   // 沙漏：落點後跳出選擇
-  function openChoice(slot) {
+  function openChoice() {
     cancelCharge();
     stopBetHold();
-    $('choice-text').textContent = landingPreview(slot);
+    $('choice-text').textContent = landingPreview();
     $('choice-ask').textContent = t('hgAsk');
     choiceDlg.showModal();
   }
