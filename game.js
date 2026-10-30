@@ -2092,7 +2092,7 @@
       const key = round.dmg && round.gain ? 'roundSumBoth' : round.gain ? 'roundSumGain' : 'roundSumDmg';
       say(key, { n: shots(), hit: round.hits, dmg: round.dmg, gain: round.gain });
     }
-    if (round.dmg || round.gain) Sound.win();
+    // 不再播勝利音效：每顆命中時已經各自有音效，勝利音效留給打倒怪物
   }
 
   function resolveLanding(slot) {
