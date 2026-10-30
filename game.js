@@ -1273,9 +1273,6 @@
     placing: false,       // 搖晃機台：等玩家點檯面放珠
     landed: [],           // 這回合每顆鋼珠落在哪一排（-1 是掉出機台）
     launched: 0,          // 這回合已經發射（或放下）幾顆
-    burst: 0,             // 大冒險連發：還有幾顆要自動接著發射
-    burstT: 0,
-    burstP: 0,            // 連發用的彈簧力道
     hits: 0,              // 這回合打中攻擊燈幾顆、造成多少傷害、補回幾顆（結算訊息用）
     dmg: 0,
     gain: 0,
@@ -1283,7 +1280,8 @@
   };
   const balls = [];       // 機台內的鋼珠：大冒險投幾顆就一次發射幾顆，其他時候只有一顆
   const restBall = () => ({ x: PLUNGER_X, y: SHOOTER_FLOOR - BALL_R - 1, vx: 0, vy: 0, still: 0, fired: false });
-  const atShooter = b => b.x > LANE_X && b.y > SHOOTER_FLOOR - 30;
+  // 停在發射軌道下段（可能好幾顆疊在彈簧上），往上飛的不算
+  const atShooter = b => b.x > LANE_X && b.y > SHOOTER_FLOOR - 200 && b.vy > -200;
   const tray = [];        // 托盤裡看得到的彈珠
   const tweens = [];      // 投珠時飛進洞裡的動畫
   const popups = [];
@@ -1652,6 +1650,7 @@
         say('useFakeMult', { mult: mult() });
       } else {
         round.bet++;
+        syncRestBalls();
         say('useFakeBet', { bet: round.bet });
       }
       tweens.push({ x0: CHUTE.x, y0: TRAY.back + 10, x1: HOLES.bet.x, y1: HOLES.bet.y, t: 0, dur: 0.45 });
@@ -1729,7 +1728,7 @@
     balls.push({ x: p.x, y: p.y, vx: 0, vy: 0, still: 0, fired: true });
     round.launched++;
     const left = shots() - round.launched;
-    if (left > 0) balls.push(restBall());
+    syncRestBalls();
     round.phase = 'flying';
     state.shakeT = 0.3;
     say(left > 0 ? 'shakePlacedMore' : 'shakePlaced', { n: left });
@@ -1814,6 +1813,18 @@
   const multiBall = () => mode === 'adv' && !chestStage();
   const shots = () => multiBall() ? Math.max(1, round.bet) : 1;
 
+  // 發射軌道上排好這回合還沒發射的珠：大冒險投幾顆就疊幾顆在彈簧上，其他時候一顆
+  function syncRestBalls() {
+    const want = shots() - round.launched;
+    const rest = balls.filter(b => !b.fired).sort((a, b) => a.y - b.y);   // 由上往下
+    while (rest.length > want) balls.splice(balls.indexOf(rest.shift()), 1);
+    for (let i = rest.length; i < want; i++) {
+      const b = restBall();
+      b.y -= i * BALL_R * 2;
+      balls.push(b);
+    }
+  }
+
   function rollLit(n) {
     const slots = [...Array(SLOT_COUNT).keys()];
     for (let i = slots.length - 1; i > 0; i--) {
@@ -1849,12 +1860,12 @@
     round.extraLit = round.extraRefill = round.heavy = 0;
     round.hourglass = round.placing = false;
     round.landed = [];
-    round.launched = round.burst = 0;
+    round.launched = 0;
     round.hits = round.dmg = round.gain = 0;
     round.refunded = false;
     adv.rescueSaid = false;
     rollLit(litCount());
-    if (!balls.length) balls.push(restBall());
+    syncRestBalls();
     if (mode === 'adv') {
       if (adv.status === 'playing') {
         say(state.credits > 0 || state.payoutQueue > 0 ? 'selectHint' : 'advLoseMsg');
@@ -1936,6 +1947,7 @@
     takeBall(HOLES.bet);
     round.bet++;
     round.betPaid++;
+    syncRestBalls();
     Sound.clunk();
     const raw = attackRaw();
     if (chestStage()) {
@@ -2059,7 +2071,6 @@
     const unfired = Math.min(round.betPaid, shots() - round.launched);
     if (unfired > 0) state.payoutQueue += unfired;
     balls.length = 0;
-    round.burst = 0;
     round.phase = 'win';
     round.resetT = 1.6;
   }
@@ -2325,21 +2336,6 @@
     if (state.charging) state.power = Math.min(1, state.power + dt / 1.1);
     state.floorY = SHOOTER_FLOOR + state.power * SPRING_TRAVEL;
 
-    // 大冒險連發：拉一次彈簧，剩下的珠用同樣力道一顆接一顆發射
-    if (round.burst > 0) {
-      round.burstT -= dt;
-      if (round.burstT <= 0) {
-        const b = restBall();
-        b.vy = -(600 + 640 * round.burstP) * (0.98 + Math.random() * 0.04);
-        b.fired = true;
-        balls.push(b);
-        round.launched++;
-        round.burst--;
-        round.burstT = BURST_GAP;
-        Sound.spring(round.burstP);
-      }
-    }
-
     const h = dt / SUBSTEPS;
     for (let s = 0; s < SUBSTEPS && balls.length; s++) {
       for (const b of [...balls]) if (balls.includes(b)) stepBall(b, h);
@@ -2454,28 +2450,20 @@
     state.power = 0;
     state.floorY = SHOOTER_FLOOR;
     if (ballAtShooter()) {
-      let n = 0;
-      for (const b of balls) {
-        if (!atShooter(b)) continue;
-        b.y = Math.min(b.y, SHOOTER_FLOOR - BALL_R);
-        b.vy = -(600 + 640 * p);
+      // 彈簧上疊著的珠整疊一起射出：上面的最快、越下面稍慢一點，飛出去後才會拉開距離
+      const stack = balls.filter(atShooter).sort((a, b) => b.y - a.y);   // 由下往上
+      const v = 600 + 640 * p, n = stack.length;
+      stack.forEach((b, i) => {
+        b.y = Math.min(b.y, SHOOTER_FLOOR - BALL_R - i * BALL_R * 2);
+        b.vy = -v * (1 - 0.05 * (n - 1 - i));
         b.vx = 0;
         if (!b.fired) { b.fired = true; round.launched++; }
-        n++;
-      }
+      });
       round.phase = 'flying';
-      // 大冒險：投幾顆就發射幾顆，剩下的接著自動發射
-      if (multiBall() && round.launched < shots()) {
-        round.burst = shots() - round.launched;
-        round.burstP = p;
-        round.burstT = BURST_GAP;
-      }
-      n += round.burst;
       Sound.spring(p);
       say(n > 1 ? 'firedN' : 'fired', { n });
     }
   }
-  const BURST_GAP = 0.2;   // 連發每顆間隔幾秒
 
   // ===== 繪圖 =====
   const canvas = document.getElementById('board');
