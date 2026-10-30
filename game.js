@@ -899,14 +899,11 @@
       chestWinTitle: '獲得道具！',
       cvBag: '道具', btnBag: '背包', bagTitle: '背包', bagUse: '使用',
       cvStats: '狀態', btnStats: '狀態', statsTitle: '數值狀態',
-      stSecStage: '關卡', stSecBalls: '彈珠', stSecAttack: '攻擊（每顆珠）', stSecOther: '其他', stSecRound: '這回合',
-      stStage: '關卡', stStageN: '第 {n} 關（共 {total} 關）', stStageChest: '寶箱（第 {n} 關之後）', stFree: '自由挑戰',
-      stMonster: '怪物', stHp: 'HP', stDef: '防禦', stDefAcid: '{def}（鹽酸 −{n}）',
-      stLost: '這一關已失去', stBetCap: '每回合投珠上限', stBonus: '每過一關補',
-      stMultPct: '倍率強化', stPerBall: '每珠增傷', stPierce: '穿透傷害', stHit: '命中傷害（目前倍率）', stHitVal: '攻擊 {raw} − 防禦 {def} = {dmg}',
+      stSecBalls: '彈珠', stSecAttack: '攻擊（每顆珠）', stSecOther: '其他',
+      stBetCap: '每回合投珠上限', stBonus: '每過一關補',
+      stMultPct: '倍率強化', stPerBall: '每珠增傷', stPierce: '穿透傷害',
       stCritRate: '暴擊機率', stCritDmg: '暴擊傷害',
       stRefill: '補珠燈每顆補', stWeight: '彈珠重量', stPins: '已拔掉釘子', stPinsN: '{n} 根', stChest: '寶箱額外藍燈', stChestN: '{n} 排',
-      stBet: '投珠', stMult: '倍率', stLit: '攻擊燈／補珠燈', stLitN: '{lit} 顆／{refill} 顆', stHeavy: '沉重彈珠', stHourglass: '沙漏', stOn: '生效中',
       btnCodex: '寶藏', codexTitle: '寶藏', codexCount: '已取得 {n} / {total} 種', codexBack: '返回',
       bagEmpty: '背包是空的。冒險模式中打開寶箱就能拿到道具。',
       bagNowSelect: '現在：定燈前', bagNowBet: '現在：定燈後、發射前',
@@ -1013,14 +1010,11 @@
       chestWinTitle: 'New item!',
       cvBag: 'ITEMS', btnBag: 'Backpack', bagTitle: 'Backpack', bagUse: 'Use',
       cvStats: 'STATS', btnStats: 'Stats', statsTitle: 'Stats',
-      stSecStage: 'Stage', stSecBalls: 'Balls', stSecAttack: 'Attack (per ball)', stSecOther: 'Other', stSecRound: 'This round',
-      stStage: 'Stage', stStageN: '{n} of {total}', stStageChest: 'Chest (after stage {n})', stFree: 'Free fight',
-      stMonster: 'Monster', stHp: 'HP', stDef: 'DEF', stDefAcid: '{def} (acid −{n})',
-      stLost: 'Lost this stage', stBetCap: 'Max bet per round', stBonus: 'Bonus per stage',
-      stMultPct: 'Multiplier up', stPerBall: 'Per-ball damage', stPierce: 'Piercing', stHit: 'Hit damage (current ×)', stHitVal: '{raw} attack − DEF {def} = {dmg}',
+      stSecBalls: 'Balls', stSecAttack: 'Attack (per ball)', stSecOther: 'Other',
+      stBetCap: 'Max bet per round', stBonus: 'Bonus per stage',
+      stMultPct: 'Multiplier up', stPerBall: 'Per-ball damage', stPierce: 'Piercing',
       stCritRate: 'Crit chance', stCritDmg: 'Crit damage',
       stRefill: 'Refill per ball', stWeight: 'Marble weight', stPins: 'Pins removed', stPinsN: '{n}', stChest: 'Extra blue chest lanes', stChestN: '{n}',
-      stBet: 'Bet', stMult: 'Multiplier', stLit: 'Red / refill lights', stLitN: '{lit} / {refill}', stHeavy: 'Heavy marble', stHourglass: 'Hourglass', stOn: 'Active',
       btnCodex: 'Treasures', codexTitle: 'Treasures', codexCount: 'Found {n} / {total}', codexBack: 'Back',
       bagEmpty: 'Your backpack is empty. Open treasure chests in Adventure to get items.',
       bagNowSelect: 'Now: before locking', bagNowBet: 'Now: after locking, before shooting',
@@ -4367,22 +4361,8 @@
     };
     const pct = x => Math.round(x * 100) + '%';
     const plus = n => (n > 0 ? '+' : '') + n;
-    const playing = adv.monster && adv.status !== 'intro';
-
-    if (playing) {
-      sec('stSecStage');
-      const n = adv.monsterIdx + 1;
-      row('stStage', !adv.campaign ? t('stFree') : adv.chest ? t('stStageChest', { n }) : t('stStageN', { n, total: MONSTERS.length }));
-      if (!adv.chest) {
-        row('stMonster', monsterName());
-        row('stHp', `${adv.hp} / ${adv.maxHp}`);
-        row('stDef', adv.defDown ? t('stDefAcid', { def: monsterDef(), n: adv.defDown }) : monsterDef());
-      }
-    }
 
     sec('stSecBalls');
-    row('statusBalls', t('statusBallsN', { n: state.credits + state.payoutQueue }));
-    if (adv.campaign) row('stLost', t('statusBallsN', { n: adv.lost }));
     row('stBetCap', t('statusBallsN', { n: betCap() }));
     if (adv.campaign) row('stBonus', t('statusBallsN', { n: CAMPAIGN_BONUS }));
 
@@ -4390,10 +4370,6 @@
     row('stMultPct', '+' + 10 * boon('multPct') + '%');
     row('stPerBall', plus(boon('perBall')));
     row('stPierce', plus(boon('pierce')));
-    if (playing && !adv.chest) {
-      const { raw, def, dmg } = computeHit(false);
-      row('stHit', t('stHitVal', { raw, def, dmg }));
-    }
     row('stCritRate', pct(critRate()));
     row('stCritDmg', pct(critMult()));
 
@@ -4402,15 +4378,6 @@
     row('stWeight', '×' + (1 + 0.2 * boon('weight')).toFixed(1));
     row('stPins', t('stPinsN', { n: adv.removedPins.size }));
     row('stChest', t('stChestN', { n: boon('chestRare') }));
-
-    if (playing && !adv.chest) {
-      sec('stSecRound');
-      row('stBet', `${round.bet} / ${betCap()}`);
-      row('stMult', '×' + mult());
-      row('stLit', t('stLitN', { lit: litCount(), refill: round.phase === 'select' ? 1 + round.extraRefill : round.refills.size }));
-      if (round.heavy) row('stHeavy', plus(round.heavy));
-      if (round.hourglass) row('stHourglass', t('stOn'));
-    }
 
     // 道具、過關獎勵：跟過關卡片同樣的小圖示
     const items = ITEM_IDS.filter(id => adv.items[id] > 0).map(id => {
