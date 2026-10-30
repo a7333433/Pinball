@@ -69,6 +69,7 @@
         <button id="bet-btn" class="btn"><span data-i18n="btnBet">投珠孔</span> <kbd>B</kbd></button>
         <button id="fire" class="btn fire"><span data-i18n="btnFire">按住拉彈簧</span> <kbd>Space</kbd></button>
         <button class="btn coin" data-action="coin"><span data-i18n="coin">投幣</span> <kbd>C</kbd></button>
+        <button class="btn stats" data-action="stats"><span data-i18n="btnStats">狀態</span> <kbd>S</kbd></button>
         <button class="btn bag" data-action="bag"><span data-i18n="btnBag">背包</span> <kbd>I</kbd></button>
         <button class="btn treasure" data-action="codex" aria-label="寶藏 / Treasures"><kbd>T</kbd></button>
         <button class="btn" data-action="help"><span data-i18n="howTo">玩法說明</span> <kbd>H</kbd></button>
@@ -115,7 +116,7 @@
         <li>新的冒險開始時，過關獎勵會全部清空。</li>
       </ol>
       <h3>鍵盤</h3>
-      <p class="keys"><kbd>X</kbd> 倍率孔　<kbd>D</kbd> 定燈　<kbd>B</kbd> 投珠孔　<kbd>Space</kbd> 拉彈簧　<kbd>C</kbd> 投幣　<kbd>Q</kbd> 切換模式　<kbd>I</kbd> 背包　<kbd>T</kbd> 寶藏　<kbd>L</kbd> 語言　<kbd>M</kbd> 靜音　<kbd>H</kbd> 說明</p>
+      <p class="keys"><kbd>X</kbd> 倍率孔　<kbd>D</kbd> 定燈　<kbd>B</kbd> 投珠孔　<kbd>Space</kbd> 拉彈簧　<kbd>C</kbd> 投幣　<kbd>Q</kbd> 切換模式　<kbd>S</kbd> 狀態　<kbd>I</kbd> 背包　<kbd>T</kbd> 寶藏　<kbd>L</kbd> 語言　<kbd>M</kbd> 靜音　<kbd>H</kbd> 說明</p>
       <h3>我的紀錄</h3>
       <p class="records">最高分（單局最高得珠）<b data-record="bestWin">0</b>　最多持珠 <b data-record="best">0</b></p>
       <p class="records">大冒險：勝 <b data-record="advWins">0</b> 場　敗 <b data-record="advLosses">0</b> 場</p>
@@ -156,7 +157,7 @@
         <li>Rewards reset when a new adventure starts.</li>
       </ol>
       <h3>Keyboard</h3>
-      <p class="keys"><kbd>X</kbd> Multiply　<kbd>D</kbd> Lock　<kbd>B</kbd> Bet　<kbd>Space</kbd> Pull　<kbd>C</kbd> Coin　<kbd>Q</kbd> Switch mode　<kbd>I</kbd> Backpack　<kbd>T</kbd> Treasures　<kbd>L</kbd> Language　<kbd>M</kbd> Mute　<kbd>H</kbd> Help</p>
+      <p class="keys"><kbd>X</kbd> Multiply　<kbd>D</kbd> Lock　<kbd>B</kbd> Bet　<kbd>Space</kbd> Pull　<kbd>C</kbd> Coin　<kbd>Q</kbd> Switch mode　<kbd>S</kbd> Stats　<kbd>I</kbd> Backpack　<kbd>T</kbd> Treasures　<kbd>L</kbd> Language　<kbd>M</kbd> Mute　<kbd>H</kbd> Help</p>
       <h3>My records</h3>
       <p class="records">High score (best single win) <b data-record="bestWin">0</b>　Most balls held <b data-record="best">0</b></p>
       <p class="records">Pinball Quest: <b data-record="advWins">0</b> wins　<b data-record="advLosses">0</b> losses</p>
@@ -170,6 +171,12 @@
     <h2 data-i18n="bagTitle">背包</h2>
     <p id="bag-note" class="bag-note"></p>
     <ul id="bag-list" class="bag-list"></ul>
+    <form method="dialog"><button class="btn coin" data-i18n="close">關閉</button></form>
+  </dialog>
+
+  <dialog id="stats" class="help stats-dlg">
+    <h2 data-i18n="statsTitle">數值狀態</h2>
+    <div id="stats-body" class="stats-body"></div>
     <form method="dialog"><button class="btn coin" data-i18n="close">關閉</button></form>
   </dialog>
 

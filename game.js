@@ -898,6 +898,15 @@
       chestOpenMsg: '打開寶箱！獲得{tier}道具「{item}」',
       chestWinTitle: '獲得道具！',
       cvBag: '道具', btnBag: '背包', bagTitle: '背包', bagUse: '使用',
+      cvStats: '狀態', btnStats: '狀態', statsTitle: '數值狀態',
+      stSecStage: '關卡', stSecBalls: '彈珠', stSecAttack: '攻擊（每顆珠）', stSecOther: '其他', stSecRound: '這回合',
+      stStage: '關卡', stStageN: '第 {n} 關（共 {total} 關）', stStageChest: '寶箱（第 {n} 關之後）', stFree: '自由挑戰',
+      stMonster: '怪物', stHp: 'HP', stDef: '防禦', stDefAcid: '{def}（鹽酸 −{n}）',
+      stLost: '這一關已失去', stBetCap: '每回合投珠上限', stBonus: '每過一關補',
+      stMultPct: '倍率強化', stPerBall: '每珠增傷', stPierce: '穿透傷害', stHit: '命中傷害（目前倍率）', stHitVal: '攻擊 {raw} − 防禦 {def} = {dmg}',
+      stCritRate: '暴擊機率', stCritDmg: '暴擊傷害',
+      stRefill: '補珠燈每顆補', stWeight: '彈珠重量', stPins: '已拔掉釘子', stPinsN: '{n} 根', stChest: '寶箱額外藍燈', stChestN: '{n} 排',
+      stBet: '投珠', stMult: '倍率', stLit: '攻擊燈／補珠燈', stLitN: '{lit} 顆／{refill} 顆', stHeavy: '沉重彈珠', stHourglass: '沙漏', stOn: '生效中',
       btnCodex: '寶藏', codexTitle: '寶藏', codexCount: '已取得 {n} / {total} 種', codexBack: '返回',
       bagEmpty: '背包是空的。冒險模式中打開寶箱就能拿到道具。',
       bagNowSelect: '現在：定燈前', bagNowBet: '現在：定燈後、發射前',
@@ -1003,6 +1012,15 @@
       chestOpenMsg: 'Chest opened! Got a {tier} item: {item}',
       chestWinTitle: 'New item!',
       cvBag: 'ITEMS', btnBag: 'Backpack', bagTitle: 'Backpack', bagUse: 'Use',
+      cvStats: 'STATS', btnStats: 'Stats', statsTitle: 'Stats',
+      stSecStage: 'Stage', stSecBalls: 'Balls', stSecAttack: 'Attack (per ball)', stSecOther: 'Other', stSecRound: 'This round',
+      stStage: 'Stage', stStageN: '{n} of {total}', stStageChest: 'Chest (after stage {n})', stFree: 'Free fight',
+      stMonster: 'Monster', stHp: 'HP', stDef: 'DEF', stDefAcid: '{def} (acid −{n})',
+      stLost: 'Lost this stage', stBetCap: 'Max bet per round', stBonus: 'Bonus per stage',
+      stMultPct: 'Multiplier up', stPerBall: 'Per-ball damage', stPierce: 'Piercing', stHit: 'Hit damage (current ×)', stHitVal: '{raw} attack − DEF {def} = {dmg}',
+      stCritRate: 'Crit chance', stCritDmg: 'Crit damage',
+      stRefill: 'Refill per ball', stWeight: 'Marble weight', stPins: 'Pins removed', stPinsN: '{n}', stChest: 'Extra blue chest lanes', stChestN: '{n}',
+      stBet: 'Bet', stMult: 'Multiplier', stLit: 'Red / refill lights', stLitN: '{lit} / {refill}', stHeavy: 'Heavy marble', stHourglass: 'Hourglass', stOn: 'Active',
       btnCodex: 'Treasures', codexTitle: 'Treasures', codexCount: 'Found {n} / {total}', codexBack: 'Back',
       bagEmpty: 'Your backpack is empty. Open treasure chests in Adventure to get items.',
       bagNowSelect: 'Now: before locking', bagNowBet: 'Now: after locking, before shooting',
@@ -1074,7 +1092,8 @@
   const TRAY = { left: 34, right: 400, back: 934, front: 1034 };   // 右邊讓給投珠孔
   // 大冒險的托盤往左縮，讓出位置給背包（道具）按鈕
   const TRAY_RIGHT = { classic: 400, adv: 352 };
-  const BAG = { x: 398, y: 980, r: 22 };
+  const BAG = { x: 398, y: 1000, r: 18 };     // 背包按鈕（大冒險：托盤和投珠孔之間）
+  const STATS = { x: 398, y: 934, r: 17 };    // 狀態按鈕（背包上面）
   const TRAY_TILT = 260;            // 盤子往前傾，珠子會滾到前緣
   const TRAY_CAP = 190;             // 托盤裝得下的顆數；再多就從托盤滿出來、掉到機台外面（仍然計數）
   const DISPLAY = { x: 272, y: 856, w: 110, h: 46 };
@@ -3819,10 +3838,8 @@
   }
 
   // 背包按鈕：托盤和投珠孔之間，右上角顯示道具數量
-  function drawBag() {
-    if (mode !== 'adv') return;
-    const { x, y, r } = BAG;
-    ctx.save();
+  // 白邊圓形按鈕底座（背包、狀態共用），下方寫標籤
+  function roundButton(x, y, r, c0, c1, label) {
     ctx.beginPath();
     ctx.arc(x + 1, y + 2, r + 1, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
@@ -3835,13 +3852,47 @@
     ctx.fillStyle = rim;
     ctx.fill();
     const inner = ctx.createRadialGradient(x - 4, y - 5, 1, x, y, r - 3);
-    inner.addColorStop(0, '#9a6532');
-    inner.addColorStop(1, '#4a2c12');
+    inner.addColorStop(0, c0);
+    inner.addColorStop(1, c1);
     ctx.beginPath();
     ctx.arc(x, y, r - 3, 0, Math.PI * 2);
     ctx.fillStyle = inner;
     ctx.fill();
-    // 背包圖案：提把、包身、蓋子、扣環、前口袋
+    ctx.fillStyle = '#3b2412';
+    ctx.font = `bold 12px ${SANS}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y + r + 12);
+  }
+
+  // 狀態按鈕：藍底、三根長條圖
+  function drawStatsBtn() {
+    if (mode !== 'adv') return;
+    const { x, y, r } = STATS;
+    ctx.save();
+    roundButton(x, y, r, '#3d6fa8', '#16304f', t('cvStats'));
+    ctx.strokeStyle = '#0b1a2b';
+    ctx.lineWidth = 1.2;
+    [[-7, 5], [-2, 9], [3, 13]].forEach(([dx, hgt]) => {
+      ctx.fillStyle = '#ffd166';
+      ctx.fillRect(x + dx, y + 6 - hgt, 4, hgt);
+      ctx.strokeRect(x + dx, y + 6 - hgt, 4, hgt);
+    });
+    ctx.fillStyle = '#e8f1ff';
+    ctx.fillRect(x - 9, y + 6, 18, 1.5);
+    ctx.restore();
+  }
+
+  function drawBag() {
+    if (mode !== 'adv') return;
+    const { x, y, r } = BAG;
+    ctx.save();
+    roundButton(x, y, r, '#9a6532', '#4a2c12', t('cvBag'));
+    // 背包圖案：提把、包身、蓋子、扣環、前口袋（按鈕縮小了，圖案跟著縮）
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(0.85, 0.85);
+    ctx.translate(-x, -y);
     ctx.strokeStyle = '#2a1405';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
@@ -3861,12 +3912,7 @@
     ctx.strokeRect(x - 2, y - 1, 4, 4);
     roundRect(ctx, x - 5, y + 4, 10, 5, 2);
     ctx.stroke();
-    // 標籤
-    ctx.fillStyle = '#3b2412';
-    ctx.font = `bold 12px ${SANS}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(t('cvBag'), x, y + r + 14);
+    ctx.restore();
     const n = itemCount();
     if (n > 0) {
       const bx = x + r - 3, by = y - r + 3;
@@ -4023,6 +4069,7 @@
     drawButton(t);
     drawDisplay();
     drawTray();
+    drawStatsBtn();
     drawBag();
     drawTweens();
     drawHints(t);
@@ -4080,6 +4127,7 @@
       case 'KeyQ': switchMode(); break;
       case 'KeyI': openBag(); break;
       case 'KeyT': openCodex(); break;
+      case 'KeyS': openStats(); break;
     }
   });
   window.addEventListener('keyup', e => {
@@ -4099,6 +4147,7 @@
     }
     if (Math.hypot(p.x - BUTTON.x, p.y - BUTTON.y) < 32) return 'button';
     if (mode === 'adv' && Math.hypot(p.x - BAG.x, p.y - BAG.y) < BAG.r + 8) return 'bag';
+    if (mode === 'adv' && Math.hypot(p.x - STATS.x, p.y - STATS.y) < STATS.r + 8) return 'stats';
     if (mode === 'classic' && Math.abs(p.x - COIN_SLOT.x) < 34 && Math.abs(p.y - COIN_SLOT.y) < 50) return 'coin';
     return null;
   }
@@ -4108,6 +4157,7 @@
     const target = hitTarget(p);
     e.preventDefault();
     if (target === 'bag') openBag();
+    else if (target === 'stats') openStats();
     else if (round.placing) placeBall(p);
     else if (target === 'bet') {
       try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 同下 */ }
@@ -4293,6 +4343,108 @@
     codexGrid.hidden = true;
     codexDetail.hidden = false;
   }
+
+  // ---- 數值面板：目前所有的數值狀態 ----
+  const statsDlg = $('stats'), statsBody = $('stats-body');
+  function renderStats() {
+    statsBody.textContent = '';
+    const sec = title => {
+      const h = document.createElement('h3');
+      h.textContent = t(title);
+      statsBody.append(h);
+    };
+    const row = (label, ...content) => {
+      const r = document.createElement('div');
+      r.className = 'st-row';
+      const l = document.createElement('span');
+      l.className = 'st-label';
+      l.textContent = t(label);
+      const v = document.createElement('div');
+      v.className = 'st-value';
+      v.append(...content.map(String));
+      r.append(l, v);
+      statsBody.append(r);
+    };
+    const pct = x => Math.round(x * 100) + '%';
+    const plus = n => (n > 0 ? '+' : '') + n;
+    const playing = adv.monster && adv.status !== 'intro';
+
+    if (playing) {
+      sec('stSecStage');
+      const n = adv.monsterIdx + 1;
+      row('stStage', !adv.campaign ? t('stFree') : adv.chest ? t('stStageChest', { n }) : t('stStageN', { n, total: MONSTERS.length }));
+      if (!adv.chest) {
+        row('stMonster', monsterName());
+        row('stHp', `${adv.hp} / ${adv.maxHp}`);
+        row('stDef', adv.defDown ? t('stDefAcid', { def: monsterDef(), n: adv.defDown }) : monsterDef());
+      }
+    }
+
+    sec('stSecBalls');
+    row('statusBalls', t('statusBallsN', { n: state.credits + state.payoutQueue }));
+    if (adv.campaign) row('stLost', t('statusBallsN', { n: adv.lost }));
+    row('stBetCap', t('statusBallsN', { n: betCap() }));
+    if (adv.campaign) row('stBonus', t('statusBallsN', { n: CAMPAIGN_BONUS }));
+
+    sec('stSecAttack');
+    row('stMultPct', '+' + 10 * boon('multPct') + '%');
+    row('stPerBall', plus(boon('perBall')));
+    row('stPierce', plus(boon('pierce')));
+    if (playing && !adv.chest) {
+      const { raw, def, dmg } = computeHit(false);
+      row('stHit', t('stHitVal', { raw, def, dmg }));
+    }
+    row('stCritRate', pct(critRate()));
+    row('stCritDmg', pct(critMult()));
+
+    sec('stSecOther');
+    row('stRefill', t('statusBallsN', { n: refillBonus() }));
+    row('stWeight', '×' + (1 + 0.2 * boon('weight')).toFixed(1));
+    row('stPins', t('stPinsN', { n: adv.removedPins.size }));
+    row('stChest', t('stChestN', { n: boon('chestRare') }));
+
+    if (playing && !adv.chest) {
+      sec('stSecRound');
+      row('stBet', `${round.bet} / ${betCap()}`);
+      row('stMult', '×' + mult());
+      row('stLit', t('stLitN', { lit: litCount(), refill: round.phase === 'select' ? 1 + round.extraRefill : round.refills.size }));
+      if (round.heavy) row('stHeavy', plus(round.heavy));
+      if (round.hourglass) row('stHourglass', t('stOn'));
+    }
+
+    // 道具、過關獎勵：跟過關卡片同樣的小圖示
+    const items = ITEM_IDS.filter(id => adv.items[id] > 0).map(id => {
+      const chip = document.createElement('span');
+      chip.className = 'st-item';
+      chip.title = itemName(id);
+      chip.append(itemIcon(id, 2), '×' + adv.items[id]);
+      return chip;
+    });
+    const boons = BOON_IDS.filter(id => boon(id) > 0).map(id => {
+      const chip = document.createElement('span');
+      chip.className = 'st-item';
+      chip.title = BOONS[id].desc[lang];
+      chip.textContent = `${BOONS[id].name[lang]} ×${boon(id)}`;
+      return chip;
+    });
+    for (const [title, chips] of [['statusItems', items], ['statusBoons', boons]]) {
+      sec(title);
+      const v = document.createElement('div');
+      v.className = 'st-value';
+      v.append(...(chips.length ? chips : [t('statusNoItems')]));
+      statsBody.append(v);
+    }
+  }
+  function openStats() {
+    if (mode !== 'adv' || !statsDlg) return;
+    Sound.init();
+    cancelCharge();
+    stopBetHold();
+    Sound.clunk();
+    renderStats();
+    statsDlg.showModal();
+  }
+  if (statsDlg) statsDlg.addEventListener('click', e => { if (e.target === statsDlg) statsDlg.close(); });
 
   function openCodex() {
     if (mode !== 'adv' || !codexDlg) return;
@@ -4580,6 +4732,7 @@
   $('overlay-coin').addEventListener('click', overlayPrimary);
   for (const el of byAction('mode')) el.addEventListener('click', switchMode);
   for (const el of byAction('bag')) el.addEventListener('click', openBag);
+  for (const el of byAction('stats')) el.addEventListener('click', openStats);
   for (const el of byAction('codex')) {
     // 寶藏按鈕只放寶箱的像素圖示，不寫字
     const icon = pixelCanvas(CHEST.map, CHEST.pal, 2);

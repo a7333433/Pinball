@@ -339,9 +339,11 @@ body {
 /* 大冒險模式不能投幣；背包只有大冒險才有 */
 body[data-mode="adv"] [data-action="coin"] { display: none; }
 body:not([data-mode="adv"]) [data-action="bag"],
+body:not([data-mode="adv"]) [data-action="stats"],
 body:not([data-mode="adv"]) [data-action="codex"] { display: none; }
 .btn.treasure { background: #b45309; box-shadow: 0 4px 0 #6b2f05; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .btn.bag { background: #8a5a2b; box-shadow: 0 4px 0 #4a2c12; }
+.btn.stats { background: #2c5282; box-shadow: 0 4px 0 #16304f; }
 .btn kbd { margin-left: 4px; vertical-align: 1px; }
 
 .msg {
@@ -467,6 +469,10 @@ body[data-mode="adv"] .overlay-card .link { display: none; }
 .st-label { flex-shrink: 0; min-width: 5em; color: var(--gold); font-weight: bold; font-size: 14px; }
 .st-value { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 15px; }
 .st-item { display: inline-flex; align-items: center; gap: 2px; font-size: 13px; }
+.stats-dlg { width: min(420px, calc(100vw - 32px)); }
+.stats-body .st-row { padding: 3px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.12); }
+.stats-body .st-label { min-width: 9em; }
+.stats-body h3:first-child { margin-top: 0; }
 .ov-item b { font-size: 18px; text-shadow: 1px 1px 0 #000; }
 
 /* ---- 背包、沙漏 ---- */
