@@ -68,7 +68,7 @@
       tier: 0, when: 'both',
       name: { zh: '石頭', en: 'Stone' },
       quote: { zh: '一顆手感不錯的石頭。', en: 'A stone that feels nice in the hand.' },
-      effect: { zh: '對怪物造成 3 + 2 × 第幾關 點無視防禦的傷害（目前 {n} 點）', en: 'Deals 3 + 2 × stage damage that ignores DEF (now {n})' },
+      effect: { zh: '對怪物造成 3 + 2 × 第幾關 + 攻擊加成 點無視防禦的傷害，可以暴擊（目前 {n} 點）', en: 'Deals 3 + 2 × stage + your attack bonus damage that ignores DEF and can crit (now {n})' },
     },
     acid: {
       tier: 1, when: 'both',
@@ -130,7 +130,7 @@
     // 天賦專屬：只有選了該天賦才抽得到
     armor: { talent: 'alloy', name: { zh: '破甲合金', en: 'Armor Breaker' }, desc: { zh: '攻擊時無視 1 點防禦', en: 'Attacks ignore 1 DEF' } },
     light: { talent: 'alloy', name: { zh: '輕量合金', en: 'Light Alloy' }, desc: { zh: '每回合倍率孔多 1 段免費', en: '1 more free multiplier step every round' } },
-    chainCrit: { talent: 'alloy', name: { zh: '連鎖暴擊', en: 'Chain Crit' }, desc: { zh: '這回合每暴擊一次，之後的珠攻擊 +1', en: 'Each crit this round gives later balls +1 attack' } },
+    chainCrit: { talent: 'alloy', name: { zh: '連鎖暴擊', en: 'Chain Crit' }, desc: { zh: '同一回合內每暴擊一次，這回合後面的珠攻擊 +1（下回合歸零）', en: 'Each crit gives the later balls this round +1 attack (resets next round)' } },
     kindle: { talent: 'burn', name: { zh: '助燃', en: 'Kindling' }, desc: { zh: '每次命中多疊 1 層燃燒', en: '+1 extra burn per hit' } },
     smolder: { talent: 'burn', name: { zh: '悶燒', en: 'Smolder' }, desc: { zh: '回合結束燃燒後保留更多層（減半 → 保留 2/3 → 3/4…）', en: 'Burn decays slower after each round (½ → ⅔ → ¾ kept…)' } },
     tinder: { talent: 'burn', name: { zh: '火種', en: 'Tinder' }, desc: { zh: '落進補珠燈也疊 1 層燃燒', en: 'Refill lights also add 1 burn' } },
@@ -910,7 +910,7 @@
       advPressStart: '按「開始冒險」', laugh: '嘻嘻嘻',
       stWinAdv: '上次傷害', stBestWinAdv: '勝場', stBestAdv: '敗場',
       hitMsgTotal: '命中！攻擊 {raw}，扣掉防禦 {def}，加上加成共造成 {dmg} 點傷害',
-      critMsg: '暴擊！造成 {dmg} 點傷害', critPop: '暴擊 -{d}',
+      critMsg: '暴擊！造成 {dmg} 點傷害', critPop: '暴擊 -{d}', chainPop: '連鎖+{c}', chainTag: '（連鎖暴擊 +{c}）',
       talentTitle: '選擇天賦（整趟冒險有效）', stTalent: '天賦', stBurn: '燃燒層數',
       burnStart: '燃燒中…… 🔥 {n} 層',
       burnMsg: '燃燒！怪物受到 {dmg} 點傷害，燃燒剩 {left} 層',
@@ -947,7 +947,7 @@
       itemPlacing: '先點檯面放下彈珠',
       useCoin: '使用銀幣：持珠 +{n} 顆', useLaserRed: '雷射筆（紅）：這一關攻擊燈 +1，定燈後亮 {lit} 顆',
       useLaserGreen: '雷射筆（綠）：這一關補珠燈 +1', useFakeBoth: '假彈珠：倍率 +1、投珠 +1，變成 {mult} 倍、{bet} 顆！', useFakeMult: '假彈珠：倍率 +1，變成 {mult} 倍！',
-      useFakeBet: '假彈珠：投珠 +1，變成 {bet} 顆！', useStone: '丟石頭！對{name}造成 {d} 點傷害（無視防禦）',
+      useFakeBet: '假彈珠：投珠 +1，變成 {bet} 顆！', useStone: '丟石頭！對{name}造成 {d} 點傷害（無視防禦）', useStoneCrit: '丟石頭暴擊！對{name}造成 {d} 點傷害（無視防禦）',
       useAcid: '潑鹽酸！{name}的防禦降到 {def}', useHeavy: '沉重彈珠：這回合每顆珠的基本傷害變成 {n}',
       useHourglass: '沙漏翻過來了：鋼珠落下後可以選擇保留結果或返回上回合',
       useDrink: '嘶～～～ 紅燈全部變成補珠燈了！', useKey: '用老闆的鑰匙打開珠箱，拿回 {n} 顆彈珠！',
@@ -1031,7 +1031,7 @@
       advPressStart: 'Press Start', laugh: 'hehehe',
       stWinAdv: 'Last hit', stBestWinAdv: 'Wins', stBestAdv: 'Losses',
       hitMsgTotal: 'Hit! {raw} attack − DEF {def}, with bonuses {dmg} damage',
-      critMsg: 'Critical hit! {dmg} damage', critPop: 'CRIT -{d}',
+      critMsg: 'Critical hit! {dmg} damage', critPop: 'CRIT -{d}', chainPop: 'chain+{c}', chainTag: ' (chain crit +{c})',
       talentTitle: 'Choose a talent (lasts the whole adventure)', stTalent: 'Talent', stBurn: 'Burn',
       burnStart: 'Burning... 🔥 {n} stacks',
       burnMsg: 'Burn! {dmg} damage, {left} burn left',
@@ -1068,7 +1068,7 @@
       itemPlacing: 'Tap the board to drop the ball first',
       useCoin: 'Silver Coin: +{n} balls', useLaserRed: 'Red laser: +1 attack light this stage ({lit} after locking)',
       useLaserGreen: 'Green laser: +1 refill light this stage', useFakeBoth: 'Fake marble: +1 multiplier and +1 bet, now ×{mult} with {bet}!', useFakeMult: 'Fake marble: multiplier +1, now ×{mult}!',
-      useFakeBet: 'Fake marble: +1 bet, now {bet}!', useStone: 'Threw a stone! {d} damage to the {name}, ignoring DEF',
+      useFakeBet: 'Fake marble: +1 bet, now {bet}!', useStone: 'Threw a stone! {d} damage to the {name}, ignoring DEF', useStoneCrit: 'Critical stone! {d} damage to the {name}, ignoring DEF',
       useAcid: 'Acid! The {name}\'s DEF drops to {def}', useHeavy: 'Heavy marble: {n} base damage per ball this round',
       useHourglass: 'Hourglass flipped: after the ball lands, keep the result or rewind the round',
       useDrink: 'Slurrrp~ Every red light is now a refill light!', useKey: 'The shopkeeper\'s key opened the ball box: {n} balls back!',
@@ -1600,6 +1600,7 @@
     const crit = Math.random() < critRate();
     const hitRes = computeHit(crit, combo);
     const { raw, def } = hitRes, dmg = hitRes.dmg * times;
+    const chain = round.crits * boon('chainCrit');   // 這顆吃到的連鎖暴擊加成
     if (crit) round.crits++;
     state.lastWin = dmg;
     if (dmg === 0) {
@@ -1607,7 +1608,7 @@
       adv.laughT = 1.3;
       adv.pops.push({ text: t('blockScreen'), t: 0 });
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('blockPop'), t: 0, color: '#cbd5e1' });
-      say(combo ? 'blockMsgCombo' : 'blockMsg', { raw, def, k: combo + 1 });
+      say(combo ? 'blockMsgCombo' : 'blockMsg', { raw, def, k: combo + 1, chain });
       Sound.thud();
       setTimeout(() => Sound.snicker(), 250);
       return;
@@ -1616,10 +1617,10 @@
     round.dmg += dmg;
     adv.hitT = 0.5;
     adv.pops.push({ text: '-' + dmg, t: 0, color: crit ? '#ffd166' : undefined, big: crit });
-    const pop = t(crit ? 'critPop' : 'dmgPop', { d: dmg });
+    const pop = t(crit ? 'critPop' : 'dmgPop', { d: dmg }) + (chain ? ' ' + t('chainPop', { c: chain }) : '');
     popups.push({ x: px, y: SLOT_TOP - 16, text: combo ? t('comboPop', { k: combo + 1, text: pop }) : pop, t: 0, color: crit ? '#ffd166' : '#ff6b6b', big: crit || combo > 0 });
     const key = crit ? 'critMsg' : combo ? 'hitMsgCombo' : hitBonused() ? 'hitMsgTotal' : def > 0 ? 'hitMsgDef' : 'hitMsg';
-    say(key, { mult: mult(), bet: round.bet, raw, def, dmg, k: combo + 1, c: combo });
+    say(key, { mult: mult(), bet: round.bet, raw, def, dmg, k: combo + 1, c: combo, chain });
     if (crit) {
       state.shakeT = Math.max(state.shakeT, 0.25);   // 暴擊時機台晃一下
       Sound.crit();
@@ -1731,7 +1732,8 @@
   const itemName = id => ITEMS[id].name[lang];
   // 會隨關卡變化的數值
   const coinBalls = () => 10 + adv.monsterIdx + 1;
-  const stoneDmg = () => 3 + 2 * (adv.monsterIdx + 1);
+  // 石頭：隨關卡成長，再加上養出來的攻擊（每珠攻擊、天賦攻擊）
+  const stoneDmg = () => 3 + 2 * (adv.monsterIdx + 1) + boon('perBall') + talentAtk();
   const ITEM_N = { coin: coinBalls, stone: stoneDmg, key: () => adv.lost };
   const itemEffect = id => ITEMS[id].effect[lang].replace('{n}', ITEM_N[id] ? ITEM_N[id]() : '');
 
@@ -1815,14 +1817,17 @@
       Sound.clunk();
     },
     stone() {
-      const d = stoneDmg();
+      // 石頭也會暴擊，算進連鎖暴擊
+      const crit = Math.random() < critRate();
+      const d = crit ? Math.round(stoneDmg() * critMult()) : stoneDmg();
+      if (crit) round.crits++;
       adv.hp = Math.max(0, adv.hp - d);
       adv.hitT = 0.5;
-      adv.pops.push({ text: '-' + d, t: 0 });
-      popups.push({ x: W / 2, y: SLOT_TOP - 16, text: t('dmgPop', { d }), t: 0, color: '#ff6b6b' });
-      say('useStone', { name: monsterName(), d });
+      adv.pops.push({ text: '-' + d, t: 0, color: crit ? '#ffd166' : undefined, big: crit });
+      popups.push({ x: W / 2, y: SLOT_TOP - 16, text: t(crit ? 'critPop' : 'dmgPop', { d }), t: 0, color: crit ? '#ffd166' : '#ff6b6b', big: crit });
+      say(crit ? 'useStoneCrit' : 'useStone', { name: monsterName(), d });
       Sound.thud();
-      Sound.hit();
+      if (crit) Sound.crit(); else Sound.hit();
       if (adv.hp === 0) {
         // 這局投下去的珠還沒用到，退回來
         const refund = round.betPaid + round.multPaid;
@@ -2077,7 +2082,7 @@
   let msgText = '', msgT = 0;
   function say(key, vars = {}) {
     lastMsg = [key, vars];
-    const text = t(key, vars);
+    const text = t(key, vars) + (vars.chain ? t('chainTag', { c: vars.chain }) : '');
     for (const el of msgEls) el.textContent = text;
     if (text !== msgText) { msgText = text; msgT = performance.now(); }
   }
