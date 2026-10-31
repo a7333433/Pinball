@@ -119,6 +119,7 @@
     weight: { name: { zh: '加重彈珠', en: 'Heavier Marble' }, desc: { zh: '彈珠重量增加 0.2（撞釘子彈得比較低、比較不會亂跳）', en: 'Marble weight +0.2 (bounces lower and jitters less)' } },
     pin: { name: { zh: '拔釘子', en: 'Fewer Pins' }, desc: { zh: '落珠區的釘子隨機減少 2 根', en: 'Removes 2 random pins from the board' } },
     refill: { name: { zh: '補珠加量', en: 'Bigger Refills' }, desc: { zh: '補珠燈補珠時多得 2 顆', en: '+2 balls on every refill light' } },
+    refillLight: { name: { zh: '補珠燈數', en: 'More Refill Lights' }, desc: { zh: '每回合補珠燈多 1 顆', en: '+1 refill light every round' } },
     chestRare: { name: { zh: '寶箱升級', en: 'Better Chests' }, desc: { zh: '寶箱關卡的稀有（藍）燈 +1、一般（白）燈 −1', en: 'Chests get +1 rare (blue) lane, −1 common (white) lane' } },
     critRate: { name: { zh: '暴擊率', en: 'Crit Rate' }, desc: { zh: '暴擊機率增加 10%', en: 'Crit chance +10%' } },
     critDmg: { name: { zh: '暴擊傷害', en: 'Crit Damage' }, desc: { zh: '暴擊傷害倍率增加 25%', en: 'Crit damage +25%' } },
@@ -903,7 +904,7 @@
       stBetCap: '每回合投珠上限', stBonus: '每過一關補',
       stMultPct: '倍率強化', stPerBall: '每珠增傷', stPierce: '穿透傷害',
       stCritRate: '暴擊機率', stCritDmg: '暴擊傷害',
-      stRefill: '補珠燈每顆補', stWeight: '彈珠重量', stPins: '已拔掉釘子', stPinsN: '{n} 根', stChest: '寶箱額外藍燈', stChestN: '{n} 排',
+      stRefillLights: '每回合補珠燈', stRefillLightsN: '{n} 顆', stRefill: '補珠燈每顆補', stWeight: '彈珠重量', stPins: '已拔掉釘子', stPinsN: '{n} 根', stChest: '寶箱額外藍燈', stChestN: '{n} 排',
       btnCodex: '寶藏', codexTitle: '寶藏', codexCount: '已取得 {n} / {total} 種', codexBack: '返回',
       bagEmpty: '背包是空的。冒險模式中打開寶箱就能拿到道具。',
       bagNowSelect: '現在：定燈前', bagNowBet: '現在：定燈後、發射前',
@@ -1014,7 +1015,7 @@
       stBetCap: 'Max bet per round', stBonus: 'Bonus per stage',
       stMultPct: 'Multiplier up', stPerBall: 'Per-ball damage', stPierce: 'Piercing',
       stCritRate: 'Crit chance', stCritDmg: 'Crit damage',
-      stRefill: 'Refill per ball', stWeight: 'Marble weight', stPins: 'Pins removed', stPinsN: '{n}', stChest: 'Extra blue chest lanes', stChestN: '{n}',
+      stRefillLights: 'Refill lights per round', stRefillLightsN: '{n}', stRefill: 'Refill per ball', stWeight: 'Marble weight', stPins: 'Pins removed', stPinsN: '{n}', stChest: 'Extra blue chest lanes', stChestN: '{n}',
       btnCodex: 'Treasures', codexTitle: 'Treasures', codexCount: 'Found {n} / {total}', codexBack: 'Back',
       bagEmpty: 'Your backpack is empty. Open treasure chests in Adventure to get items.',
       bagNowSelect: 'Now: before locking', bagNowBet: 'Now: after locking, before shooting',
@@ -1918,10 +1919,10 @@
     if (chestStage()) {
       say('lockedChest');
     } else if (mode === 'adv') {
-      // 定燈後，在沒亮燈的排裡隨機挑一排當補珠燈（雷射筆（綠）會多挑幾排）
+      // 定燈後，在沒亮燈的排裡隨機挑一排當補珠燈（雷射筆（綠）、過關獎勵「補珠燈數」會多挑幾排；沒空排就不再加，不會擠掉紅燈）
       const free = [];
       for (let i = 0; i < SLOT_COUNT; i++) if (!round.lit.has(i)) free.push(i);
-      for (let n = 1 + round.extraRefill; n > 0 && free.length; n--) {
+      for (let n = 1 + round.extraRefill + boon('refillLight'); n > 0 && free.length; n--) {
         round.refills.add(free.splice(Math.floor(Math.random() * free.length), 1)[0]);
       }
       say('lockedAdv', { lit: round.lit.size });
@@ -4374,6 +4375,7 @@
     row('stCritDmg', pct(critMult()));
 
     sec('stSecOther');
+    row('stRefillLights', t('stRefillLightsN', { n: 1 + boon('refillLight') }));
     row('stRefill', t('statusBallsN', { n: refillBonus() }));
     row('stWeight', '×' + (1 + 0.2 * boon('weight')).toFixed(1));
     row('stPins', t('stPinsN', { n: adv.removedPins.size }));
