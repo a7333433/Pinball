@@ -120,7 +120,7 @@
     litUp: { name: { zh: '攻擊燈數', en: 'More Red Lights' }, desc: { zh: '每回合紅燈（攻擊燈）多亮 1 顆', en: '+1 red (attack) light every round' } },
     pierce: { name: { zh: '穿透傷害', en: 'Piercing' }, desc: { zh: '攻擊打破防禦時，追加 1 點忽視防禦的傷害', en: '+1 damage that ignores DEF on hits that break DEF' } },
     weight: { name: { zh: '加重彈珠', en: 'Heavier Marble' }, desc: { zh: '彈珠重量增加 0.5（撞釘子彈得比較低、比較不會亂跳）', en: 'Marble weight +0.5 (bounces lower and jitters less)' } },
-    pin: { name: { zh: '拔釘子', en: 'Fewer Pins' }, desc: { zh: '落珠區的釘子隨機減少 5 根', en: 'Removes 5 random pins from the board' } },
+    pin: { name: { zh: '拔釘子', en: 'Fewer Pins' }, desc: { zh: '落珠區的釘子隨機減少 5 根，之後每關也少長 5 根', en: 'Removes 5 random pins now, and 5 fewer grow in every later stage' } },
     refill: { name: { zh: '補珠加量', en: 'Bigger Refills' }, desc: { zh: '補珠燈補珠時多得 2 顆', en: '+2 balls on every refill light' } },
     refillLight: { name: { zh: '補珠燈數', en: 'More Refill Lights' }, desc: { zh: '每回合補珠燈多 1 顆', en: '+1 refill light every round' } },
     chestRare: { name: { zh: '寶箱升級', en: 'Better Chests' }, desc: { zh: '寶箱關卡的稀有（藍）燈 +1、一般（白）燈 −1', en: 'Chests get +1 rare (blue) lane, −1 common (white) lane' } },
@@ -910,7 +910,7 @@
       stBetCap: '每回合投珠上限', stBonus: '下次過關補',
       stMultBase: '基礎倍率', stLitUp: '紅燈多亮', stPerBall: '每珠增傷', stPierce: '穿透傷害',
       stCritRate: '暴擊機率', stCritDmg: '暴擊傷害',
-      stRefillLights: '每回合補珠燈', stRefillLightsN: '{n} 顆', stRefill: '補珠燈每顆補', stWeight: '彈珠重量', stPins: '已拔掉釘子', stPinsN: '{n} 根', stChest: '寶箱額外藍燈', stChestN: '{n} 排',
+      stRefillLights: '每回合補珠燈', stRefillLightsN: '{n} 顆', stRefill: '補珠燈每顆補', stWeight: '彈珠重量', stPinsBoard: '檯面釘子', stPinsBoardN: '{n} / {total} 根', stPins: '拔釘子（每關少）', stPinsN: '{n} 根', stChest: '寶箱額外藍燈', stChestN: '{n} 排',
       btnCodex: '寶藏', codexTitle: '寶藏', codexCount: '已取得 {n} / {total} 種', codexBack: '返回',
       bagEmpty: '背包是空的。冒險模式中打開寶箱就能拿到道具。',
       bagNowSelect: '現在：定燈前', bagNowBet: '現在：定燈後、發射前',
@@ -1025,7 +1025,7 @@
       stBetCap: 'Max bet per round', stBonus: 'Next stage bonus',
       stMultBase: 'Base multiplier', stLitUp: 'Extra red lights', stPerBall: 'Per-ball damage', stPierce: 'Piercing',
       stCritRate: 'Crit chance', stCritDmg: 'Crit damage',
-      stRefillLights: 'Refill lights per round', stRefillLightsN: '{n}', stRefill: 'Refill per ball', stWeight: 'Marble weight', stPins: 'Pins removed', stPinsN: '{n}', stChest: 'Extra blue chest lanes', stChestN: '{n}',
+      stRefillLights: 'Refill lights per round', stRefillLightsN: '{n}', stRefill: 'Refill per ball', stWeight: 'Marble weight', stPinsBoard: 'Pins on board', stPinsBoardN: '{n} / {total}', stPins: 'Fewer pins (per stage)', stPinsN: '{n}', stChest: 'Extra blue chest lanes', stChestN: '{n}',
       btnCodex: 'Treasures', codexTitle: 'Treasures', codexCount: 'Found {n} / {total}', codexBack: 'Back',
       bagEmpty: 'Your backpack is empty. Open treasure chests in Adventure to get items.',
       bagNowSelect: 'Now: before locking', bagNowBet: 'Now: after locking, before shooting',
@@ -1166,10 +1166,11 @@
     }
   }
   const ALL_PINS = pins.slice();
-  // 大冒險拔掉的釘子只在大冒險拿掉，經典模式永遠是完整的釘陣
+  // 大冒險的釘子隨關卡增加（adv.pinSet），經典模式永遠是完整的釘陣
   function syncPins() {
     pins.length = 0;
-    ALL_PINS.forEach((p, i) => { if (!(mode === 'adv' && adv.removedPins.has(i))) pins.push(p); });
+    const keep = mode === 'adv' ? adv.pinSet : null;
+    ALL_PINS.forEach((p, i) => { if (!keep || keep.has(i)) pins.push(p); });
   }
 
   // ===== 音效 =====
@@ -1358,7 +1359,7 @@
     boons: {},            // 過關獎勵：id → 疊了幾層（新的冒險開始時清空）
     rewards: null,        // 正在選的 3 個過關獎勵
     rerollCost: 1,        // 下一次重骰要花幾顆
-    removedPins: new Set(),   // 「拔釘子」拔掉的釘子（ALL_PINS 的索引）
+    pinSet: null,         // 大冒險檯面上有哪些釘子（ALL_PINS 的索引）；null = 還沒開打，顯示完整釘陣
   };
   const boon = id => adv.boons[id] || 0;
   const critRate = () => Math.min(1, CRIT_BASE_RATE + 0.2 * boon('critRate'));
@@ -1442,6 +1443,19 @@
     startStage(MONSTERS[idx], idx, keepBalls, bonus);
   }
 
+  // 第 idx 關的釘子數：第 1 關 0 根，平均增加到最後一關全部；「拔釘子」每層少 5 根
+  const pinTarget = idx => Math.max(0, Math.round(ALL_PINS.length * idx / LAST_STAGE) - 5 * boon('pin'));
+  // 新的一場從空盤開始；之後每關在空位隨機補釘子補到這一關的數量
+  function growPins(idx, fresh) {
+    if (fresh || !adv.pinSet) adv.pinSet = new Set();
+    const empty = ALL_PINS.map((p, i) => i).filter(i => !adv.pinSet.has(i));
+    for (let n = pinTarget(idx) - adv.pinSet.size; n > 0 && empty.length; n--) {
+      adv.pinSet.add(empty.splice(Math.floor(Math.random() * empty.length), 1)[0]);
+    }
+    syncPins();
+    drawStatic();
+  }
+
   // 寶箱也走這裡（HP 1、不會反擊）；idx 是寶箱前面那一關的怪物
   function startStage(m, idx, keepBalls, bonus) {
     Sound.init();
@@ -1467,10 +1481,9 @@
       adv.items = {};
       adv.boons = {};
       adv.rewards = null;
-      adv.removedPins.clear();
-      syncPins();
-      drawStatic();
     }
+    // 寶箱沿用前一關的釘子；自由挑戰每場都重新擺
+    if (!adv.chest) growPins(idx, !keepBalls);
     state.lastWin = null;
     state.started = true;
     newRound();
@@ -1597,9 +1610,10 @@
     refreshOverlay();
   }
   function removeRandomPin() {
-    const left = ALL_PINS.map((p, i) => i).filter(i => !adv.removedPins.has(i));
+    if (!adv.pinSet) return;
+    const left = [...adv.pinSet];
     if (!left.length) return;
-    adv.removedPins.add(left[Math.floor(Math.random() * left.length)]);
+    adv.pinSet.delete(left[Math.floor(Math.random() * left.length)]);
     syncPins();
     drawStatic();
   }
@@ -4417,7 +4431,8 @@
     row('stRefillLights', t('stRefillLightsN', { n: 1 + boon('refillLight') }));
     row('stRefill', t('statusBallsN', { n: refillBonus() }));
     row('stWeight', '×' + (1 + 0.5 * boon('weight')).toFixed(1));
-    row('stPins', t('stPinsN', { n: adv.removedPins.size }));
+    row('stPinsBoard', t('stPinsBoardN', { n: pins.length, total: ALL_PINS.length }));
+    row('stPins', t('stPinsN', { n: 5 * boon('pin') }));
     row('stChest', t('stChestN', { n: boon('chestRare') }));
 
     // 道具、過關獎勵：跟過關卡片同樣的小圖示
