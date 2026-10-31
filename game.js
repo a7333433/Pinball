@@ -1264,6 +1264,14 @@
       [784, 988, 1175, 1568, 1175, 1568].forEach((f, i) => this.tone(f, 0.18, 'square', 0.06, i * 0.09));
     },
     lose() { this.tone(330, 0.35, 'triangle', 0.12, 0, 160); },
+    miss() {
+      // 單顆珠沒中：輕輕的「噗」往下掉，跟傷害的重擊聲分開
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      if (now - (this.lastMiss || 0) < 0.05) return;
+      this.lastMiss = now;
+      this.tone(520, 0.18, 'triangle', 0.07, 0, 260);
+    },
     coin() {
       this.tone(1320, 0.08, 'square', 0.08);
       this.tone(1980, 0.35, 'square', 0.08, 0.08);
@@ -2230,11 +2238,11 @@
       state.payoutQueue += 1;
       adv.lost = Math.max(0, adv.lost - 1);
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('refillPop', { n: 1 }), t: 0, color: '#cbd5e1' });
-      Sound.thud();
+      Sound.tone(1320, 0.1, 'square', 0.05);
     } else {
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('losePop'), t: 0, color: '#cbd5e1' });
       if (shots() === 1) say('advMissMsg', { name: monsterName() });
-      Sound.thud();
+      Sound.miss();
     }
   }
 
