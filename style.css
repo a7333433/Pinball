@@ -465,6 +465,7 @@ body[data-mode="adv"] .overlay-card .link { display: none; }
   cursor: pointer;
 }
 .rw-card:hover, .rw-card:focus-visible { background: rgba(255, 209, 102, 0.15); }
+.rw-card.selected { background: rgba(255, 209, 102, 0.22); border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold) inset; }
 .rw-card b { color: var(--gold); font-size: 16px; }
 .rw-card span { font-size: 14px; }
 .rw-card small { font-size: 12px; opacity: 0.7; }

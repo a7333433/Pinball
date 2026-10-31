@@ -129,6 +129,15 @@
     betCap: { name: { zh: '投珠上限', en: 'Bet Limit' }, desc: { zh: '每回合投珠上限 +2', en: '+2 max bet per round' } },
   };
   const BOON_IDS = Object.keys(BOONS);
+  // 天賦：冒險模式開始前選 1 個，效果持續整趟冒險
+  const TALENTS = {
+    alloy: { name: { zh: '合金鋼珠', en: 'Alloy Marble' }, desc: { zh: '每顆珠攻擊 +1（扣防禦前）、基礎倍率 +1、暴擊率 +15%', en: '+1 attack per ball (before DEF), +1 base multiplier, +15% crit chance' } },
+    burn: { name: { zh: '燒紅彈珠', en: 'Red-hot Marble' }, desc: { zh: '每次落進攻擊燈讓怪物燃燒 +1 層；每回合結束受到「層數」點無視防禦的傷害，之後層數減半', en: 'Each red-light hit adds 1 burn; at round end the monster takes burn damage (ignores DEF), then burn halves' } },
+    trauma: { name: { zh: '外傷滾珠', en: 'Grinding Marble' }, desc: { zh: '落進補珠燈時照常補珠，另外造成補珠數 50%（四捨五入）的無視防禦傷害', en: 'Refill lights still pay out, and also deal 50% of the balls refilled as damage (rounded, ignores DEF)' } },
+  };
+  const TALENT_IDS = Object.keys(TALENTS);
+  let talentPick = 'alloy';
+  try { const s = localStorage.getItem('candy-pinball-talent'); if (TALENTS[s]) talentPick = s; } catch (e) { /* 無痕模式 */ }
   // 道具的 12×12 像素圖示（背包、寶箱結果、說明、怪物螢幕都用這個）
   const LASER_MAP = [
       '.........RRR',
@@ -892,6 +901,10 @@
       stWinAdv: '上次傷害', stBestWinAdv: '勝場', stBestAdv: '敗場',
       hitMsgTotal: '命中！攻擊 {raw}，扣掉防禦 {def}，加上加成共造成 {dmg} 點傷害',
       critMsg: '暴擊！造成 {dmg} 點傷害', critPop: '暴擊 -{d}',
+      talentTitle: '選擇天賦（整趟冒險有效）', stTalent: '天賦', stBurn: '燃燒層數',
+      burnMsg: '燃燒！怪物受到 {dmg} 點傷害，燃燒剩 {left} 層',
+      traumaMsg: '外傷！補回 {n} 顆彈珠，同時造成 {dmg} 點傷害',
+      hgRefillHurt: '鋼珠落進補珠燈，將補回 {n} 顆彈珠並造成 {dmg} 點傷害。',
       rewardTitle: '選擇過關獎勵', rewardReroll: '重骰（{n} 顆彈珠）', rewardHave: '已有 ×{n}',
       statusBoons: '過關獎勵',
       chestName: '寶箱',
@@ -1007,6 +1020,10 @@
       stWinAdv: 'Last hit', stBestWinAdv: 'Wins', stBestAdv: 'Losses',
       hitMsgTotal: 'Hit! {raw} attack − DEF {def}, with bonuses {dmg} damage',
       critMsg: 'Critical hit! {dmg} damage', critPop: 'CRIT -{d}',
+      talentTitle: 'Choose a talent (lasts the whole adventure)', stTalent: 'Talent', stBurn: 'Burn',
+      burnMsg: 'Burn! {dmg} damage, {left} burn left',
+      traumaMsg: 'Grind! {n} balls back and {dmg} damage',
+      hgRefillHurt: 'The ball landed on a refill light: {n} balls back and {dmg} damage.',
       rewardTitle: 'Choose a reward', rewardReroll: 'Reroll ({n} balls)', rewardHave: 'Have ×{n}',
       statusBoons: 'Rewards',
       chestName: 'Treasure Chest',
@@ -1359,10 +1376,14 @@
     boons: {},            // 過關獎勵：id → 疊了幾層（新的冒險開始時清空）
     rewards: null,        // 正在選的 3 個過關獎勵
     rerollCost: 1,        // 下一次重骰要花幾顆
+    talent: null,         // 這趟冒險的天賦（TALENTS 的 id）；自由挑戰沒有天賦
+    burn: 0,              // 燒紅彈珠：這隻怪物身上的燃燒層數
     pinSet: null,         // 大冒險檯面上有哪些釘子（ALL_PINS 的索引）；null = 還沒開打，顯示完整釘陣
   };
   const boon = id => adv.boons[id] || 0;
-  const critRate = () => Math.min(1, CRIT_BASE_RATE + 0.2 * boon('critRate'));
+  const hasTalent = id => mode === 'adv' && adv.talent === id;
+  const talentAtk = () => hasTalent('alloy') ? 1 : 0;
+  const critRate = () => Math.min(1, CRIT_BASE_RATE + 0.2 * boon('critRate') + (hasTalent('alloy') ? 0.15 : 0));
   const critMult = () => CRIT_BASE_MULT + 0.5 * boon('critDmg');
   // 每回合投珠上限：寶箱只能投 1 顆
   const betCap = () => chestStage() ? 1 : BET_CAP + 2 * boon('betCap');
@@ -1481,7 +1502,9 @@
       adv.items = {};
       adv.boons = {};
       adv.rewards = null;
+      adv.talent = adv.campaign ? talentPick : null;
     }
+    adv.burn = 0;
     // 寶箱沿用前一關的釘子；自由挑戰每場都重新擺
     if (!adv.chest) growPins(idx, !keepBalls);
     state.lastWin = null;
@@ -1504,16 +1527,37 @@
   // combo：這回合前面已經有幾顆珠落進同一顆燈，每多一顆攻擊 +1（扣防禦前）
   function computeHit(crit, combo = 0) {
     const def = monsterDef();
-    const raw = mult() * (1 + round.heavy) + boon('perBall') + levelAtk() + combo;
+    const raw = mult() * (1 + round.heavy) + boon('perBall') + talentAtk() + levelAtk() + combo;
     let dmg = Math.max(0, raw - def);
     if (crit) dmg = Math.round(dmg * critMult());
     if (dmg > 0) dmg += boon('pierce');
     return { raw, def, dmg };
   }
-  const hitBonused = () => round.heavy > 0 || levelAtk() > 0 || boon('multBase') > 0 || boon('perBall') > 0 || boon('pierce') > 0;
+  const hitBonused = () => round.heavy > 0 || levelAtk() > 0 || talentAtk() > 0 || boon('multBase') > 0 || boon('perBall') > 0 || boon('pierce') > 0;
   const refillBonus = () => REFILL_MULT + boon('refill');   // 每顆珠
 
+  // 天賦的額外傷害（燃燒、外傷）：無視防禦、不會暴擊
+  function extraDamage(dmg, color) {
+    if (dmg <= 0 || adv.status !== 'playing') return;
+    adv.hp = Math.max(0, adv.hp - dmg);
+    round.dmg += dmg;
+    adv.hitT = 0.5;
+    adv.pops.push({ text: '-' + dmg, t: 0, color });
+    if (adv.hp === 0) defeatMonster();
+  }
+  // 燒紅彈珠：回合結束時燃燒，之後層數減半
+  function burnTick() {
+    if (!hasTalent('burn') || !adv.burn || adv.chest || adv.status !== 'playing') return false;
+    const dmg = adv.burn;
+    adv.burn = Math.floor(adv.burn / 2);
+    extraDamage(dmg, '#fb923c');
+    say('burnMsg', { dmg, left: adv.burn });
+    Sound.hit();
+    return true;
+  }
+
   function damageMonster(px, combo = 0) {
+    if (hasTalent('burn')) adv.burn++;   // 落進攻擊燈就疊燃燒（打不破防禦也算）
     const crit = Math.random() < critRate();
     const { raw, def, dmg } = computeHit(crit, combo);
     state.lastWin = dmg;
@@ -1867,7 +1911,7 @@
   }
 
   // 過關獎勵「基礎倍率」：大冒險打怪時每段倍率都 +1
-  const multBonus = () => mode === 'adv' && !chestStage() ? boon('multBase') : 0;
+  const multBonus = () => mode === 'adv' && !chestStage() ? boon('multBase') + (hasTalent('alloy') ? 1 : 0) : 0;
   const mult = () => multRule().mults[round.level] + multBonus();
 
   function ballAtShooter() {
@@ -2130,6 +2174,11 @@
       popups.push({ x: px, y: SLOT_TOP - 16, text: combo ? t('comboPop', { k: combo + 1, text: pop }) : pop, t: 0, color: '#4ade80', big: combo > 0 });
       say(combo ? 'refillMsgCombo' : refund ? 'refillMsgMult' : 'refillMsg', { n, refund, bonus, k: combo + 1, c: combo });
       Sound.coin();
+      if (hasTalent('trauma')) {
+        const dmg = Math.round(n * 0.5);
+        extraDamage(dmg, '#f472b6');
+        say('traumaMsg', { n, dmg });
+      }
     } else {
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('losePop'), t: 0, color: '#cbd5e1' });
       if (shots() === 1) say('advMissMsg', { name: monsterName() });
@@ -2149,17 +2198,20 @@
   // 大冒險這回合的珠全部落下：顯示總結
   function finishRound() {
     round.resetT = 1.6;
+    const burned = burnTick();
+    if (adv.status === 'won') { round.phase = 'win'; return; }
     const anyHit = round.landed.some(s => round.lit.has(s) || round.refills.has(s));
-    round.phase = anyHit ? 'win' : 'lose';
+    round.phase = anyHit || burned ? 'win' : 'lose';
     if (!anyHit) {
       state.lastWin = 0;
+      if (burned) return;   // 訊息螢幕留給燃燒
       adv.laughT = 1.3;
       setTimeout(() => Sound.snicker(), 250);
       say('advMissMsg', { name: monsterName() });
       Sound.lose();
       return;
     }
-    if (shots() > 1) {
+    if (shots() > 1 && !burned) {
       const key = round.dmg && round.gain ? 'roundSumBoth' : round.gain ? 'roundSumGain' : 'roundSumDmg';
       say(key, { n: shots(), hit: round.hits, dmg: round.dmg, gain: round.gain });
     }
@@ -2225,7 +2277,8 @@
         const { raw, def, dmg } = computeHit(false, combo);
         text = dmg > 0 ? t('hgHit', { dmg }) : t('hgBlock', { raw, def });
       } else if (round.refills.has(slot)) {
-        text = t('hgRefill', { n: refund + refillBonus() + combo });
+        const n = refund + refillBonus() + combo;
+        text = hasTalent('trauma') ? t('hgRefillHurt', { n, dmg: Math.round(n * 0.5) }) : t('hgRefill', { n });
         refund = 0;
       } else {
         text = t(slot < 0 ? 'hgOut' : 'hgMiss');
@@ -3612,7 +3665,7 @@
 
       // 怪物下面：HP 血條 + 盾牌（防禦）
       ctx.font = `bold 15px ${PIXEL_FONT}`;
-      const hpText = `${adv.hp}/${adv.maxHp}`, defText = String(monsterDef());
+      const hpText = `${adv.hp}/${adv.maxHp}`, defText = String(monsterDef()) + (adv.burn ? `  🔥${adv.burn}` : '');
       const labelW = ctx.measureText('HP').width, hpW = ctx.measureText(hpText).width, defW = ctx.measureText(defText).width;
       const bw = 200, bh = 12, by = S.y + 99;                       // 往下一點，讓出影子的位置
       const groupW = labelW + 8 + bw + 8 + hpW + 12 + SHIELD_W + 4 + defW;
@@ -4411,6 +4464,8 @@
     const plus = n => (n > 0 ? '+' : '') + n;
 
     sec('stSecLevel');
+    if (adv.talent) row('stTalent', TALENTS[adv.talent].name[lang]);
+    if (adv.talent === 'burn') row('stBurn', adv.burn);
     row('stLevel', 'Lv' + advLevel());
     row('stLevelAtk', '+' + levelAtk());
     sec('stSecBalls');
@@ -4420,9 +4475,9 @@
     if (adv.campaign) row('stBonus', t('statusBallsN', { n: nextBonus }));
 
     sec('stSecAttack');
-    row('stMultBase', '+' + boon('multBase'));
+    row('stMultBase', '+' + (boon('multBase') + (hasTalent('alloy') ? 1 : 0)));
     row('stLitUp', plus(boon('litUp')));
-    row('stPerBall', plus(boon('perBall')));
+    row('stPerBall', plus(boon('perBall') + talentAtk()));
     row('stPierce', plus(boon('pierce')));
     row('stCritRate', pct(critRate()));
     row('stCritDmg', pct(critMult()));
@@ -4515,6 +4570,34 @@
     re.disabled = state.credits < adv.rerollCost;
     re.addEventListener('click', rerollRewards);
     ovRewards.append(re);
+  }
+
+  // 冒險模式開始前選天賦：點卡片選取，按「開始冒險」才生效
+  function renderTalents() {
+    ovRewards.textContent = '';
+    const head = document.createElement('p');
+    head.className = 'rw-head';
+    head.textContent = t('talentTitle');
+    ovRewards.append(head);
+    for (const id of TALENT_IDS) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'rw-card' + (id === talentPick ? ' selected' : '');
+      b.setAttribute('aria-pressed', String(id === talentPick));
+      const name = document.createElement('b');
+      name.textContent = TALENTS[id].name[lang];
+      const desc = document.createElement('span');
+      desc.textContent = TALENTS[id].desc[lang];
+      b.append(name, desc);
+      b.addEventListener('click', () => {
+        Sound.init();
+        Sound.clunk();
+        talentPick = id;
+        try { localStorage.setItem('candy-pinball-talent', id); } catch (e) { /* 無痕模式 */ }
+        refreshOverlay();
+      });
+      ovRewards.append(b);
+    }
   }
 
   // 過關卡片的「目前狀態」：彈珠數、背包裡的道具
@@ -4678,9 +4761,12 @@
     if (ovTitle) ovTitle.textContent = title;
     if (ovText) { ovText.textContent = text; ovText.hidden = !text; }
     if (ovBtn) { ovBtn.textContent = btn; ovBtn.hidden = !!(midRun && adv.rewards); }
+    // 冒險模式要開新的一趟時先選天賦
+    const talents = picking && !midRun && advPlan === 'campaign';
     if (ovRewards) {
-      ovRewards.hidden = !(midRun && adv.rewards);
+      ovRewards.hidden = !(midRun && adv.rewards) && !talents;
       if (midRun && adv.rewards) renderRewards();
+      else if (talents) renderTalents();
     }
     if (ovStatus) {
       ovStatus.hidden = !midRun;
