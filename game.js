@@ -127,6 +127,16 @@
     critRate: { name: { zh: '暴擊率', en: 'Crit Rate' }, desc: { zh: '暴擊機率增加 20%', en: 'Crit chance +20%' } },
     critDmg: { name: { zh: '暴擊傷害', en: 'Crit Damage' }, desc: { zh: '暴擊傷害倍率增加 50%', en: 'Crit damage +50%' } },
     betCap: { name: { zh: '投珠上限', en: 'Bet Limit' }, desc: { zh: '每回合投珠上限 +2', en: '+2 max bet per round' } },
+    // 天賦專屬：只有選了該天賦才抽得到
+    armor: { talent: 'alloy', name: { zh: '破甲合金', en: 'Armor Breaker' }, desc: { zh: '攻擊時無視 1 點防禦', en: 'Attacks ignore 1 DEF' } },
+    light: { talent: 'alloy', name: { zh: '輕量合金', en: 'Light Alloy' }, desc: { zh: '每回合倍率孔多 1 段免費', en: '1 more free multiplier step every round' } },
+    chainCrit: { talent: 'alloy', name: { zh: '連鎖暴擊', en: 'Chain Crit' }, desc: { zh: '這回合每暴擊一次，之後的珠攻擊 +1', en: 'Each crit this round gives later balls +1 attack' } },
+    kindle: { talent: 'burn', name: { zh: '助燃', en: 'Kindling' }, desc: { zh: '每次命中多疊 1 層燃燒', en: '+1 extra burn per hit' } },
+    smolder: { talent: 'burn', name: { zh: '悶燒', en: 'Smolder' }, desc: { zh: '回合結束燃燒後保留更多層（減半 → 保留 2/3 → 3/4…）', en: 'Burn decays slower after each round (½ → ⅔ → ¾ kept…)' } },
+    tinder: { talent: 'burn', name: { zh: '火種', en: 'Tinder' }, desc: { zh: '落進補珠燈也疊 1 層燃燒', en: 'Refill lights also add 1 burn' } },
+    rend: { talent: 'trauma', name: { zh: '撕裂', en: 'Rend' }, desc: { zh: '外傷傷害比例 +25%', en: 'Grind damage +25% of balls refilled' } },
+    shatter: { talent: 'trauma', name: { zh: '碎甲', en: 'Shatter' }, desc: { zh: '外傷觸發時這隻怪物防禦 −1（每回合最多一次）', en: 'Grind lowers this monster\u2019s DEF by 1 (once per round)' } },
+    roll: { talent: 'trauma', name: { zh: '滾動補給', en: 'Rolling Supply' }, desc: { zh: '沒落進任何燈的珠退回 1 顆', en: 'Balls that land on no light come back' } },
   };
   const BOON_IDS = Object.keys(BOONS);
   // 天賦：冒險模式開始前選 1 個，效果持續整趟冒險
@@ -905,6 +915,7 @@
       burnMsg: '燃燒！怪物受到 {dmg} 點傷害，燃燒剩 {left} 層',
       traumaMsg: '外傷！補回 {n} 顆彈珠，同時造成 {dmg} 點傷害',
       hgRefillHurt: '鋼珠落進補珠燈，將補回 {n} 顆彈珠並造成 {dmg} 點傷害。',
+      rewardTalent: '{name}專屬', stArmor: '破甲', stTrauma: '外傷比例',
       rewardTitle: '選擇過關獎勵', rewardReroll: '重骰（{n} 顆彈珠）', rewardHave: '已有 ×{n}',
       statusBoons: '過關獎勵',
       chestName: '寶箱',
@@ -1024,6 +1035,7 @@
       burnMsg: 'Burn! {dmg} damage, {left} burn left',
       traumaMsg: 'Grind! {n} balls back and {dmg} damage',
       hgRefillHurt: 'The ball landed on a refill light: {n} balls back and {dmg} damage.',
+      rewardTalent: '{name} only', stArmor: 'Armor break', stTrauma: 'Grind rate',
       rewardTitle: 'Choose a reward', rewardReroll: 'Reroll ({n} balls)', rewardHave: 'Have ×{n}',
       statusBoons: 'Rewards',
       chestName: 'Treasure Chest',
@@ -1383,6 +1395,7 @@
   const boon = id => adv.boons[id] || 0;
   const hasTalent = id => mode === 'adv' && adv.talent === id;
   const talentAtk = () => hasTalent('alloy') ? 1 : 0;
+  const traumaRate = () => 0.5 + 0.25 * boon('rend');
   const critRate = () => Math.min(1, CRIT_BASE_RATE + 0.2 * boon('critRate') + (hasTalent('alloy') ? 0.15 : 0));
   const critMult = () => CRIT_BASE_MULT + 0.5 * boon('critDmg');
   // 每回合投珠上限：寶箱只能投 1 顆
@@ -1526,8 +1539,8 @@
   // → 有打破防禦才加穿透傷害（不然可以每次投 1 顆、只靠穿透慢慢磨死高防禦怪物）
   // combo：這回合前面已經有幾顆珠落進同一顆燈，每多一顆攻擊 +1（扣防禦前）
   function computeHit(crit, combo = 0) {
-    const def = monsterDef();
-    const raw = mult() * (1 + round.heavy) + boon('perBall') + talentAtk() + levelAtk() + combo;
+    const def = Math.max(0, monsterDef() - boon('armor'));
+    const raw = mult() * (1 + round.heavy) + boon('perBall') + talentAtk() + levelAtk() + combo + round.crits * boon('chainCrit');
     let dmg = Math.max(0, raw - def);
     if (crit) dmg = Math.round(dmg * critMult());
     if (dmg > 0) dmg += boon('pierce');
@@ -1549,7 +1562,8 @@
   function burnTick() {
     if (!hasTalent('burn') || !adv.burn || adv.chest || adv.status !== 'playing') return false;
     const dmg = adv.burn;
-    adv.burn = Math.floor(adv.burn / 2);
+    // 悶燒 n 層：保留 (n+1)/(n+2)，0 層就是減半
+    adv.burn = Math.floor(adv.burn * (boon('smolder') + 1) / (boon('smolder') + 2));
     extraDamage(dmg, '#fb923c');
     say('burnMsg', { dmg, left: adv.burn });
     Sound.hit();
@@ -1557,9 +1571,10 @@
   }
 
   function damageMonster(px, combo = 0) {
-    if (hasTalent('burn')) adv.burn++;   // 落進攻擊燈就疊燃燒（打不破防禦也算）
+    if (hasTalent('burn')) adv.burn += 1 + boon('kindle');   // 落進攻擊燈就疊燃燒（打不破防禦也算）
     const crit = Math.random() < critRate();
     const { raw, def, dmg } = computeHit(crit, combo);
+    if (crit) round.crits++;
     state.lastWin = dmg;
     if (dmg === 0) {
       // 攻擊沒打破防禦：0 傷害，怪物竊笑
@@ -1622,6 +1637,9 @@
   function boonAvailable(id) {
     if (id === 'chestRare') return CHEST_LANES[1] + boon('chestRare') + CHEST_LANES[2] + CHEST_LANES[3] < SLOT_COUNT;
     if (id === 'pin') return pins.length > 0;
+    if (BOONS[id].talent && BOONS[id].talent !== adv.talent) return false;
+    if (id === 'light') return boon('light') < MULT_RULES.adv.mults.length - 1;
+    if (id === 'roll') return !boon('roll');      // 只能拿一次
     return true;
   }
   function rollRewards() {
@@ -1974,6 +1992,8 @@
     round.hits = round.dmg = round.gain = 0;
     round.refunded = false;
     round.stack = {};
+    round.crits = 0;          // 連鎖暴擊：這回合暴擊了幾次
+    round.shattered = false;  // 碎甲：這回合降過防禦了沒
     adv.rescueSaid = false;
     rollLit(litCount());
     syncRestBalls();
@@ -2094,7 +2114,9 @@
   }
 
   // 升一段倍率需要的持珠數：大冒險要多留 1 顆投珠
-  const multNeed = () => multRule().cost + (mode === 'adv' ? 1 : 0);
+  // 輕量合金：大冒險（寶箱除外）前幾段倍率免費
+  const multCost = () => mode === 'adv' && !chestStage() && round.level < boon('light') ? 0 : multRule().cost;
+  const multNeed = () => multCost() + (mode === 'adv' ? 1 : 0);
 
   function addMult() {
     Sound.init();
@@ -2112,10 +2134,11 @@
       Sound.error();
       return;
     }
-    for (let i = 0; i < multRule().cost; i++) takeBall(HOLES.mult, i * 0.12);
+    const cost = multCost();
+    for (let i = 0; i < cost; i++) takeBall(HOLES.mult, i * 0.12);
     Sound.clunk();
     round.level++;
-    round.multPaid += multRule().cost;
+    round.multPaid += cost;
     if (chestStage()) say('chestTierUp', { desc: t('chestDesc' + round.level) });
     else say('multUp', { mult: mult(), lit: litCount() });
   }
@@ -2174,11 +2197,22 @@
       popups.push({ x: px, y: SLOT_TOP - 16, text: combo ? t('comboPop', { k: combo + 1, text: pop }) : pop, t: 0, color: '#4ade80', big: combo > 0 });
       say(combo ? 'refillMsgCombo' : refund ? 'refillMsgMult' : 'refillMsg', { n, refund, bonus, k: combo + 1, c: combo });
       Sound.coin();
+      if (hasTalent('burn')) adv.burn += boon('tinder');
       if (hasTalent('trauma')) {
-        const dmg = Math.round(n * 0.5);
+        const dmg = Math.round(n * traumaRate());
         extraDamage(dmg, '#f472b6');
+        if (boon('shatter') && !round.shattered && adv.monster && monsterDef() > 0) {
+          round.shattered = true;
+          adv.defDown = Math.min(adv.monster.def, adv.defDown + boon('shatter'));
+        }
         say('traumaMsg', { n, dmg });
       }
+    } else if (boon('roll')) {
+      // 滾動補給：沒中的珠退回 1 顆
+      state.payoutQueue += 1;
+      adv.lost = Math.max(0, adv.lost - 1);
+      popups.push({ x: px, y: SLOT_TOP - 16, text: t('refillPop', { n: 1 }), t: 0, color: '#cbd5e1' });
+      Sound.thud();
     } else {
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('losePop'), t: 0, color: '#cbd5e1' });
       if (shots() === 1) say('advMissMsg', { name: monsterName() });
@@ -2278,7 +2312,7 @@
         text = dmg > 0 ? t('hgHit', { dmg }) : t('hgBlock', { raw, def });
       } else if (round.refills.has(slot)) {
         const n = refund + refillBonus() + combo;
-        text = hasTalent('trauma') ? t('hgRefillHurt', { n, dmg: Math.round(n * 0.5) }) : t('hgRefill', { n });
+        text = hasTalent('trauma') ? t('hgRefillHurt', { n, dmg: Math.round(n * traumaRate()) }) : t('hgRefill', { n });
         refund = 0;
       } else {
         text = t(slot < 0 ? 'hgOut' : 'hgMiss');
@@ -4466,6 +4500,8 @@
     sec('stSecLevel');
     if (adv.talent) row('stTalent', TALENTS[adv.talent].name[lang]);
     if (adv.talent === 'burn') row('stBurn', adv.burn);
+    if (adv.talent === 'trauma') row('stTrauma', pct(traumaRate()));
+    if (boon('armor')) row('stArmor', '−' + boon('armor'));
     row('stLevel', 'Lv' + advLevel());
     row('stLevelAtk', '+' + levelAtk());
     sec('stSecBalls');
@@ -4555,6 +4591,12 @@
       const desc = document.createElement('span');
       desc.textContent = BOONS[id].desc[lang];
       b.append(name, desc);
+      if (BOONS[id].talent) {
+        b.classList.add('rw-talent');
+        const tag = document.createElement('small');
+        tag.textContent = t('rewardTalent', { name: TALENTS[BOONS[id].talent].name[lang] });
+        b.append(tag);
+      }
       if (boon(id)) {
         const have = document.createElement('small');
         have.textContent = t('rewardHave', { n: boon(id) });
