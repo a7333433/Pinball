@@ -912,6 +912,7 @@
       hitMsgTotal: '命中！攻擊 {raw}，扣掉防禦 {def}，加上加成共造成 {dmg} 點傷害',
       critMsg: '暴擊！造成 {dmg} 點傷害', critPop: '暴擊 -{d}',
       talentTitle: '選擇天賦（整趟冒險有效）', stTalent: '天賦', stBurn: '燃燒層數',
+      burnStart: '燃燒中…… 🔥 {n} 層',
       burnMsg: '燃燒！怪物受到 {dmg} 點傷害，燃燒剩 {left} 層',
       traumaMsg: '外傷！補回 {n} 顆彈珠，同時造成 {dmg} 點傷害',
       hgRefillHurt: '鋼珠落進補珠燈，將補回 {n} 顆彈珠並造成 {dmg} 點傷害。',
@@ -1032,6 +1033,7 @@
       hitMsgTotal: 'Hit! {raw} attack − DEF {def}, with bonuses {dmg} damage',
       critMsg: 'Critical hit! {dmg} damage', critPop: 'CRIT -{d}',
       talentTitle: 'Choose a talent (lasts the whole adventure)', stTalent: 'Talent', stBurn: 'Burn',
+      burnStart: 'Burning... 🔥 {n} stacks',
       burnMsg: 'Burn! {dmg} damage, {left} burn left',
       traumaMsg: 'Grind! {n} balls back and {dmg} damage',
       hgRefillHurt: 'The ball landed on a refill light: {n} balls back and {dmg} damage.',
@@ -1264,6 +1266,17 @@
       [784, 988, 1175, 1568, 1175, 1568].forEach((f, i) => this.tone(f, 0.18, 'square', 0.06, i * 0.09));
     },
     lose() { this.tone(330, 0.35, 'triangle', 0.12, 0, 160); },
+    ignite() {
+      // 點火：「呼──」往上竄
+      this.noise(0.5, 0.12);
+      this.tone(110, 0.55, 'sawtooth', 0.05, 0, 330);
+    },
+    burn() {
+      // 燃燒爆開：一團火「轟」
+      this.noise(0.35, 0.4);
+      this.tone(300, 0.4, 'sawtooth', 0.09, 0, 60);
+      this.tone(900, 0.2, 'triangle', 0.05, 0.05, 1800);
+    },
     miss() {
       // 單顆珠沒中：輕輕的「噗」往下掉，跟傷害的重擊聲分開
       if (!this.ctx) return;
@@ -1577,7 +1590,7 @@
     adv.burn = Math.floor(adv.burn * (boon('smolder') + 1) / (boon('smolder') + 2));
     extraDamage(dmg, '#fb923c');
     say('burnMsg', { dmg, left: adv.burn });
-    Sound.hit();
+    Sound.burn();
     return true;
   }
 
@@ -2255,27 +2268,54 @@
     round.resetT = 1.6;
   }
 
-  // 大冒險這回合的珠全部落下：顯示總結
+  // 燃燒階段的時間點（秒）：等總結看完 → 點火、數層數 → 爆開扣血 → 收尾
+  const BURN_WAIT = 0.7, BURN_BLAST = 1.1, BURN_END = 1.9;
+  const burnPending = () => hasTalent('burn') && adv.burn > 0 && !adv.chest && adv.status === 'playing';
+
+  // 大冒險這回合的珠全部落下：顯示總結，有燃燒的話接著跑一段燃燒動畫
   function finishRound() {
     round.resetT = 1.6;
-    const burned = burnTick();
     if (adv.status === 'won') { round.phase = 'win'; return; }
     const anyHit = round.landed.some(s => round.lit.has(s) || round.refills.has(s));
-    round.phase = anyHit || burned ? 'win' : 'lose';
+    const result = anyHit ? 'win' : 'lose';
     if (!anyHit) {
       state.lastWin = 0;
-      if (burned) return;   // 訊息螢幕留給燃燒
       adv.laughT = 1.3;
       setTimeout(() => Sound.snicker(), 250);
       say('advMissMsg', { name: monsterName() });
       Sound.lose();
-      return;
-    }
-    if (shots() > 1 && !burned) {
+    } else if (shots() > 1) {
       const key = round.dmg && round.gain ? 'roundSumBoth' : round.gain ? 'roundSumGain' : 'roundSumDmg';
       say(key, { n: shots(), hit: round.hits, dmg: round.dmg, gain: round.gain });
     }
     // 不再播勝利音效：每顆命中時已經各自有音效，勝利音效留給打倒怪物
+    if (burnPending()) {
+      round.phase = 'burn';
+      round.burnT = anyHit || shots() > 1 ? -BURN_WAIT : -BURN_WAIT * 1.4;
+      round.burnN = adv.burn;          // 這回合結算的層數
+      round.burnLit = round.burnDone = false;
+      round.burnNext = result;
+      return;
+    }
+    round.phase = result;
+  }
+
+  // 燃燒階段：點火 → 數層數 → 爆開造成傷害 → 回到一般回合結束
+  function updateBurn(dt) {
+    round.burnT += dt;
+    if (!round.burnLit && round.burnT >= 0) {
+      round.burnLit = true;
+      say('burnStart', { n: round.burnN });
+      Sound.ignite();
+    }
+    if (!round.burnDone && round.burnT >= BURN_BLAST) {
+      round.burnDone = true;
+      burnTick();
+    }
+    if (round.burnT >= BURN_END) {
+      round.phase = adv.status === 'won' ? 'win' : round.burnNext;
+      round.resetT = 0.5;
+    }
   }
 
   function resolveLanding(slot) {
@@ -2599,6 +2639,7 @@
     }
 
     state.shakeT = Math.max(0, state.shakeT - dt);
+    if (round.phase === 'burn') updateBurn(dt);
     if (round.phase === 'win' || round.phase === 'lose' || round.phase === 'rewind') {
       round.resetT -= dt;
       if (round.resetT <= 0 && state.payoutQueue === 0) newRound();
@@ -3603,6 +3644,75 @@
     }));
   }
 
+  // ===== 燃燒動畫 =====
+  // 火勢 0~1：點火後慢慢變大，爆開時最大，之後退掉
+  function burnPower() {
+    const t = round.burnT;
+    if (t < BURN_BLAST) return Math.min(1, t / BURN_BLAST) * 0.7;
+    return Math.max(0, 1 - (t - BURN_BLAST) / (BURN_END - BURN_BLAST)) * (t - BURN_BLAST < 0.15 ? 1.3 : 1);
+  }
+  // 怪物後面一圈橘紅色火光
+  function drawBurnGlow(cx, y0, size, time) {
+    const k = burnPower(), cy = y0 + size * 0.6;
+    const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, size * 1.2);
+    g.addColorStop(0, `rgba(255, 140, 40, ${0.55 * k + 0.08 * Math.sin(time * 20)})`);
+    g.addColorStop(1, 'rgba(255, 60, 20, 0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(cx - size * 1.3, y0 - 20, size * 2.6, size * 1.6);
+  }
+  // 怪物身上的像素火焰、往上飄的火星、正中間的層數
+  function drawBurnFx(m, x0, y0, size, time) {
+    const k = burnPower(), P = 4, cx = x0 + size / 2;
+    // 怪物整隻被燒得發紅，爆開那一下最亮
+    ctx.fillStyle = `rgba(255, ${90 + Math.round(60 * Math.sin(time * 18))}, 0, ${Math.min(0.75, 0.25 + 0.4 * k)})`;
+    m.map.forEach((row, r) => [...row].forEach((ch, col) => {
+      if (ch !== '.') ctx.fillRect(x0 + col * PX, y0 + r * PX, PX, PX);
+    }));
+    const tongues = Math.min(12, 5 + round.burnN);
+    const base = y0 + size + 4;
+    const seed = i => Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1;
+    for (let i = 0; i < tongues; i++) {
+      const fx = cx - size * 0.6 + (i + 0.5) * size * 1.2 / tongues;
+      const flick = 0.6 + 0.4 * Math.abs(Math.sin(time * (9 + seed(i) * 6) + i * 1.7));
+      const h = Math.round((size * (0.6 + seed(i + 7) * 0.7)) * Math.min(1, k) * flick / P);
+      for (let r = 0; r < h; r++) {
+        const f = r / Math.max(1, h);                 // 0 底部 → 1 尖端
+        const w = Math.max(1, Math.round((1 - f) * 3));
+        ctx.fillStyle = f < 0.2 ? '#fef08a' : f < 0.45 ? '#facc15' : f < 0.75 ? '#f97316' : '#dc2626';
+        ctx.globalAlpha = Math.min(1, 1.15 - f * 0.6);
+        const sway = Math.round(Math.sin(time * 8 + i + r * 0.5) * f * 1.5);
+        ctx.fillRect(Math.round(fx / P + sway - w / 2) * P, base - (r + 1) * P, w * P, P);
+      }
+    }
+    // 火星
+    for (let i = 0; i < 18; i++) {
+      const life = (time * (0.7 + seed(i) * 0.6) + seed(i + 3)) % 1;
+      if (life > k + 0.2) continue;
+      ctx.globalAlpha = (1 - life) * Math.min(1, k * 1.5);
+      ctx.fillStyle = seed(i + 5) > 0.5 ? '#fde047' : '#fb923c';
+      const ex = cx + (seed(i + 9) - 0.5) * size * 1.1 + Math.sin(time * 3 + i) * 6;
+      ctx.fillRect(Math.round(ex), Math.round(base - life * size * 1.1), 3, 3);
+    }
+    ctx.globalAlpha = 1;
+    // 層數：點火時從 0 數到 n，爆開時放大
+    const t = round.burnT;
+    const shown = t < BURN_BLAST * 0.8 ? Math.ceil(round.burnN * Math.min(1, t / (BURN_BLAST * 0.7))) : round.burnN;
+    if (t < BURN_BLAST + 0.35) {
+      const pop = t >= BURN_BLAST ? 1 + (t - BURN_BLAST) * 2.5 : 1;
+      ctx.globalAlpha = t >= BURN_BLAST ? Math.max(0, 1 - (t - BURN_BLAST) / 0.35) : Math.min(1, t * 5);
+      ctx.font = `bold ${Math.round(24 * pop)}px "Courier New", Consolas, monospace`;
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#450a0a';
+      const label = `🔥×${Math.max(0, shown)}`, ly = y0 + 10;
+      ctx.textBaseline = 'middle';
+      ctx.strokeText(label, cx, ly);
+      ctx.fillStyle = '#fde047';
+      ctx.fillText(label, cx, ly);
+      ctx.globalAlpha = 1;
+    }
+  }
+
   function drawMonster(m, x0, y0, flash, laughing = false, open = false) {
     const map = open ? m.open : laughing ? m.laugh : m.map;
     for (let r = 0; r < map.length; r++) {
@@ -3667,7 +3777,10 @@
         ctx.ellipse(sx, sy, size * 0.36 * k, 6 * k, 0, 0, Math.PI * 2);
         ctx.fill();
       }
+      const burning = round.phase === 'burn' && round.burnT >= 0 && visible;
+      if (burning) drawBurnGlow(cx, y0, size, time);
       if (visible) drawMonster(m, x0, y0, adv.hitT > 0 && Math.floor(adv.hitT * 20) % 2 === 0, laughing, opened);
+      if (burning) drawBurnFx(m, x0, y0, size, time);
       if (opened && adv.loot) {
         // 拿到的道具從寶箱旁邊浮出來
         const icon = ITEM_ICONS[adv.loot], IP = 4;
@@ -3778,7 +3891,7 @@
     // 檯面每一排的 LED
     const chest = chestStage();
     // 落到珠的那幾排：中了閃燈、沒中蓋一層淡白
-    const showLand = round.phase === 'win' || round.phase === 'lose' || round.phase === 'flying';
+    const showLand = round.phase === 'win' || round.phase === 'lose' || round.phase === 'flying' || round.phase === 'burn';
     const landed = new Set(showLand ? round.landed : []);
     for (const i of round.lit) {
       const on = landed.has(i) ? blink : true;
