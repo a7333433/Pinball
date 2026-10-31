@@ -110,16 +110,17 @@
   const ITEM_IDS = Object.keys(ITEMS);
 
   // ===== 暴擊、過關獎勵（冒險模式） =====
-  const CRIT_BASE_RATE = 0;       // 基礎暴擊機率
+  const CRIT_BASE_RATE = 0.05;    // 基礎暴擊機率 5%
   const CRIT_BASE_MULT = 1.5;     // 基礎暴擊傷害倍率 150%
   // 每打倒一隻怪物（最後一隻除外）從這裡隨機抽 3 樣選 1 樣，效果持續整個冒險、可以疊加
   const BOONS = {
-    balls: { name: { zh: '彈珠補給', en: 'Ball Supply' }, desc: { zh: '持有彈珠數增加 5', en: '+5 balls' } },
+    balls: { name: { zh: '彈珠補給', en: 'Ball Supply' }, desc: { zh: '持有彈珠數增加 10', en: '+10 balls' } },
     perBall: { name: { zh: '每珠增傷', en: 'Per-ball Damage' }, desc: { zh: '每顆投珠增加攻擊力 1（扣防禦前）', en: '+1 attack per ball bet (before DEF)' } },
-    multPct: { name: { zh: '倍率強化', en: 'Multiplier Up' }, desc: { zh: '倍率孔的倍率增加 10%', en: 'Multiplier +10%' } },
+    multBase: { name: { zh: '基礎倍率', en: 'Base Multiplier' }, desc: { zh: '倍率從 ×1 改成多 1 倍起跳（每段倍率都 +1）', en: 'Every multiplier step is ×1 higher' } },
+    litUp: { name: { zh: '攻擊燈數', en: 'More Red Lights' }, desc: { zh: '每回合紅燈（攻擊燈）多亮 1 顆', en: '+1 red (attack) light every round' } },
     pierce: { name: { zh: '穿透傷害', en: 'Piercing' }, desc: { zh: '攻擊打破防禦時，追加 1 點忽視防禦的傷害', en: '+1 damage that ignores DEF on hits that break DEF' } },
-    weight: { name: { zh: '加重彈珠', en: 'Heavier Marble' }, desc: { zh: '彈珠重量增加 0.2（撞釘子彈得比較低、比較不會亂跳）', en: 'Marble weight +0.2 (bounces lower and jitters less)' } },
-    pin: { name: { zh: '拔釘子', en: 'Fewer Pins' }, desc: { zh: '落珠區的釘子隨機減少 2 根', en: 'Removes 2 random pins from the board' } },
+    weight: { name: { zh: '加重彈珠', en: 'Heavier Marble' }, desc: { zh: '彈珠重量增加 0.5（撞釘子彈得比較低、比較不會亂跳）', en: 'Marble weight +0.5 (bounces lower and jitters less)' } },
+    pin: { name: { zh: '拔釘子', en: 'Fewer Pins' }, desc: { zh: '落珠區的釘子隨機減少 5 根', en: 'Removes 5 random pins from the board' } },
     refill: { name: { zh: '補珠加量', en: 'Bigger Refills' }, desc: { zh: '補珠燈補珠時多得 2 顆', en: '+2 balls on every refill light' } },
     refillLight: { name: { zh: '補珠燈數', en: 'More Refill Lights' }, desc: { zh: '每回合補珠燈多 1 顆', en: '+1 refill light every round' } },
     chestRare: { name: { zh: '寶箱升級', en: 'Better Chests' }, desc: { zh: '寶箱關卡的稀有（藍）燈 +1、一般（白）燈 −1', en: 'Chests get +1 rare (blue) lane, −1 common (white) lane' } },
@@ -904,7 +905,7 @@
       stSecBalls: '彈珠', stSecAttack: '攻擊（每顆珠）', stSecOther: '其他',
       stSecLevel: '等級', stLevel: '目前等級', stLevelAtk: '等級攻擊加成',
       stBetCap: '每回合投珠上限', stBonus: '下次過關補',
-      stMultPct: '倍率強化', stPerBall: '每珠增傷', stPierce: '穿透傷害',
+      stMultBase: '基礎倍率', stLitUp: '紅燈多亮', stPerBall: '每珠增傷', stPierce: '穿透傷害',
       stCritRate: '暴擊機率', stCritDmg: '暴擊傷害',
       stRefillLights: '每回合補珠燈', stRefillLightsN: '{n} 顆', stRefill: '補珠燈每顆補', stWeight: '彈珠重量', stPins: '已拔掉釘子', stPinsN: '{n} 根', stChest: '寶箱額外藍燈', stChestN: '{n} 排',
       btnCodex: '寶藏', codexTitle: '寶藏', codexCount: '已取得 {n} / {total} 種', codexBack: '返回',
@@ -1016,7 +1017,7 @@
       stSecBalls: 'Balls', stSecAttack: 'Attack (per ball)', stSecOther: 'Other',
       stSecLevel: 'Level', stLevel: 'Level', stLevelAtk: 'Level attack bonus',
       stBetCap: 'Max bet per round', stBonus: 'Next stage bonus',
-      stMultPct: 'Multiplier up', stPerBall: 'Per-ball damage', stPierce: 'Piercing',
+      stMultBase: 'Base multiplier', stLitUp: 'Extra red lights', stPerBall: 'Per-ball damage', stPierce: 'Piercing',
       stCritRate: 'Crit chance', stCritDmg: 'Crit damage',
       stRefillLights: 'Refill lights per round', stRefillLightsN: '{n}', stRefill: 'Refill per ball', stWeight: 'Marble weight', stPins: 'Pins removed', stPinsN: '{n}', stChest: 'Extra blue chest lanes', stChestN: '{n}',
       btnCodex: 'Treasures', codexTitle: 'Treasures', codexCount: 'Found {n} / {total}', codexBack: 'Back',
@@ -1483,13 +1484,13 @@
   // → 有打破防禦才加穿透傷害（不然可以每次投 1 顆、只靠穿透慢慢磨死高防禦怪物）
   function computeHit(crit) {
     const def = monsterDef();
-    const raw = Math.round(mult() * (1 + 0.1 * boon('multPct')) * (1 + round.heavy)) + boon('perBall') + levelAtk();
+    const raw = mult() * (1 + round.heavy) + boon('perBall') + levelAtk();
     let dmg = Math.max(0, raw - def);
     if (crit) dmg = Math.round(dmg * critMult());
     if (dmg > 0) dmg += boon('pierce');
     return { raw, def, dmg };
   }
-  const hitBonused = () => round.heavy > 0 || levelAtk() > 0 || boon('multPct') > 0 || boon('perBall') > 0 || boon('pierce') > 0;
+  const hitBonused = () => round.heavy > 0 || levelAtk() > 0 || boon('multBase') > 0 || boon('perBall') > 0 || boon('pierce') > 0;
   const refillBonus = () => REFILL_MULT + 2 * boon('refill');   // 每顆珠
 
   function damageMonster(px) {
@@ -1582,8 +1583,8 @@
     if (!adv.rewards || !adv.rewards.includes(id)) return;
     adv.boons[id] = boon(id) + 1;
     adv.rewards = null;
-    if (id === 'balls') state.payoutQueue += 5;
-    if (id === 'pin') { removeRandomPin(); removeRandomPin(); }
+    if (id === 'balls') state.payoutQueue += 10;
+    if (id === 'pin') for (let i = 0; i < 5; i++) removeRandomPin();
     Sound.coin();
     refreshOverlay();
   }
@@ -1843,7 +1844,9 @@
     applyMode();
   }
 
-  const mult = () => multRule().mults[round.level];
+  // 過關獎勵「基礎倍率」：大冒險打怪時每段倍率都 +1
+  const multBonus = () => mode === 'adv' && !chestStage() ? boon('multBase') : 0;
+  const mult = () => multRule().mults[round.level] + multBonus();
 
   function ballAtShooter() {
     return balls.some(atShooter);
@@ -1884,10 +1887,11 @@
     }
   }
 
-  // 這局亮幾顆攻擊燈：寶箱全亮；雷射筆（紅）多亮，但要留位置給補珠燈
+  // 這局亮幾顆攻擊燈：寶箱全亮；雷射筆（紅）、過關獎勵「攻擊燈數」多亮，但要留位置給補珠燈
   function litCount() {
     if (chestStage()) return SLOT_COUNT;
-    return Math.min(litFor(round.level) + round.extraLit, SLOT_COUNT - 1 - round.extraRefill);
+    const bonus = mode === 'adv' ? round.extraLit + boon('litUp') : round.extraLit;
+    return Math.min(litFor(round.level) + bonus, SLOT_COUNT - 1 - round.extraRefill);
   }
 
   function newRound() {
@@ -2031,7 +2035,7 @@
     if (round.phase !== 'select') { say('multLocked'); Sound.error(); return; }
     if (round.level >= multRule().mults.length - 1) {
       if (chestStage()) say('chestMultMax');
-      else say('multMax', { max: multRule().mults[multRule().mults.length - 1] });
+      else say('multMax', { max: multRule().mults[multRule().mults.length - 1] + multBonus() });
       Sound.error();
       return;
     }
@@ -2222,7 +2226,7 @@
   }
 
   // ===== 物理 =====
-  let ballWeight = 1;     // 加重彈珠（每層 +0.2）：撞到東西時反彈係數、隨機抖動都除以重量
+  let ballWeight = 1;     // 加重彈珠（每層 +0.5）：撞到東西時反彈係數、隨機抖動都除以重量
   function collideCircle(b, px, py, rad, e, jitter = true) {
     e /= ballWeight;
     const dx = b.x - px, dy = b.y - py;
@@ -2273,7 +2277,7 @@
   }
 
   function stepBall(b, h) {
-    ballWeight = mode === 'adv' ? 1 + 0.2 * boon('weight') : 1;
+    ballWeight = mode === 'adv' ? 1 + 0.5 * boon('weight') : 1;
     b.vy += GRAVITY * h;
     const damp = 1 - 0.1 * h;
     b.vx *= damp; b.vy *= damp;
@@ -4386,7 +4390,8 @@
     if (adv.campaign) row('stBonus', t('statusBallsN', { n: nextBonus }));
 
     sec('stSecAttack');
-    row('stMultPct', '+' + 10 * boon('multPct') + '%');
+    row('stMultBase', '+' + boon('multBase'));
+    row('stLitUp', plus(boon('litUp')));
     row('stPerBall', plus(boon('perBall')));
     row('stPierce', plus(boon('pierce')));
     row('stCritRate', pct(critRate()));
@@ -4395,7 +4400,7 @@
     sec('stSecOther');
     row('stRefillLights', t('stRefillLightsN', { n: 1 + boon('refillLight') }));
     row('stRefill', t('statusBallsN', { n: refillBonus() }));
-    row('stWeight', '×' + (1 + 0.2 * boon('weight')).toFixed(1));
+    row('stWeight', '×' + (1 + 0.5 * boon('weight')).toFixed(1));
     row('stPins', t('stPinsN', { n: adv.removedPins.size }));
     row('stChest', t('stChestN', { n: boon('chestRare') }));
 
