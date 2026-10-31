@@ -141,9 +141,9 @@
   const BOON_IDS = Object.keys(BOONS);
   // 天賦：冒險模式開始前選 1 個，效果持續整趟冒險
   const TALENTS = {
-    alloy: { name: { zh: '合金鋼珠', en: 'Alloy Marble' }, desc: { zh: '每顆珠攻擊 +1（扣防禦前）、基礎倍率 +1、暴擊率 +15%', en: '+1 attack per ball (before DEF), +1 base multiplier, +15% crit chance' } },
+    alloy: { name: { zh: '合金鋼珠', en: 'Alloy Marble' }, desc: { zh: '每顆珠攻擊 +1（扣防禦前）、暴擊率 +15%', en: '+1 attack per ball (before DEF), +15% crit chance' } },
     burn: { name: { zh: '燒紅彈珠', en: 'Red-hot Marble' }, desc: { zh: '每次落進攻擊燈讓怪物燃燒 +1 層；每回合結束受到「層數」點無視防禦的傷害，之後層數減半', en: 'Each red-light hit adds 1 burn; at round end the monster takes burn damage (ignores DEF), then burn halves' } },
-    trauma: { name: { zh: '外傷滾珠', en: 'Grinding Marble' }, desc: { zh: '落進補珠燈時照常補珠，另外造成補珠數 50%（四捨五入）的無視防禦傷害', en: 'Refill lights still pay out, and also deal 50% of the balls refilled as damage (rounded, ignores DEF)' } },
+    trauma: { name: { zh: '外傷滾珠', en: 'Grinding Marble' }, desc: { zh: '落進補珠燈時照常補珠，另外造成等於補珠數的無視防禦傷害', en: 'Refill lights still pay out, and also deal damage equal to the balls refilled (ignores DEF)' } },
   };
   const TALENT_IDS = Object.keys(TALENTS);
   let talentPick = 'alloy';
@@ -1395,7 +1395,7 @@
   const boon = id => adv.boons[id] || 0;
   const hasTalent = id => mode === 'adv' && adv.talent === id;
   const talentAtk = () => hasTalent('alloy') ? 1 : 0;
-  const traumaRate = () => 0.5 + 0.25 * boon('rend');
+  const traumaRate = () => 1 + 0.25 * boon('rend');
   const critRate = () => Math.min(1, CRIT_BASE_RATE + 0.2 * boon('critRate') + (hasTalent('alloy') ? 0.15 : 0));
   const critMult = () => CRIT_BASE_MULT + 0.5 * boon('critDmg');
   // 每回合投珠上限：寶箱只能投 1 顆
@@ -1929,7 +1929,7 @@
   }
 
   // 過關獎勵「基礎倍率」：大冒險打怪時每段倍率都 +1
-  const multBonus = () => mode === 'adv' && !chestStage() ? boon('multBase') + (hasTalent('alloy') ? 1 : 0) : 0;
+  const multBonus = () => mode === 'adv' && !chestStage() ? boon('multBase') : 0;
   const mult = () => multRule().mults[round.level] + multBonus();
 
   function ballAtShooter() {
@@ -4511,7 +4511,7 @@
     if (adv.campaign) row('stBonus', t('statusBallsN', { n: nextBonus }));
 
     sec('stSecAttack');
-    row('stMultBase', '+' + (boon('multBase') + (hasTalent('alloy') ? 1 : 0)));
+    row('stMultBase', '+' + boon('multBase'));
     row('stLitUp', plus(boon('litUp')));
     row('stPerBall', plus(boon('perBall') + talentAtk()));
     row('stPierce', plus(boon('pierce')));
