@@ -882,6 +882,9 @@
       roundSumGain: '這回合 {n} 顆珠打中 {hit} 顆，補回 {gain} 顆彈珠',
       roundSumBoth: '這回合 {n} 顆珠打中 {hit} 顆，共造成 {dmg} 點傷害、補回 {gain} 顆彈珠',
       refillMsg: '命中補珠燈！補回 {n} 顆彈珠', refillPop: '+{n} 顆',
+      refillMsgCombo: '第 {k} 顆落進同一顆補珠燈！多補 {c} 顆，共補回 {n} 顆彈珠', comboPop: '疊{k} {text}',
+      hitMsgCombo: '第 {k} 顆落進同一顆攻擊燈！攻擊 +{c} 共 {raw}，扣掉防禦 {def} 造成 {dmg} 點傷害',
+      blockMsgCombo: '第 {k} 顆落進同一顆攻擊燈，但攻擊 {raw} 還是打不破防禦 {def}',
       refillMsgMult: '命中補珠燈！退回倍率孔 {refund} 顆，再補 {bonus} 顆，共 {n} 顆',
       advMissMsg: '沒打中！{name}在嘲笑你', advWinMsg: '打倒了{name}！', advWinLv: '打倒了{name}！升到 Lv{lv}，過關補珠 +{bonus}', advWinLvAtk: '打倒了{name}！升到 Lv{lv}，攻擊 +1（共 +{atk}）、過關補珠 +{bonus}', advLoseMsg: '彈珠用完了…',
       dmgPop: '-{d} HP', advNoCoin: '大冒險模式不能投幣',
@@ -994,6 +997,9 @@
       roundSumGain: '{hit} of {n} balls hit: {gain} balls back',
       roundSumBoth: '{hit} of {n} balls hit: {dmg} damage and {gain} balls back',
       refillMsg: 'Refill light! +{n} balls', refillPop: '+{n} balls',
+      refillMsgCombo: 'Ball #{k} on the same refill light! +{c} extra, {n} balls back', comboPop: 'x{k} {text}',
+      hitMsgCombo: 'Ball #{k} on the same red light! +{c} attack = {raw} − DEF {def}: {dmg} damage',
+      blockMsgCombo: 'Ball #{k} on the same red light, but {raw} attack is still blocked by DEF {def}',
       refillMsgMult: 'Refill light! {refund} multiplier balls back + {bonus} = {n} balls',
       advMissMsg: 'Missed! The {name} laughs', advWinMsg: 'Defeated the {name}!', advWinLv: 'Defeated the {name}! Level {lv}: stage bonus +{bonus}', advWinLvAtk: 'Defeated the {name}! Level {lv}: attack +1 (total +{atk}), stage bonus +{bonus}', advLoseMsg: 'Out of balls…',
       dmgPop: '-{d} HP', advNoCoin: 'No coins in Quest mode',
@@ -1482,9 +1488,10 @@
   // 大冒險每顆珠各自計算，加上過關獎勵、暴擊後的傷害：
   // 攻擊 = 倍率 ×（1 + 倍率強化 10%／層）× 基本傷害 + 每珠增傷 → 扣防禦 → × 暴擊
   // → 有打破防禦才加穿透傷害（不然可以每次投 1 顆、只靠穿透慢慢磨死高防禦怪物）
-  function computeHit(crit) {
+  // combo：這回合前面已經有幾顆珠落進同一顆燈，每多一顆攻擊 +1（扣防禦前）
+  function computeHit(crit, combo = 0) {
     const def = monsterDef();
-    const raw = mult() * (1 + round.heavy) + boon('perBall') + levelAtk();
+    const raw = mult() * (1 + round.heavy) + boon('perBall') + levelAtk() + combo;
     let dmg = Math.max(0, raw - def);
     if (crit) dmg = Math.round(dmg * critMult());
     if (dmg > 0) dmg += boon('pierce');
@@ -1493,16 +1500,16 @@
   const hitBonused = () => round.heavy > 0 || levelAtk() > 0 || boon('multBase') > 0 || boon('perBall') > 0 || boon('pierce') > 0;
   const refillBonus = () => REFILL_MULT + 2 * boon('refill');   // 每顆珠
 
-  function damageMonster(px) {
+  function damageMonster(px, combo = 0) {
     const crit = Math.random() < critRate();
-    const { raw, def, dmg } = computeHit(crit);
+    const { raw, def, dmg } = computeHit(crit, combo);
     state.lastWin = dmg;
     if (dmg === 0) {
       // 攻擊沒打破防禦：0 傷害，怪物竊笑
       adv.laughT = 1.3;
       adv.pops.push({ text: t('blockScreen'), t: 0 });
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('blockPop'), t: 0, color: '#cbd5e1' });
-      say('blockMsg', { raw, def });
+      say(combo ? 'blockMsgCombo' : 'blockMsg', { raw, def, k: combo + 1 });
       Sound.thud();
       setTimeout(() => Sound.snicker(), 250);
       return;
@@ -1511,9 +1518,10 @@
     round.dmg += dmg;
     adv.hitT = 0.5;
     adv.pops.push({ text: '-' + dmg, t: 0, color: crit ? '#ffd166' : undefined, big: crit });
-    popups.push({ x: px, y: SLOT_TOP - 16, text: t(crit ? 'critPop' : 'dmgPop', { d: dmg }), t: 0, color: crit ? '#ffd166' : '#ff6b6b', big: crit });
-    const key = crit ? 'critMsg' : hitBonused() ? 'hitMsgTotal' : def > 0 ? 'hitMsgDef' : 'hitMsg';
-    say(key, { mult: mult(), bet: round.bet, raw, def, dmg });
+    const pop = t(crit ? 'critPop' : 'dmgPop', { d: dmg });
+    popups.push({ x: px, y: SLOT_TOP - 16, text: combo ? t('comboPop', { k: combo + 1, text: pop }) : pop, t: 0, color: crit ? '#ffd166' : '#ff6b6b', big: crit || combo > 0 });
+    const key = crit ? 'critMsg' : combo ? 'hitMsgCombo' : hitBonused() ? 'hitMsgTotal' : def > 0 ? 'hitMsgDef' : 'hitMsg';
+    say(key, { mult: mult(), bet: round.bet, raw, def, dmg, k: combo + 1, c: combo });
     if (crit) {
       state.shakeT = Math.max(state.shakeT, 0.25);   // 暴擊時機台晃一下
       Sound.crit();
@@ -1907,6 +1915,7 @@
     round.launched = 0;
     round.hits = round.dmg = round.gain = 0;
     round.refunded = false;
+    round.stack = {};
     adv.rescueSaid = false;
     rollLit(litCount());
     syncRestBalls();
@@ -2089,19 +2098,23 @@
   // 大冒險一顆珠的結果：攻擊燈造成傷害、補珠燈補珠、其他沒中
   function resolveBall(slot) {
     const px = B.left + (slot + 0.5) * SLOT_W;
+    // 同一顆燈疊珠：這回合第 k 顆落進同一顆燈的珠，攻擊 +(k−1)／補珠 +(k−1)
+    const combo = round.stack[slot] || 0;
+    round.stack[slot] = combo + 1;
     if (round.lit.has(slot)) {
       round.hits++;
-      damageMonster(px);
+      damageMonster(px, combo);
     } else if (round.refills.has(slot)) {
       // 補珠燈：每顆補 2 顆；這回合第一次中還會退回投進倍率孔的珠
-      const refund = round.refunded ? 0 : round.multPaid, bonus = refillBonus(), n = refund + bonus;
+      const refund = round.refunded ? 0 : round.multPaid, bonus = refillBonus() + combo, n = refund + bonus;
       round.refunded = true;
       round.hits++;
       round.gain += n;
       state.payoutQueue += n;
       adv.lost = Math.max(0, adv.lost - n);
-      popups.push({ x: px, y: SLOT_TOP - 16, text: t('refillPop', { n }), t: 0, color: '#4ade80' });
-      say(refund ? 'refillMsgMult' : 'refillMsg', { n, refund, bonus });
+      const pop = t('refillPop', { n });
+      popups.push({ x: px, y: SLOT_TOP - 16, text: combo ? t('comboPop', { k: combo + 1, text: pop }) : pop, t: 0, color: '#4ade80', big: combo > 0 });
+      say(combo ? 'refillMsgCombo' : refund ? 'refillMsgMult' : 'refillMsg', { n, refund, bonus, k: combo + 1, c: combo });
       Sound.coin();
     } else {
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('losePop'), t: 0, color: '#cbd5e1' });
@@ -2189,13 +2202,16 @@
   // 沙漏：預告這回合每顆珠的落點結果
   function landingPreview() {
     let refund = round.multPaid;
+    const stack = {};
     const lines = round.landed.map((slot, i) => {
       let text;
+      const combo = stack[slot] || 0;
+      if (slot >= 0) stack[slot] = combo + 1;
       if (round.lit.has(slot)) {
-        const { raw, def, dmg } = computeHit(false);
+        const { raw, def, dmg } = computeHit(false, combo);
         text = dmg > 0 ? t('hgHit', { dmg }) : t('hgBlock', { raw, def });
       } else if (round.refills.has(slot)) {
-        text = t('hgRefill', { n: refund + refillBonus() });
+        text = t('hgRefill', { n: refund + refillBonus() + combo });
         refund = 0;
       } else {
         text = t(slot < 0 ? 'hgOut' : 'hgMiss');
