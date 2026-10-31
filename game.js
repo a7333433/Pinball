@@ -44,31 +44,31 @@
       tier: 0, when: 'both',
       name: { zh: '銀幣', en: 'Silver Coin' },
       quote: { zh: '「我要十圓。」── 小屁孩', en: '"I want ten bucks." — Some brat' },
-      effect: { zh: '持珠數增加 10 顆', en: '+10 balls' },
+      effect: { zh: '持珠數增加 10 + 第幾關 顆（目前 {n} 顆）', en: '+10 balls plus the stage number (now {n})' },
     },
     laserRed: {
       tier: 0, when: 'pre',
       name: { zh: '雷射筆（紅）', en: 'Red Laser Pointer' },
       quote: { zh: '請勿對眼睛照射。', en: 'Do not shine into eyes.' },
-      effect: { zh: '這回合攻擊燈數增加 1', en: '+1 attack light this round' },
+      effect: { zh: '這一關攻擊燈數增加 1', en: '+1 attack light for the rest of this stage' },
     },
     fake: {
       tier: 0, when: 'both',
       name: { zh: '假彈珠', en: 'Fake Marble' },
       quote: { zh: '「這人怎麼彈珠打不完？」── 柑仔店老闆', en: '"How does this kid never run out of marbles?" — The shopkeeper' },
-      effect: { zh: '這回合倍率或投珠數隨機增加 1（定燈後只會加投珠數）', en: 'This round: randomly +1 multiplier or +1 bet (only +1 bet after locking)' },
+      effect: { zh: '這回合倍率和投珠數各免費 +1（定燈後只會加投珠數）', en: 'This round: free +1 multiplier and +1 bet (only +1 bet after locking)' },
     },
     laserGreen: {
       tier: 0, when: 'pre',
       name: { zh: '雷射筆（綠）', en: 'Green Laser Pointer' },
       quote: { zh: '請勿對眼睛照射，即使他是有益色。', en: 'Do not shine into eyes, even if green is good for them.' },
-      effect: { zh: '這回合補珠燈數增加 1', en: '+1 refill light this round' },
+      effect: { zh: '這一關補珠燈數增加 1', en: '+1 refill light for the rest of this stage' },
     },
     stone: {
       tier: 0, when: 'both',
       name: { zh: '石頭', en: 'Stone' },
       quote: { zh: '一顆手感不錯的石頭。', en: 'A stone that feels nice in the hand.' },
-      effect: { zh: '對怪物造成 1 點無視防禦的傷害', en: 'Deals 1 damage that ignores DEF' },
+      effect: { zh: '對怪物造成 3 + 2 × 第幾關 點無視防禦的傷害（目前 {n} 點）', en: 'Deals 3 + 2 × stage damage that ignores DEF (now {n})' },
     },
     acid: {
       tier: 1, when: 'both',
@@ -104,7 +104,7 @@
       tier: 3, when: 'post',
       name: { zh: '搖晃機台', en: 'Shake the Machine' },
       quote: { zh: '「你不能那樣做！」── 柑仔店老闆', en: '"You can\'t do that!" — The shopkeeper' },
-      effect: { zh: '把 1 顆彈珠直接放在檯面上任何地方，讓它從那裡落下（其他的珠照常發射）', en: 'Drop 1 ball anywhere on the board (the rest are shot as usual)' },
+      effect: { zh: '把 1 顆彈珠直接放在檯面上任何地方，讓它從那裡落下，這顆珠的傷害 ×3（其他的珠照常發射）', en: 'Drop 1 ball anywhere on the board; that ball deals ×3 damage (the rest are shot as usual)' },
     },
   };
   const ITEM_IDS = Object.keys(ITEMS);
@@ -944,14 +944,14 @@
       itemMaxLights: '燈已經亮滿了', itemNoDef: '怪物已經沒有防禦了', itemActive: '這回合已經用過了',
       itemNoLit: '沒有亮著的紅燈', itemKeyEmpty: '還沒有失去任何彈珠', itemNeedBet: '先往投珠孔投珠再使用',
       itemPlacing: '先點檯面放下彈珠',
-      useCoin: '使用銀幣：持珠 +{n} 顆', useLaserRed: '雷射筆（紅）：這回合攻擊燈 +1，定燈後亮 {lit} 顆',
-      useLaserGreen: '雷射筆（綠）：這回合補珠燈 +1', useFakeMult: '假彈珠：倍率 +1，變成 {mult} 倍！',
+      useCoin: '使用銀幣：持珠 +{n} 顆', useLaserRed: '雷射筆（紅）：這一關攻擊燈 +1，定燈後亮 {lit} 顆',
+      useLaserGreen: '雷射筆（綠）：這一關補珠燈 +1', useFakeBoth: '假彈珠：倍率 +1、投珠 +1，變成 {mult} 倍、{bet} 顆！', useFakeMult: '假彈珠：倍率 +1，變成 {mult} 倍！',
       useFakeBet: '假彈珠：投珠 +1，變成 {bet} 顆！', useStone: '丟石頭！對{name}造成 {d} 點傷害（無視防禦）',
       useAcid: '潑鹽酸！{name}的防禦降到 {def}', useHeavy: '沉重彈珠：這回合每顆珠的基本傷害變成 {n}',
       useHourglass: '沙漏翻過來了：鋼珠落下後可以選擇保留結果或返回上回合',
       useDrink: '嘶～～～ 紅燈全部變成補珠燈了！', useKey: '用老闆的鑰匙打開珠箱，拿回 {n} 顆彈珠！',
       useShake: '搖晃機台！點檯面上任何地方放下彈珠', shakeWhere: '點檯面上（釘子區）放下彈珠',
-      shakeHint: '點檯面放珠', shakePlaced: '「你不能那樣做！」彈珠放下去了',
+      shakeHint: '點檯面放珠', shakePlaced: '「你不能那樣做！」彈珠放下去了，這顆傷害 ×3',
       shakePlacedMore: '「你不能那樣做！」彈珠放下去了，剩下 {n} 顆拉彈簧發射',
       outUseItem: '彈珠用完了！背包裡還有能用的道具',
       hgTitle: '沙漏', hgKeep: '保留結果', hgRewindBtn: '返回上回合',
@@ -1064,14 +1064,14 @@
       itemMaxLights: 'No room for more lights', itemNoDef: 'The monster has no DEF left', itemActive: 'Already used this round',
       itemNoLit: 'No red lights to convert', itemKeyEmpty: 'You haven\'t lost any balls yet', itemNeedBet: 'Bet first',
       itemPlacing: 'Tap the board to drop the ball first',
-      useCoin: 'Silver Coin: +{n} balls', useLaserRed: 'Red laser: +1 attack light this round ({lit} after locking)',
-      useLaserGreen: 'Green laser: +1 refill light this round', useFakeMult: 'Fake marble: multiplier +1, now ×{mult}!',
+      useCoin: 'Silver Coin: +{n} balls', useLaserRed: 'Red laser: +1 attack light this stage ({lit} after locking)',
+      useLaserGreen: 'Green laser: +1 refill light this stage', useFakeBoth: 'Fake marble: +1 multiplier and +1 bet, now ×{mult} with {bet}!', useFakeMult: 'Fake marble: multiplier +1, now ×{mult}!',
       useFakeBet: 'Fake marble: +1 bet, now {bet}!', useStone: 'Threw a stone! {d} damage to the {name}, ignoring DEF',
       useAcid: 'Acid! The {name}\'s DEF drops to {def}', useHeavy: 'Heavy marble: {n} base damage per ball this round',
       useHourglass: 'Hourglass flipped: after the ball lands, keep the result or rewind the round',
       useDrink: 'Slurrrp~ Every red light is now a refill light!', useKey: 'The shopkeeper\'s key opened the ball box: {n} balls back!',
       useShake: 'Shake the machine! Tap anywhere on the board to drop the ball', shakeWhere: 'Tap the pin area of the board to drop the ball',
-      shakeHint: 'Tap to drop', shakePlaced: '"You can\'t do that!" Ball dropped',
+      shakeHint: 'Tap to drop', shakePlaced: '"You can\'t do that!" Ball dropped (×3 damage)',
       shakePlacedMore: '"You can\'t do that!" Ball dropped. Shoot the other {n}',
       outUseItem: 'Out of balls! Your backpack still has items that can help',
       hgTitle: 'Hourglass', hgKeep: 'Keep result', hgRewindBtn: 'Rewind',
@@ -1390,6 +1390,8 @@
     rerollCost: 1,        // 下一次重骰要花幾顆
     talent: null,         // 這趟冒險的天賦（TALENTS 的 id）；自由挑戰沒有天賦
     burn: 0,              // 燒紅彈珠：這隻怪物身上的燃燒層數
+    stageLit: 0,          // 雷射筆（紅）：這一關多亮幾顆攻擊燈
+    stageRefill: 0,       // 雷射筆（綠）：這一關多亮幾顆補珠燈
     pinSet: null,         // 大冒險檯面上有哪些釘子（ALL_PINS 的索引）；null = 還沒開打，顯示完整釘陣
   };
   const boon = id => adv.boons[id] || 0;
@@ -1518,6 +1520,7 @@
       adv.talent = adv.campaign ? talentPick : null;
     }
     adv.burn = 0;
+    adv.stageLit = adv.stageRefill = 0;
     // 寶箱沿用前一關的釘子；自由挑戰每場都重新擺
     if (!adv.chest) growPins(idx, !keepBalls);
     state.lastWin = null;
@@ -1570,10 +1573,12 @@
     return true;
   }
 
-  function damageMonster(px, combo = 0) {
+  // times：搖晃機台放下的那顆珠傷害 ×3
+  function damageMonster(px, combo = 0, times = 1) {
     if (hasTalent('burn')) adv.burn += 1 + boon('kindle');   // 落進攻擊燈就疊燃燒（打不破防禦也算）
     const crit = Math.random() < critRate();
-    const { raw, def, dmg } = computeHit(crit, combo);
+    const hitRes = computeHit(crit, combo);
+    const { raw, def } = hitRes, dmg = hitRes.dmg * times;
     if (crit) round.crits++;
     state.lastWin = dmg;
     if (dmg === 0) {
@@ -1703,7 +1708,11 @@
 
   // ===== 道具 =====
   const itemName = id => ITEMS[id].name[lang];
-  const itemEffect = id => ITEMS[id].effect[lang].replace('{n}', adv.lost);
+  // 會隨關卡變化的數值
+  const coinBalls = () => 10 + adv.monsterIdx + 1;
+  const stoneDmg = () => 3 + 2 * (adv.monsterIdx + 1);
+  const ITEM_N = { coin: coinBalls, stone: stoneDmg, key: () => adv.lost };
+  const itemEffect = id => ITEMS[id].effect[lang].replace('{n}', ITEM_N[id] ? ITEM_N[id]() : '');
 
   // 不能用的原因（i18n key），可以用就回傳 null
   function itemBlockGeneral() {
@@ -1750,43 +1759,47 @@
 
   const ITEM_FX = {
     coin() {
-      state.payoutQueue += 10;
-      say('useCoin', { n: 10 });
+      const n = coinBalls();
+      state.payoutQueue += n;
+      say('useCoin', { n });
       Sound.coin();
     },
     laserRed() {
+      adv.stageLit++;
       round.extraLit++;
       rollLit(litCount());
       say('useLaserRed', { lit: litCount() });
       Sound.lock();
     },
     laserGreen() {
+      adv.stageRefill++;
       round.extraRefill++;
       rollLit(litCount());
       say('useLaserGreen');
       Sound.lock();
     },
     fake() {
-      // 定燈前：倍率、投珠隨機加 1（倍率已經最高或手上沒珠時直接加投珠）
-      const canMult = round.phase === 'select' && round.level < multRule().mults.length - 1 && !(state.credits === 0 && round.bet === 0);
+      // 定燈前：倍率、投珠各加 1（倍率已經最高就只加投珠，投珠到上限就只加倍率）
+      const canMult = round.phase === 'select' && round.level < multRule().mults.length - 1;
       const canBet = round.bet < betCap();
-      if (canMult && (!canBet || Math.random() < 0.5)) {
-        round.level++;
-        say('useFakeMult', { mult: mult() });
-      } else {
+      if (canMult) round.level++;
+      if (canBet) {
         round.bet++;
         syncRestBalls();
-        say('useFakeBet', { bet: round.bet });
       }
+      if (canMult && canBet) say('useFakeBoth', { mult: mult(), bet: round.bet });
+      else if (canMult) say('useFakeMult', { mult: mult() });
+      else say('useFakeBet', { bet: round.bet });
       tweens.push({ x0: CHUTE.x, y0: TRAY.back + 10, x1: HOLES.bet.x, y1: HOLES.bet.y, t: 0, dur: 0.45 });
       Sound.clunk();
     },
     stone() {
-      adv.hp = Math.max(0, adv.hp - 1);
+      const d = stoneDmg();
+      adv.hp = Math.max(0, adv.hp - d);
       adv.hitT = 0.5;
-      adv.pops.push({ text: '-1', t: 0 });
-      popups.push({ x: W / 2, y: SLOT_TOP - 16, text: t('dmgPop', { d: 1 }), t: 0, color: '#ff6b6b' });
-      say('useStone', { name: monsterName(), d: 1 });
+      adv.pops.push({ text: '-' + d, t: 0 });
+      popups.push({ x: W / 2, y: SLOT_TOP - 16, text: t('dmgPop', { d }), t: 0, color: '#ff6b6b' });
+      say('useStone', { name: monsterName(), d });
       Sound.thud();
       Sound.hit();
       if (adv.hp === 0) {
@@ -1850,7 +1863,7 @@
     // 拿發射口那顆來放，剩下的珠還是要拉彈簧發射
     const i = balls.findIndex(atShooter);
     if (i >= 0) balls.splice(i, 1);
-    balls.push({ x: p.x, y: p.y, vx: 0, vy: 0, still: 0, fired: true });
+    balls.push({ x: p.x, y: p.y, vx: 0, vy: 0, still: 0, fired: true, shake: true });
     round.launched++;
     const left = shots() - round.launched;
     syncRestBalls();
@@ -1985,7 +1998,11 @@
     round.landSlot = -1;
     round.refills = new Set();
     round.betPaid = round.multPaid = 0;
-    round.extraLit = round.extraRefill = round.heavy = 0;
+    // 雷射筆效果持續整關
+    round.extraLit = mode === 'adv' ? adv.stageLit : 0;
+    round.extraRefill = mode === 'adv' ? adv.stageRefill : 0;
+    round.heavy = 0;
+    round.shakeIdx = -1;
     round.hourglass = round.placing = false;
     round.landed = [];
     round.launched = 0;
@@ -2157,6 +2174,7 @@
   function land(b, slot) {
     balls.splice(balls.indexOf(b), 1);
     round.landed.push(slot);
+    if (b.shake) round.shakeIdx = round.landed.length - 1;
     if (!multiBall()) {
       round.landSlot = slot;
       round.resetT = 1.6;
@@ -2164,7 +2182,7 @@
       return;
     }
     // 大冒險：每顆落下就結算（用了沙漏就等全部落下再一起預告）
-    if (!round.hourglass && slot >= 0 && adv.status === 'playing') resolveBall(slot);
+    if (!round.hourglass && slot >= 0 && adv.status === 'playing') resolveBall(slot, !!b.shake);
     if (adv.status === 'won') { endEarly(); return; }
     if (round.launched < shots() || balls.length) return;    // 還有珠沒發射或還在檯面上
     if (round.hourglass) {
@@ -2177,14 +2195,14 @@
   }
 
   // 大冒險一顆珠的結果：攻擊燈造成傷害、補珠燈補珠、其他沒中
-  function resolveBall(slot) {
+  function resolveBall(slot, shake = false) {
     const px = B.left + (slot + 0.5) * SLOT_W;
     // 同一顆燈疊珠：這回合第 k 顆落進同一顆燈的珠，攻擊 +(k−1)／補珠 +(k−1)
     const combo = round.stack[slot] || 0;
     round.stack[slot] = combo + 1;
     if (round.lit.has(slot)) {
       round.hits++;
-      damageMonster(px, combo);
+      damageMonster(px, combo, shake ? 3 : 1);
     } else if (round.refills.has(slot)) {
       // 補珠燈：每顆補 2 顆；這回合第一次中還會退回投進倍率孔的珠
       const refund = round.refunded ? 0 : round.multPaid, bonus = refillBonus() + combo, n = refund + bonus;
@@ -2309,7 +2327,7 @@
       if (slot >= 0) stack[slot] = combo + 1;
       if (round.lit.has(slot)) {
         const { raw, def, dmg } = computeHit(false, combo);
-        text = dmg > 0 ? t('hgHit', { dmg }) : t('hgBlock', { raw, def });
+        text = dmg > 0 ? t('hgHit', { dmg: dmg * (i === round.shakeIdx ? 3 : 1) }) : t('hgBlock', { raw, def });
       } else if (round.refills.has(slot)) {
         const n = refund + refillBonus() + combo;
         text = hasTalent('trauma') ? t('hgRefillHurt', { n, dmg: Math.round(n * traumaRate()) }) : t('hgRefill', { n });
@@ -2325,7 +2343,7 @@
   function chooseHourglass(keep) {
     if (round.phase !== 'choose') return;
     if (keep) {
-      for (const slot of round.landed) if (slot >= 0 && adv.status === 'playing') resolveBall(slot);
+      round.landed.forEach((slot, i) => { if (slot >= 0 && adv.status === 'playing') resolveBall(slot, i === round.shakeIdx); });
       if (adv.status === 'won') endEarly();
       else finishRound();
       return;
