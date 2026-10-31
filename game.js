@@ -26,6 +26,8 @@
   const BET_CAP = 3;          // 大冒險每回合最多投幾顆珠（過關獎勵「投珠上限」可以提高）
   const REFILL_MULT = 2;      // 補珠燈：每顆落進補珠燈的珠補 2 顆彈珠（這回合第一次中還會退回倍率孔的珠）
   const CAMPAIGN_BONUS = 30;  // 冒險模式：每過一關額外補幾顆彈珠（剩下的彈珠也會帶到下一關）
+  // 等級：每打倒一隻怪物升 1 級（從 Lv1 開始），每升一級過關補珠 +5，每 2 級每顆珠攻擊 +1
+  const LEVEL_BONUS = 5;
   // ===== 寶箱與道具 =====
   // 道具等級：白燈一般、藍燈稀有、紫燈史詩、橘燈傳說
   const TIERS = [
@@ -337,9 +339,8 @@
   // 12×12 像素圖：'.' 透明，其他字元對應 pal 的顏色
   // 投幾顆珠就一次發射幾顆，每顆各自結算：實際傷害 = 倍率 − 防禦（最少 0）
   // 每回合最多投 BET_CAP 顆，前期沒辦法一發打死
-  // TODO：改成多顆發射後還沒重新平衡；以下是舊版（倍率 × 投珠數 − 防禦）的模擬結果
-  // 數值依冒險模式模擬（14 關、起始 50 顆、每關補 30 顆、有過關獎勵、玩家想快點打完）調整：
-  // 每關過關率約 100% → 85%，全破約 25%（不計道具），每關平均打 6～12 回合
+  // HP = 舊版 HP ×（1 + 0.35 × 第幾關）。依模擬（多顆發射、起始 50 顆、等級成長、有過關獎勵、
+  // 不計道具、每回合選最划算的打法）全破約 58%，真人玩應該會再難一些
   const MONSTERS = [
     {
       bg: 'forest',
@@ -377,7 +378,7 @@
     },
     {
       bg: 'forest',
-      name: { zh: '蘑菇怪', en: 'Mushroom' }, hp: 28, def: 0,
+      name: { zh: '蘑菇怪', en: 'Mushroom' }, hp: 38, def: 0,
       pal: { K: '#2b0f0f', R: '#e53935', W: '#ffffff', S: '#f5deb3', P: '#ff8fa3' },
       map: [
         '............',
@@ -411,7 +412,7 @@
     },
     {
       bg: 'cave',
-      name: { zh: '蝙蝠', en: 'Bat' }, hp: 32, def: 1,
+      name: { zh: '蝙蝠', en: 'Bat' }, hp: 54, def: 1,
       pal: { K: '#120818', P: '#8a4fd8', W: '#ffe66b', R: '#ff4d6d' },
       map: [
         '............',
@@ -445,7 +446,7 @@
     },
     {
       bg: 'cave',
-      name: { zh: '蜘蛛', en: 'Spider' }, hp: 37, def: 1,
+      name: { zh: '蜘蛛', en: 'Spider' }, hp: 76, def: 1,
       pal: { K: '#111111', P: '#4a148c', V: '#7b1fa2', R: '#ff1744', W: '#ffffff' },
       map: [
         'K..........K',
@@ -479,7 +480,7 @@
     },
     {
       bg: 'graveyard',
-      name: { zh: '幽靈', en: 'Ghost' }, hp: 42, def: 2,
+      name: { zh: '幽靈', en: 'Ghost' }, hp: 101, def: 2,
       pal: { K: '#1a1a2e', W: '#e8f0ff', R: '#ff6b81' },
       map: [
         '....KKKK....',
@@ -513,7 +514,7 @@
     },
     {
       bg: 'graveyard',
-      name: { zh: '南瓜頭', en: 'Pumpkin Head' }, hp: 48, def: 2,
+      name: { zh: '南瓜頭', en: 'Pumpkin Head' }, hp: 132, def: 2,
       pal: { K: '#3e1f00', O: '#ff8c00', D: '#cc5500', G: '#2e7d32', Y: '#ffeb3b' },
       map: [
         '.....GG.....',
@@ -547,7 +548,7 @@
     },
     {
       bg: 'graveyard',
-      name: { zh: '僵屍', en: 'Zombie' }, hp: 55, def: 3,
+      name: { zh: '僵屍', en: 'Zombie' }, hp: 170, def: 3,
       pal: { K: '#141a10', G: '#7fb069', D: '#4a6b3a', C: '#5b4b8a', W: '#f5f5f5', R: '#c0392b' },
       map: [
         '...KKKKKK...',
@@ -581,7 +582,7 @@
     },
     {
       bg: 'ruins',
-      name: { zh: '木乃伊', en: 'Mummy' }, hp: 66, def: 3,
+      name: { zh: '木乃伊', en: 'Mummy' }, hp: 228, def: 3,
       pal: { K: '#2b2b2b', W: '#e8e2d0', D: '#b8ae96', R: '#ff3b3b' },
       map: [
         '...KKKKKK...',
@@ -615,7 +616,7 @@
     },
     {
       bg: 'crypt',
-      name: { zh: '骷髏', en: 'Skeleton' }, hp: 78, def: 4,
+      name: { zh: '骷髏', en: 'Skeleton' }, hp: 296, def: 4,
       pal: { K: '#111111', W: '#f2efe6', R: '#e0465a' },
       map: [
         '...KKKKKK...',
@@ -649,7 +650,7 @@
     },
     {
       bg: 'crypt',
-      name: { zh: '吸血鬼', en: 'Vampire' }, hp: 92, def: 4,
+      name: { zh: '吸血鬼', en: 'Vampire' }, hp: 382, def: 4,
       pal: { K: '#120012', S: '#e0d6e8', H: '#1a1a2e', R: '#d50000', C: '#4a0d1a', W: '#ffffff' },
       map: [
         '..KKKKKKKK..',
@@ -683,7 +684,7 @@
     },
     {
       bg: 'hell',
-      name: { zh: '小惡龍', en: 'Baby Dragon' }, hp: 106, def: 5,
+      name: { zh: '小惡龍', en: 'Baby Dragon' }, hp: 477, def: 5,
       pal: { K: '#2a0505', R: '#e6392f', W: '#ffffff', Y: '#ffd166', T: '#ff8fa3' },
       map: [
         '..K......K..',
@@ -717,7 +718,7 @@
     },
     {
       bg: 'hell',
-      name: { zh: '地獄犬', en: 'Hellhound' }, hp: 120, def: 5,
+      name: { zh: '地獄犬', en: 'Hellhound' }, hp: 582, def: 5,
       pal: { K: '#1a0000', B: '#3d0c02', R: '#ff3d00', Y: '#ffd600', W: '#ffffff' },
       map: [
         '.K........K.',
@@ -751,7 +752,7 @@
     },
     {
       bg: 'ruins',
-      name: { zh: '石像怪', en: 'Gargoyle' }, hp: 134, def: 6,
+      name: { zh: '石像怪', en: 'Gargoyle' }, hp: 697, def: 6,
       pal: { K: '#1f1f24', S: '#8b8f99', D: '#5f636c', R: '#ff3b3b' },
       map: [
         'K.K......K.K',
@@ -785,7 +786,7 @@
     },
     {
       bg: 'crypt',
-      name: { zh: '巫妖', en: 'Lich' }, hp: 168, def: 7,
+      name: { zh: '巫妖', en: 'Lich' }, hp: 932, def: 7,
       pal: { K: '#0a0a12', P: '#311b92', V: '#6a1b9a', B: '#e0e0e0', G: '#76ff03', Y: '#ffd600' },
       map: [
         '..Y.Y..Y.Y..',
@@ -881,7 +882,7 @@
       roundSumBoth: '這回合 {n} 顆珠打中 {hit} 顆，共造成 {dmg} 點傷害、補回 {gain} 顆彈珠',
       refillMsg: '命中補珠燈！補回 {n} 顆彈珠', refillPop: '+{n} 顆',
       refillMsgMult: '命中補珠燈！退回倍率孔 {refund} 顆，再補 {bonus} 顆，共 {n} 顆',
-      advMissMsg: '沒打中！{name}在嘲笑你', advWinMsg: '打倒了{name}！', advLoseMsg: '彈珠用完了…',
+      advMissMsg: '沒打中！{name}在嘲笑你', advWinMsg: '打倒了{name}！', advWinLv: '打倒了{name}！升到 Lv{lv}，過關補珠 +5', advWinLvAtk: '打倒了{name}！升到 Lv{lv}，攻擊 +1（共 +{atk}）、過關補珠 +5', advLoseMsg: '彈珠用完了…',
       dmgPop: '-{d} HP', advNoCoin: '大冒險模式不能投幣',
       advPressStart: '按「開始冒險」', laugh: '嘻嘻嘻',
       stWinAdv: '上次傷害', stBestWinAdv: '勝場', stBestAdv: '敗場',
@@ -901,7 +902,8 @@
       cvBag: '道具', btnBag: '背包', bagTitle: '背包', bagUse: '使用',
       cvStats: '狀態', btnStats: '狀態', statsTitle: '數值狀態',
       stSecBalls: '彈珠', stSecAttack: '攻擊（每顆珠）', stSecOther: '其他',
-      stBetCap: '每回合投珠上限', stBonus: '每過一關補',
+      stSecLevel: '等級', stLevel: '目前等級', stLevelAtk: '等級攻擊加成',
+      stBetCap: '每回合投珠上限', stBonus: '下次過關補',
       stMultPct: '倍率強化', stPerBall: '每珠增傷', stPierce: '穿透傷害',
       stCritRate: '暴擊機率', stCritDmg: '暴擊傷害',
       stRefillLights: '每回合補珠燈', stRefillLightsN: '{n} 顆', stRefill: '補珠燈每顆補', stWeight: '彈珠重量', stPins: '已拔掉釘子', stPinsN: '{n} 根', stChest: '寶箱額外藍燈', stChestN: '{n} 排',
@@ -992,7 +994,7 @@
       roundSumBoth: '{hit} of {n} balls hit: {dmg} damage and {gain} balls back',
       refillMsg: 'Refill light! +{n} balls', refillPop: '+{n} balls',
       refillMsgMult: 'Refill light! {refund} multiplier balls back + {bonus} = {n} balls',
-      advMissMsg: 'Missed! The {name} laughs', advWinMsg: 'Defeated the {name}!', advLoseMsg: 'Out of balls…',
+      advMissMsg: 'Missed! The {name} laughs', advWinMsg: 'Defeated the {name}!', advWinLv: 'Defeated the {name}! Level {lv}: stage bonus +5', advWinLvAtk: 'Defeated the {name}! Level {lv}: attack +1 (total +{atk}), stage bonus +5', advLoseMsg: 'Out of balls…',
       dmgPop: '-{d} HP', advNoCoin: 'No coins in Quest mode',
       advPressStart: 'Press Start', laugh: 'hehehe',
       stWinAdv: 'Last hit', stBestWinAdv: 'Wins', stBestAdv: 'Losses',
@@ -1012,7 +1014,8 @@
       cvBag: 'ITEMS', btnBag: 'Backpack', bagTitle: 'Backpack', bagUse: 'Use',
       cvStats: 'STATS', btnStats: 'Stats', statsTitle: 'Stats',
       stSecBalls: 'Balls', stSecAttack: 'Attack (per ball)', stSecOther: 'Other',
-      stBetCap: 'Max bet per round', stBonus: 'Bonus per stage',
+      stSecLevel: 'Level', stLevel: 'Level', stLevelAtk: 'Level attack bonus',
+      stBetCap: 'Max bet per round', stBonus: 'Next stage bonus',
       stMultPct: 'Multiplier up', stPerBall: 'Per-ball damage', stPierce: 'Piercing',
       stCritRate: 'Crit chance', stCritDmg: 'Crit damage',
       stRefillLights: 'Refill lights per round', stRefillLightsN: '{n}', stRefill: 'Refill per ball', stWeight: 'Marble weight', stPins: 'Pins removed', stPinsN: '{n}', stChest: 'Extra blue chest lanes', stChestN: '{n}',
@@ -1405,7 +1408,13 @@
   // 連續闖關打贏了、後面還有關卡
   // 打倒最後一顆彈珠時沒有珠可以帶到下一關，就算闖關結束
   // 打完怪物下一關是寶箱（會補珠）；打開寶箱後下一關是下一隻怪物（不補珠）
-  const campaignBalls = () => state.credits + state.payoutQueue + (adv.chest ? 0 : CAMPAIGN_BONUS);
+  // 已經打倒幾隻：打怪時是前面那幾隻，打贏或進寶箱後含這一隻（自由挑戰也當作前面都打過）
+  const advKills = () => !adv.monster ? 0 : adv.monsterIdx + (adv.chest || adv.status === 'won' ? 1 : 0);
+  const advLevel = () => 1 + advKills();
+  const levelAtk = () => Math.floor(advKills() / 2);
+  // 打倒第 n 隻後補的珠：第 1 隻 30、第 2 隻 35…
+  const stageBonus = () => CAMPAIGN_BONUS + LEVEL_BONUS * Math.max(0, advKills() - 1);
+  const campaignBalls = () => state.credits + state.payoutQueue + (adv.chest ? 0 : stageBonus());
   const campaignMidRun = () => adv.campaign && adv.status === 'won' && (adv.chest || adv.monsterIdx < LAST_STAGE) && campaignBalls() > 0;
 
   function startAdventure() {
@@ -1441,7 +1450,7 @@
     adv.loot = null;
     adv.lost = 0;           // 老闆的鑰匙只拿回這一關失去的彈珠
     if (keepBalls) {
-      if (bonus) state.payoutQueue += CAMPAIGN_BONUS;
+      if (bonus) state.payoutQueue += stageBonus();
     } else {
       // 新的一場（或闖關從第 1 關開始）重新發彈珠，背包也清空
       state.credits = 0;
@@ -1474,13 +1483,13 @@
   // → 有打破防禦才加穿透傷害（不然可以每次投 1 顆、只靠穿透慢慢磨死高防禦怪物）
   function computeHit(crit) {
     const def = monsterDef();
-    const raw = Math.round(mult() * (1 + 0.1 * boon('multPct')) * (1 + round.heavy)) + boon('perBall');
+    const raw = Math.round(mult() * (1 + 0.1 * boon('multPct')) * (1 + round.heavy)) + boon('perBall') + levelAtk();
     let dmg = Math.max(0, raw - def);
     if (crit) dmg = Math.round(dmg * critMult());
     if (dmg > 0) dmg += boon('pierce');
     return { raw, def, dmg };
   }
-  const hitBonused = () => round.heavy > 0 || boon('multPct') > 0 || boon('perBall') > 0 || boon('pierce') > 0;
+  const hitBonused = () => round.heavy > 0 || levelAtk() > 0 || boon('multPct') > 0 || boon('perBall') > 0 || boon('pierce') > 0;
   const refillBonus = () => REFILL_MULT + 2 * boon('refill');   // 每顆珠
 
   function damageMonster(px) {
@@ -1534,7 +1543,11 @@
       }
       if (adv.monsterIdx === LAST_STAGE) saveRecord('candy-pinball-campaign-clears', ++campaign.clears);
     }
-    say('advWinMsg', { name: monsterName() });
+    if (adv.campaign && adv.monsterIdx < LAST_STAGE) {
+      say(advKills() % 2 === 0 ? 'advWinLvAtk' : 'advWinLv', { name: monsterName(), lv: advLevel(), atk: levelAtk() });
+    } else {
+      say('advWinMsg', { name: monsterName() });
+    }
     setTimeout(() => Sound.win(), 350);
   }
 
@@ -3557,7 +3570,7 @@
         if (adv.status === 'lost') { ctx.fillStyle = '#ef4444'; ctx.fillText(label, S.x + S.w - 10, S.y + 14); }
         else if (Math.floor(time * 4) % 2 === 0) { ctx.fillStyle = '#facc15'; ctx.fillText(label, S.x + S.w - 10, S.y + 14); }
       } else if (adv.campaign) {
-        const label = adv.chest ? 'TREASURE' : `STAGE ${adv.monsterIdx + 1}/${MONSTERS.length}`;
+        const label = (adv.chest ? 'TREASURE' : `STAGE ${adv.monsterIdx + 1}/${MONSTERS.length}`) + ` LV${advLevel()}`;
         textBacking(S.x + S.w - ctx.measureText(label).width - 16, S.y + 4, ctx.measureText(label).width + 12, 20);
         ctx.fillStyle = '#facc15';
         ctx.fillText(label, S.x + S.w - 10, S.y + 14);
@@ -4363,9 +4376,14 @@
     const pct = x => Math.round(x * 100) + '%';
     const plus = n => (n > 0 ? '+' : '') + n;
 
+    sec('stSecLevel');
+    row('stLevel', 'Lv' + advLevel());
+    row('stLevelAtk', '+' + levelAtk());
     sec('stSecBalls');
     row('stBetCap', t('statusBallsN', { n: betCap() }));
-    if (adv.campaign) row('stBonus', t('statusBallsN', { n: CAMPAIGN_BONUS }));
+    // 剛打倒怪物、還沒進寶箱時，下一筆補珠就是這次的；其他時候是打倒下一隻之後的
+    const nextBonus = adv.status === 'won' && !adv.chest ? stageBonus() : CAMPAIGN_BONUS + LEVEL_BONUS * advKills();
+    if (adv.campaign) row('stBonus', t('statusBallsN', { n: nextBonus }));
 
     sec('stSecAttack');
     row('stMultPct', '+' + 10 * boon('multPct') + '%');
