@@ -129,7 +129,7 @@
     betCap: { name: { zh: '投珠上限', en: 'Bet Limit' }, desc: { zh: '每回合投珠上限 +2', en: '+2 max bet per round' } },
     // 天賦專屬：只有選了該天賦才抽得到
     armor: { talent: 'alloy', name: { zh: '破甲合金', en: 'Armor Breaker' }, desc: { zh: '攻擊時無視 1 點防禦', en: 'Attacks ignore 1 DEF' } },
-    light: { talent: 'alloy', name: { zh: '輕量合金', en: 'Light Alloy' }, desc: { zh: '每回合倍率孔多 1 段免費', en: '1 more free multiplier step every round' } },
+    light: { talent: 'alloy', name: { zh: '鎢鋼彈芯', en: 'Tungsten Core' }, desc: { zh: '暴擊的珠完全無視防禦（只能拿一次）', en: 'Critical hits ignore DEF completely (once only)' } },
     chainCrit: { talent: 'alloy', name: { zh: '連鎖暴擊', en: 'Chain Crit' }, desc: { zh: '同一回合內每暴擊一次，這回合後面的珠攻擊 +1（下回合歸零）', en: 'Each crit gives the later balls this round +1 attack (resets next round)' } },
     kindle: { talent: 'burn', name: { zh: '助燃', en: 'Kindling' }, desc: { zh: '每次命中多疊 1 層燃燒', en: '+1 extra burn per hit' } },
     smolder: { talent: 'burn', name: { zh: '悶燒', en: 'Smolder' }, desc: { zh: '回合結束燃燒後保留更多層（減半 → 保留 2/3 → 3/4…）', en: 'Burn decays slower after each round (½ → ⅔ → ¾ kept…)' } },
@@ -1563,7 +1563,8 @@
   // → 有打破防禦才加穿透傷害（不然可以每次投 1 顆、只靠穿透慢慢磨死高防禦怪物）
   // combo：這回合前面已經有幾顆珠落進同一顆燈，每多一顆攻擊 +1（扣防禦前）
   function computeHit(crit, combo = 0) {
-    const def = Math.max(0, monsterDef() - boon('armor'));
+    // 鎢鋼彈芯：暴擊完全無視防禦
+    const def = crit && boon('light') ? 0 : Math.max(0, monsterDef() - boon('armor'));
     const raw = mult() * (1 + round.heavy) + boon('perBall') + talentAtk() + levelAtk() + combo + round.crits * boon('chainCrit');
     let dmg = Math.max(0, raw - def);
     if (crit) dmg = Math.round(dmg * critMult());
@@ -1665,7 +1666,7 @@
     if (id === 'chestRare') return CHEST_LANES[1] + boon('chestRare') + CHEST_LANES[2] + CHEST_LANES[3] < SLOT_COUNT;
     if (id === 'pin') return pins.length > 0;
     if (BOONS[id].talent && BOONS[id].talent !== adv.talent) return false;
-    if (id === 'light') return boon('light') < MULT_RULES.adv.mults.length - 1;
+    if (id === 'light') return !boon('light');    // 只能拿一次
     if (id === 'roll') return !boon('roll');      // 只能拿一次
     return true;
   }
@@ -2158,7 +2159,7 @@
 
   // 升一段倍率需要的持珠數：大冒險要多留 1 顆投珠
   // 輕量合金：大冒險（寶箱除外）前幾段倍率免費
-  const multCost = () => mode === 'adv' && !chestStage() && round.level < boon('light') ? 0 : multRule().cost;
+  const multCost = () => multRule().cost;
   const multNeed = () => multCost() + (mode === 'adv' ? 1 : 0);
 
   function addMult() {
