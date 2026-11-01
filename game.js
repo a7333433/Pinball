@@ -933,7 +933,8 @@
       chestMultMax: '寶箱最多投 3 顆倍率珠',
       lockedChest: '定燈！投 1 顆珠，再拉彈簧打開寶箱',
       chestBetOne: '寶箱關卡只能投 1 顆珠', chestBetMsg: '投珠 1 顆，拉彈簧發射打開寶箱！',
-      chestOpenMsg: '打開寶箱！獲得{tier}道具「{item}」',
+      chestOpenMsg: '打開寶箱！從{tier}道具裡選一個', chestPickMsg: '獲得道具「{item}」',
+      chestOpenTitle: '打開寶箱！', chestPickTitle: '選擇一個{tier}道具',
       chestWinTitle: '獲得道具！',
       cvBag: '道具', btnBag: '背包', bagTitle: '背包', bagUse: '使用',
       cvStats: '狀態', btnStats: '狀態', statsTitle: '數值狀態',
@@ -1061,7 +1062,8 @@
       chestMultMax: 'The chest takes at most 3 multiplier balls',
       lockedChest: 'Locked! Bet 1 ball, then shoot to open the chest',
       chestBetOne: 'Only 1 ball can be bet on the chest', chestBetMsg: 'Bet 1 ball. Shoot to open the chest!',
-      chestOpenMsg: 'Chest opened! Got a {tier} item: {item}',
+      chestOpenMsg: 'Chest opened! Pick a {tier} item', chestPickMsg: 'Got {item}',
+      chestOpenTitle: 'Chest opened!', chestPickTitle: 'Pick a {tier} item',
       chestWinTitle: 'New item!',
       cvBag: 'ITEMS', btnBag: 'Backpack', bagTitle: 'Backpack', bagUse: 'Use',
       cvStats: 'STATS', btnStats: 'Stats', statsTitle: 'Stats',
@@ -1499,6 +1501,7 @@
     lost: 0,              // 這次闖關失去的彈珠（老闆的鑰匙用）
     defDown: 0,           // 鹽酸：這隻怪物的防禦被降了幾點
     loot: null,           // 剛從寶箱拿到的道具
+    lootChoices: null,    // 寶箱打開後待選的道具（同一個稀有度抽 3 樣）
     rescueSaid: false,
     boons: {},            // 過關獎勵：id → 疊了幾層（新的冒險開始時清空）
     rewards: null,        // 正在選的 3 個過關獎勵
@@ -1591,7 +1594,7 @@
       stageLit: adv.stageLit, stageRefill: adv.stageRefill, lost: adv.lost,
       credits: state.credits + state.payoutQueue + unpaid,
       items: adv.items, boons: adv.boons, talent: adv.talent, rerollCost: adv.rerollCost,
-      rewards: adv.rewards, loot: adv.loot,
+      rewards: adv.rewards, loot: adv.loot, lootChoices: adv.lootChoices,
     };
     try { localStorage.setItem(RUN_KEY, JSON.stringify(data)); } catch (e) { /* 無痕模式 */ }
   }
@@ -1630,6 +1633,7 @@
     adv.rerollCost = d.rerollCost || 1;
     adv.rewards = d.rewards;
     adv.loot = d.loot;
+    adv.lootChoices = d.lootChoices || null;
     adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = 0;
     adv.pops.length = 0;
     adv.pinSet = stagePins(d.idx);
@@ -1692,7 +1696,7 @@
     adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = 0;
     adv.pops.length = 0;
     adv.defDown = 0;
-    adv.loot = null;
+    adv.loot = adv.lootChoices = null;
     adv.lost = 0;           // 老闆的鑰匙只拿回這一關失去的彈珠
     if (keepBalls) {
       if (bonus) state.payoutQueue += stageBonus();
@@ -1873,25 +1877,41 @@
     saveRun();
   }
 
-  // 寶箱：落在哪一排，就從那一排顏色等級的道具池抽一個
+  // 寶箱：落在哪一排，就從那一排顏色等級的道具池抽 3 樣（不夠 3 樣就全部）讓玩家選 1 樣
   function openChest(slot, px) {
     const tier = round.tiers[slot];
     const pool = ITEM_IDS.filter(id => ITEMS[id].tier === tier);
-    const id = pool[Math.floor(Math.random() * pool.length)];
-    adv.items[id] = (adv.items[id] || 0) + 1;
-    markSeen(id);
-    adv.loot = id;
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    adv.lootChoices = pool.slice(0, 3);
+    adv.loot = null;
     adv.hp = 0;
     adv.hitT = 0.3;
     adv.status = 'won';
     adv.endT = 1.8;
     const color = TIERS[tier].color;
-    adv.pops.push({ text: ITEMS[id].name[lang], t: 0, color });
+    adv.pops.push({ text: TIERS[tier].name[lang], t: 0, color });
     popups.push({ x: px, y: SLOT_TOP - 16, text: TIERS[tier].name[lang], t: 0, color });
     round.phase = 'win';
-    say('chestOpenMsg', { tier: TIERS[tier].name[lang], item: ITEMS[id].name[lang] });
+    say('chestOpenMsg', { tier: TIERS[tier].name[lang] });
     Sound.coin();
     setTimeout(() => Sound.win(), 250);
+    setTimeout(saveRun, 0);     // 待選的道具也存起來，重新整理不能重抽
+  }
+
+  // 選好寶箱道具：放進背包，過關卡片顯示拿到的道具
+  function pickLoot(id) {
+    if (!adv.lootChoices || !adv.lootChoices.includes(id)) return;
+    adv.lootChoices = null;
+    adv.items[id] = (adv.items[id] || 0) + 1;
+    markSeen(id);
+    adv.loot = id;
+    say('chestPickMsg', { item: ITEMS[id].name[lang] });
+    Sound.coin();
+    refreshOverlay();
+    saveRun();
   }
 
   // ===== 道具 =====
@@ -5027,6 +5047,39 @@
   const ovRestart = $('ov-restart');
   const ovStatus = $('ov-status'), ovRewards = $('ov-rewards');
 
+  // 寶箱道具：同一個稀有度的 3 張道具卡片選 1 張
+  function renderLoot() {
+    ovRewards.textContent = '';
+    const tier = ITEMS[adv.lootChoices[0]].tier;
+    const head = document.createElement('p');
+    head.className = 'rw-head';
+    head.textContent = t('chestPickTitle', { tier: TIERS[tier].name[lang] });
+    head.style.color = TIERS[tier].color;
+    ovRewards.append(head);
+    for (const id of adv.lootChoices) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'rw-card rw-loot';
+      b.style.borderColor = TIERS[tier].color;
+      const top = document.createElement('div');
+      top.className = 'rw-loot-head';
+      const name = document.createElement('b');
+      name.textContent = itemName(id);
+      name.style.color = TIERS[tier].color;
+      top.append(itemIcon(id, 3), name);
+      const desc = document.createElement('span');
+      desc.textContent = itemEffect(id);
+      b.append(top, desc);
+      if (adv.items[id]) {
+        const have = document.createElement('small');
+        have.textContent = t('rewardHave', { n: adv.items[id] });
+        b.append(have);
+      }
+      b.addEventListener('click', () => pickLoot(id));
+      ovRewards.append(b);
+    }
+  }
+
   // 過關獎勵卡片上的「目前 → 拿了之後」數值
   const pctOf = x => Math.round(x * 100) + '%';
   const plusOf = n => (n > 0 ? '+' : '') + n;
@@ -5271,7 +5324,9 @@
       const name = monsterName(), stage = adv.monsterIdx + 1, total = MONSTERS.length;
       // 結果只在「上一場的玩法」和目前選的玩法一樣時顯示，否則顯示該玩法的說明
       const hasResult = adv.status !== 'intro' && (adv.campaign ? 'campaign' : 'free') === advPlan;
-      if (midRun && adv.rewards) {
+      if (midRun && adv.lootChoices) {
+        title = t('chestOpenTitle');
+      } else if (midRun && adv.rewards) {
         title = t('stageClearTitle', { name });
       } else if (midRun) {
         // 過關卡片：標題 + 目前狀態（彈珠、道具），按鈕只有「下一關」
@@ -5322,12 +5377,14 @@
     // 瀏覽器快取到舊版 index.html 時這些元素可能不存在，略過就好，不要讓遊戲壞掉
     if (ovTitle) ovTitle.textContent = title;
     if (ovText) { ovText.textContent = text; ovText.hidden = !text; }
-    if (ovBtn) { ovBtn.textContent = btn; ovBtn.hidden = !!(midRun && adv.rewards); }
+    const choosing = midRun && !!(adv.rewards || adv.lootChoices);
+    if (ovBtn) { ovBtn.textContent = btn; ovBtn.hidden = choosing; }
     // 冒險模式要開新的一趟時先選天賦
     const talents = picking && !midRun && advPlan === 'campaign' && !resume;
     if (ovRewards) {
-      ovRewards.hidden = !(midRun && adv.rewards) && !talents;
-      if (midRun && adv.rewards) renderRewards();
+      ovRewards.hidden = !choosing && !talents;
+      if (midRun && adv.lootChoices) renderLoot();
+      else if (midRun && adv.rewards) renderRewards();
       else if (talents) renderTalents();
     }
     if (ovStatus) {
