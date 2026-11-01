@@ -7,7 +7,8 @@
   // ===== 規則 =====
   // 倍率規則依模式不同（倍率越高，亮的燈越少）：
   // 經典：2/4/6/8/10 倍，倍率孔每升一段扣 2 顆，亮燈 5 → 1
-  // 大冒險：從 ×1 起跳，倍率孔每投 1 顆 +1 倍、少一顆燈，×1 亮 7 顆 … ×7 亮 1 顆
+  // 大冒險：從 ×1 起跳，倍率孔每投 1 顆 +1 倍；前 2 顆各少一顆燈（7 → 5），
+  //         第 3 顆起不再少燈，改成隨機強化 1 顆紅燈（火焰燈：最終傷害 ×1.5，紅燈都強化過再疊到第二階 ×2）
   const MULT_RULES = {
     classic: { mults: [2, 4, 6, 8, 10], cost: 2 },
     adv: { mults: [1, 2, 3, 4, 5, 6, 7], cost: 1 },
@@ -15,7 +16,12 @@
   // 寶箱關卡：燈全亮、不加倍；倍率孔每投 1 顆升一級寶箱（最多 3 顆）
   const CHEST_RULE = { mults: [1, 1, 1, 1], cost: 1 };
   const multRule = () => chestStage() ? CHEST_RULE : MULT_RULES[mode];
-  const litFor = level => multRule().mults.length - level;
+  const ADV_LIT_DROP = 2;          // 大冒險倍率孔前幾顆會少燈
+  const BOOST_MULT = [1, 1.5, 2];  // 火焰燈：沒強化 / 第一階 / 第二階的最終傷害倍數
+  const advMultRule = () => mode === 'adv' && !chestStage();
+  const litFor = level => multRule().mults.length - (advMultRule() ? Math.min(level, ADV_LIT_DROP) : level);
+  // 這回合要強化幾次紅燈
+  const boostCount = () => advMultRule() ? Math.max(0, round.level - ADV_LIT_DROP) : 0;
   const COIN_BALLS = 20;      // 投一次幣換幾顆彈珠
   const SLOT_COUNT = 11;      // 底部落點數，每一排一顆 LED
 
@@ -861,6 +867,7 @@
       multShort: '彈珠不足 {cost} 顆，不能提升倍率',
       multKeepOne: '加倍後至少要留 1 顆投珠，彈珠不足 {need} 顆時不能提升倍率',
       multUp: '{mult} 倍！定燈後亮 {lit} 顆，按藍色按鈕定燈',
+      multUpBoost: '{mult} 倍！紅燈 {lit} 顆，其中 {b} 次強化成火焰燈（傷害 ×1.5，強化兩次 ×2）', boostPop: '🔥×{x}', boostTag: '（火焰燈 ×{x}）',
       winPop: '+{win} 顆',
       winMsg: '中了！{mult} 倍 × {bet} 顆 = {win} 顆',
       losePop: '銘謝惠顧',
@@ -990,6 +997,7 @@
       multShort: 'Need {cost} balls to raise the multiplier',
       multKeepOne: 'Keep at least 1 ball to bet: you need {need} balls to raise the multiplier',
       multUp: '×{mult}! {lit} lit after locking',
+      multUpBoost: '×{mult}! {lit} red lights, {b} flame upgrades (×1.5 damage, ×2 when upgraded twice)', boostPop: '🔥×{x}', boostTag: ' (flame light ×{x})',
       winPop: '+{win}',
       winMsg: 'Win! ×{mult} × {bet} = {win} balls',
       losePop: 'No luck',
@@ -1443,6 +1451,7 @@
     flashT: 0,
     refills: new Set(),   // 大冒險：補珠燈在哪幾排
     tiers: new Array(SLOT_COUNT).fill(0),   // 寶箱：每一排的道具等級（0 白、1 藍、2 紫、3 橘）
+    boost: new Array(SLOT_COUNT).fill(0),   // 火焰燈：每一排紅燈的強化階段（0 沒有、1 ×1.5、2 ×2）
     betPaid: 0,           // 這局真的從持珠拿出來的投珠、倍率珠（退還時用；假彈珠送的不算）
     multPaid: 0,
     extraLit: 0,          // 雷射筆（紅）：多亮幾顆攻擊燈
@@ -1769,11 +1778,12 @@
 
   // times：搖晃機台放下的那顆珠傷害 ×3
   // fire：這顆珠碰過燒紅釘，造成傷害時燃燒 +1 層
-  function damageMonster(px, combo = 0, times = 1, fire = false) {
+  // boost：落進的火焰燈階段（最終傷害 ×1.5 / ×2）
+  function damageMonster(px, combo = 0, times = 1, fire = false, boost = 0) {
     if (hasTalent('burn')) adv.burn += 1 + boon('kindle');   // 落進攻擊燈就疊燃燒（打不破防禦也算）
     const crit = Math.random() < critRate();
     const hitRes = computeHit(crit, combo);
-    const { raw, def } = hitRes, dmg = hitRes.dmg * times;
+    const { raw, def } = hitRes, dmg = Math.round(hitRes.dmg * times * BOOST_MULT[boost]);
     const chain = round.crits * boon('chainCrit');   // 這顆吃到的連鎖暴擊加成
     if (crit) round.crits++;
     state.lastWin = dmg;
@@ -1792,10 +1802,11 @@
     round.dmg += dmg;
     adv.hitT = 0.5;
     adv.pops.push({ text: '-' + dmg, t: 0, color: crit ? '#ffd166' : undefined, big: crit });
-    const pop = t(crit ? 'critPop' : 'dmgPop', { d: dmg }) + (chain ? ' ' + t('chainPop', { c: chain }) : '');
+    const pop = t(crit ? 'critPop' : 'dmgPop', { d: dmg }) + (chain ? ' ' + t('chainPop', { c: chain }) : '')
+      + (boost ? ' ' + t('boostPop', { x: BOOST_MULT[boost] }) : '');
     popups.push({ x: px, y: SLOT_TOP - 16, text: combo ? t('comboPop', { k: combo + 1, text: pop }) : pop, t: 0, color: crit ? '#ffd166' : '#ff6b6b', big: crit || combo > 0 });
     const key = crit ? 'critMsg' : combo ? 'hitMsgCombo' : hitBonused() ? 'hitMsgTotal' : def > 0 ? 'hitMsgDef' : 'hitMsg';
-    say(key, { mult: mult(), bet: round.bet, raw, def, dmg, k: combo + 1, c: combo, chain });
+    say(key, { mult: mult(), bet: round.bet, raw, def, dmg, k: combo + 1, c: combo, chain, boost: BOOST_MULT[boost] });
     if (crit) {
       state.shakeT = Math.max(state.shakeT, 0.25);   // 暴擊時機台晃一下
       Sound.crit();
@@ -2185,6 +2196,15 @@
       [slots[i], slots[j]] = [slots[j], slots[i]];
     }
     round.lit = new Set(slots.slice(0, n));
+    // 火焰燈：先強化還沒強化的紅燈，紅燈都強化過了再隨機挑一顆升到第二階
+    round.boost.fill(0);
+    const lit = slots.slice(0, n);
+    for (let u = boostCount(), k = 0; u > 0 && lit.length; u--, k++) {
+      if (k < lit.length) { round.boost[lit[k]] = 1; continue; }
+      const up = lit.filter(i => round.boost[i] === 1);
+      if (!up.length) break;
+      round.boost[up[Math.floor(Math.random() * up.length)]] = 2;
+    }
     // 寶箱：燈全亮；投 1 顆倍率珠出 3 排藍燈、2 顆再加 2 排紫燈、3 顆再加 1 排橘燈
     round.tiers.fill(0);
     if (chestStage()) {
@@ -2271,7 +2291,8 @@
   let msgText = '', msgT = 0;
   function say(key, vars = {}) {
     lastMsg = [key, vars];
-    const text = t(key, vars) + (vars.chain ? t('chainTag', { c: vars.chain }) : '');
+    const text = t(key, vars) + (vars.chain ? t('chainTag', { c: vars.chain }) : '')
+      + (vars.boost > 1 ? t('boostTag', { x: vars.boost }) : '');
     for (const el of msgEls) el.textContent = text;
     if (text !== msgText) { msgText = text; msgT = performance.now(); }
   }
@@ -2372,6 +2393,7 @@
     round.level++;
     round.multPaid += cost;
     if (chestStage()) say('chestTierUp', { desc: t('chestDesc' + round.level) });
+    else if (boostCount()) say('multUpBoost', { mult: mult(), lit: litCount(), b: boostCount() });
     else say('multUp', { mult: mult(), lit: litCount() });
   }
 
@@ -2418,7 +2440,7 @@
     round.stack[slot] = combo + 1;
     if (round.lit.has(slot)) {
       round.hits++;
-      damageMonster(px, combo, shake ? 3 : 1, fire);
+      damageMonster(px, combo, shake ? 3 : 1, fire, round.boost[slot]);
     } else if (round.refills.has(slot)) {
       // 補珠燈：每顆補 2 顆；這回合第一次中還會退回投進倍率孔的珠
       const refund = round.refunded ? 0 : round.multPaid, bonus = refillBonus() + combo, n = refund + bonus;
@@ -2570,7 +2592,7 @@
       if (slot >= 0) stack[slot] = combo + 1;
       if (round.lit.has(slot)) {
         const { raw, def, dmg } = computeHit(false, combo);
-        text = dmg > 0 ? t('hgHit', { dmg: dmg * (i === round.shakeIdx ? 3 : 1) }) : t('hgBlock', { raw, def });
+        text = dmg > 0 ? t('hgHit', { dmg: Math.round(dmg * (i === round.shakeIdx ? 3 : 1) * BOOST_MULT[round.boost[slot]]) }) : t('hgBlock', { raw, def });
       } else if (round.refills.has(slot)) {
         const n = refund + refillBonus() + combo;
         text = hasTalent('trauma') ? t('hgRefillHurt', { n, dmg: Math.round(n * traumaRate()) }) : t('hgRefill', { n });
@@ -4127,7 +4149,9 @@
     const landed = new Set(showLand ? round.landed : []);
     for (const i of round.lit) {
       const on = landed.has(i) ? blink : true;
-      led(ctx, B.left + (i + 0.5) * SLOT_W, LED_Y, 6, on, chest ? TIERS[round.tiers[i]].led : 'red');
+      const x = B.left + (i + 0.5) * SLOT_W;
+      if (!chest && round.boost[i]) drawBoostFlame(x, LED_Y, round.boost[i], t, i);
+      led(ctx, x, LED_Y, 6, on, chest ? TIERS[round.tiers[i]].led : 'red');
     }
     for (const i of round.refills) {
       const on = landed.has(i) ? blink : true;
@@ -4138,6 +4162,34 @@
       if (i < 0 || round.lit.has(i) || round.refills.has(i)) continue;
       ctx.fillRect(B.left + i * SLOT_W + 4, SLOT_TOP, SLOT_W - 8, SLOT_FLOOR - SLOT_TOP);
     }
+  }
+
+  // 火焰燈：紅燈後面一團往上竄的像素火焰（第一階紅橘色、第二階暗紫色），整排落點也染上火光
+  const BOOST_FLAME = [null,
+    { glow: 'rgba(255, 90, 30, ', cols: ['#fde047', '#fb923c', '#dc2626'] },
+    { glow: 'rgba(126, 34, 206, ', cols: ['#e9d5ff', '#a855f7', '#581c87'] }];
+  function drawBoostFlame(x, y, tier, time, seed) {
+    const F = BOOST_FLAME[tier], P = 3;
+    // 落點區淡淡的火光
+    const g = ctx.createLinearGradient(0, SLOT_FLOOR, 0, SLOT_TOP);
+    g.addColorStop(0, F.glow + (0.5 + 0.1 * Math.sin(time * 7 + seed)) + ')');
+    g.addColorStop(1, F.glow + '0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - SLOT_W / 2 + 3, SLOT_TOP, SLOT_W - 6, SLOT_FLOOR - SLOT_TOP);
+    // 燈後面的火舌
+    for (let k = 0; k < 3; k++) {
+      const fx = x + (k - 1) * 7;
+      const h = Math.round((tier === 2 ? 10 : 8) * (k === 1 ? 1 : 0.75) * (0.6 + 0.4 * Math.abs(Math.sin(time * (8 + k * 2.3) + seed * 1.7 + k))));
+      for (let r = 0; r < h; r++) {
+        const f = r / h;
+        const w = Math.max(1, Math.round((1 - f) * (k === 1 ? 3 : 2)));
+        ctx.fillStyle = f < 0.35 ? F.cols[0] : f < 0.7 ? F.cols[1] : F.cols[2];
+        ctx.globalAlpha = 1 - f * 0.5;
+        const sway = Math.round(Math.sin(time * 9 + seed + r * 0.6) * f * 1.5);
+        ctx.fillRect(Math.round(fx / P + sway - w / 2) * P, y + 4 - (r + 1) * P, w * P, P);
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   function drawShooter() {
