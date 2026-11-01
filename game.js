@@ -916,6 +916,9 @@
       critMsg: '暴擊！造成 {dmg} 點傷害', critPop: '暴擊 -{d}', chainPop: '連鎖+{c}', chainTag: '（連鎖暴擊 +{c}）',
       talentTitle: '選擇天賦（整趟冒險有效）', stTalent: '天賦', stBurn: '燃燒層數',
       burnStart: '燃燒中…… 🔥 {n} 層', splitPop: '分裂！', holePop: '掉進破洞',
+      pinInfoFire: '燒紅釘：碰到的珠造成傷害時，怪物燃燒 +1 層（可以跟燒紅彈珠疊加）',
+      pinInfoSpike: '螺旋尖刺：碰到的珠會彈開並一分為二（分裂出來的珠不會再分裂）',
+      pinInfoHole: '破洞：珠心掉進洞口，這顆珠就直接消失',
       burnMsg: '燃燒！怪物受到 {dmg} 點傷害，燃燒剩 {left} 層',
       traumaMsg: '外傷！補回 {n} 顆彈珠，同時造成 {dmg} 點傷害',
       hgRefillHurt: '鋼珠落進補珠燈，將補回 {n} 顆彈珠並造成 {dmg} 點傷害。',
@@ -1040,6 +1043,9 @@
       critMsg: 'Critical hit! {dmg} damage', critPop: 'CRIT -{d}', chainPop: 'chain+{c}', chainTag: ' (chain crit +{c})',
       talentTitle: 'Choose a talent (lasts the whole adventure)', stTalent: 'Talent', stBurn: 'Burn',
       burnStart: 'Burning... 🔥 {n} stacks', splitPop: 'Split!', holePop: 'Hole!',
+      pinInfoFire: 'Red-hot pin: a ball that touches it adds +1 burn when it deals damage (stacks with Red-hot Marble)',
+      pinInfoSpike: 'Spiral spike: a ball that touches it bounces off and splits in two (split balls cannot split again)',
+      pinInfoHole: 'Hole: if a ball center drops into it, the ball is gone',
       burnMsg: 'Burn! {dmg} damage, {left} burn left',
       traumaMsg: 'Grind! {n} balls back and {dmg} damage',
       hgRefillHurt: 'The ball landed on a refill light: {n} balls back and {dmg} damage.',
@@ -4701,13 +4707,31 @@
     return null;
   }
 
+  // 點到的特殊釘子（點的範圍比釘子大一圈，手指才點得到）
+  function specialAt(p) {
+    let best = null, bestD = 14;
+    for (const q of pins) {
+      if (!q.kind) continue;
+      const d = Math.hypot(q.x - p.x, q.y - p.y);
+      if (d < bestD) { best = q; bestD = d; }
+    }
+    return best;
+  }
+
   canvas.addEventListener('pointerdown', e => {
     const p = toLogical(e);
     const target = hitTarget(p);
     e.preventDefault();
+    const sp = !target && !round.placing && specialAt(p);
     if (target === 'bag') openBag();
     else if (target === 'stats') openStats();
     else if (round.placing) placeBall(p);
+    else if (sp) {
+      // 點特殊釘子：訊息螢幕顯示它的效果，釘子閃一下
+      sp.hitT = 0.5;
+      say({ fire: 'pinInfoFire', spike: 'pinInfoSpike', hole: 'pinInfoHole' }[sp.kind]);
+      Sound.clunk();
+    }
     else if (target === 'bet') {
       try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 同下 */ }
       startBetHold();
@@ -4729,7 +4753,8 @@
   document.addEventListener('gesturestart', noZoom, { passive: false });   // iOS Safari 雙指縮放
   canvas.addEventListener('pointercancel', () => { stopBetHold(); release(); });
   canvas.addEventListener('pointermove', e => {
-    canvas.style.cursor = hitTarget(toLogical(e)) ? 'pointer' : 'default';
+    const p = toLogical(e);
+    canvas.style.cursor = hitTarget(p) || specialAt(p) ? 'pointer' : 'default';
   });
 
   fireBtn.addEventListener('pointerdown', e => {
