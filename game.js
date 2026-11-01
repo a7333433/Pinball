@@ -917,7 +917,7 @@
       talentTitle: '選擇天賦（整趟冒險有效）', stTalent: '天賦', stBurn: '燃燒層數',
       burnStart: '燃燒中…… 🔥 {n} 層', splitPop: '分裂！', holePop: '掉進破洞',
       pinInfoFire: '燒紅釘：碰到的珠造成傷害時，怪物燃燒 +1 層（可以跟燒紅彈珠疊加）',
-      pinInfoSpike: '螺旋尖刺：碰到的珠會彈開並一分為二（分裂出來的珠不會再分裂）',
+      pinInfoSpike: '螺旋尖刺：碰到的珠會彈開並分裂成兩顆小珠（分裂出來的珠不會再分裂）',
       pinInfoHole: '破洞：珠心掉進洞口，這顆珠就直接消失',
       burnMsg: '燃燒！怪物受到 {dmg} 點傷害，燃燒剩 {left} 層',
       traumaMsg: '外傷！補回 {n} 顆彈珠，同時造成 {dmg} 點傷害',
@@ -1044,7 +1044,7 @@
       talentTitle: 'Choose a talent (lasts the whole adventure)', stTalent: 'Talent', stBurn: 'Burn',
       burnStart: 'Burning... 🔥 {n} stacks', splitPop: 'Split!', holePop: 'Hole!',
       pinInfoFire: 'Red-hot pin: a ball that touches it adds +1 burn when it deals damage (stacks with Red-hot Marble)',
-      pinInfoSpike: 'Spiral spike: a ball that touches it bounces off and splits in two (split balls cannot split again)',
+      pinInfoSpike: 'Spiral spike: a ball that touches it bounces off and splits into two smaller balls (split balls cannot split again)',
       pinInfoHole: 'Hole: if a ball center drops into it, the ball is gone',
       burnMsg: 'Burn! {dmg} damage, {left} burn left',
       traumaMsg: 'Grind! {n} balls back and {dmg} damage',
@@ -1110,6 +1110,8 @@
   // ===== 機台尺寸（邏輯座標，畫布會依螢幕縮放） =====
   const W = 520, H = 1054;
   const BALL_R = 7;
+  const SPLIT_R = 5;            // 螺旋尖刺分裂出來的小珠
+  const ballR = b => b.r || BALL_R;
   const PIN_R = 2.6;
   const CAP_R = 5;                  // 橘色膠頭釘
   const GRAVITY = 620;
@@ -2584,7 +2586,7 @@
   function collideCircle(b, px, py, rad, e, jitter = true) {
     e /= ballWeight;
     const dx = b.x - px, dy = b.y - py;
-    const min = BALL_R + rad;
+    const min = ballR(b) + rad;
     const d2 = dx * dx + dy * dy;
     if (d2 >= min * min || d2 === 0) return 0;
     const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
@@ -2611,10 +2613,9 @@
 
   // 鋼珠互撞（大冒險同時好幾顆在檯面上）
   function collideBalls() {
-    const min = BALL_R * 2;
     for (let i = 0; i < balls.length; i++) {
       for (let j = i + 1; j < balls.length; j++) {
-        const a = balls[i], b = balls[j];
+        const a = balls[i], b = balls[j], min = ballR(a) + ballR(b);
         const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
         if (d2 >= min * min || d2 === 0) continue;
         const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, push = (min - d) / 2;
@@ -2638,8 +2639,9 @@
       popups.push({ x: p.x, y: p.y - 10, text: '🔥', t: 0, color: '#fb923c' });
       Sound.sizzle();
     } else if (p.kind === 'spike' && !b.split) {
-      // 螺旋尖刺：用力彈開，一分為二（分裂出來的兩顆都不會再分裂）
+      // 螺旋尖刺：用力彈開，一分為二，兩顆都變小（分裂出來的兩顆都不會再分裂）
       b.split = true;
+      b.r = SPLIT_R;
       p.hitT = 0.5;
       const sp = Math.max(160, Math.hypot(b.vx, b.vy));
       const twin = { ...b, shake: false };
@@ -2699,7 +2701,7 @@
     }
     if (impact) Sound.clink(impact);
 
-    if (b.x < LANE_X && b.y > SLOT_FLOOR - BALL_R - 2.5) {
+    if (b.x < LANE_X && b.y > SLOT_FLOOR - ballR(b) - 2.5) {
       land(b, Math.max(0, Math.min(SLOT_COUNT - 1, Math.floor((b.x - B.left) / SLOT_W))));
     } else if (b.y > H || b.x < 0 || b.x > W) {
       if (multiBall() && b.fired) { land(b, -1); return; }
@@ -4534,16 +4536,18 @@
     drawShooter();
     drawSpecialPins(t);
     for (const b of balls) {
-      drawShadow(b.x + 2.5, b.y + 3.5, 0.9);
-      drawBall(b.x, b.y, sprites.board);
+      const k = ballR(b) / BALL_R;
+      drawShadow(b.x + 2.5 * k, b.y + 3.5 * k, 0.9, k);
+      drawBall(b.x, b.y, sprites.board, k);
       if (b.fire) {
         // 碰過燒紅釘的珠：外面一圈火光
-        const g = ctx.createRadialGradient(b.x, b.y, BALL_R * 0.4, b.x, b.y, BALL_R * 1.9);
+        const R = ballR(b);
+        const g = ctx.createRadialGradient(b.x, b.y, R * 0.4, b.x, b.y, R * 1.9);
         g.addColorStop(0, 'rgba(255, 120, 30, 0.55)');
         g.addColorStop(1, 'rgba(255, 60, 0, 0)');
         ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(b.x, b.y, BALL_R * 1.9, 0, Math.PI * 2);
+        ctx.arc(b.x, b.y, R * 1.9, 0, Math.PI * 2);
         ctx.fill();
       }
     }
