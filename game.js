@@ -2232,8 +2232,10 @@
       round.boost[up[Math.floor(Math.random() * up.length)]] = 2;
     }
   }
-  // 燈已經亮滿：雷射筆沒辦法再多亮一顆燈
-  const lightsFull = () => litCount() + 1 + round.extraRefill >= SLOT_COUNT;
+  // 定燈後會有幾顆補珠燈：基本 1 顆 + 雷射筆（綠）+ 過關獎勵「補珠燈數」
+  const refillTotal = () => 1 + round.extraRefill + boon('refillLight');
+  // 燈已經亮滿：紅燈 + 補珠燈已經佔滿 11 排，雷射筆再加燈就會蓋掉別的顏色
+  const lightsFull = () => litCount() + refillTotal() >= SLOT_COUNT;
 
   function rollLit(n) {
     const slots = [...Array(SLOT_COUNT).keys()];
