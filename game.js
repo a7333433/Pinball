@@ -56,7 +56,7 @@
       tier: 0, when: 'pre',
       name: { zh: '雷射筆（紅）', en: 'Red Laser Pointer' },
       quote: { zh: '請勿對眼睛照射。', en: 'Do not shine into eyes.' },
-      effect: { zh: '這一關攻擊燈數增加 1', en: '+1 attack light for the rest of this stage' },
+      effect: { zh: '這一關攻擊燈數增加 1；燈已經亮滿時，改成這一關每回合多強化 1 次紅燈（火焰燈）', en: '+1 attack light for the rest of this stage; if the lights are full, 1 extra flame upgrade on a red light every round this stage instead' },
     },
     fake: {
       tier: 0, when: 'both',
@@ -68,7 +68,7 @@
       tier: 0, when: 'pre',
       name: { zh: '雷射筆（綠）', en: 'Green Laser Pointer' },
       quote: { zh: '請勿對眼睛照射，即使他是有益色。', en: 'Do not shine into eyes, even if green is good for them.' },
-      effect: { zh: '這一關補珠燈數增加 1', en: '+1 refill light for the rest of this stage' },
+      effect: { zh: '這一關補珠燈數增加 1；燈已經亮滿時，改成這一關每回合強化 1 次補珠燈（火焰補珠燈）', en: '+1 refill light for the rest of this stage; if the lights are full, 1 flame upgrade on a refill light every round this stage instead' },
     },
     stone: {
       tier: 0, when: 'both',
@@ -965,12 +965,14 @@
       itemNoLit: '沒有亮著的紅燈', itemKeyEmpty: '還沒有失去任何彈珠', itemNeedBet: '先往投珠孔投珠再使用',
       itemPlacing: '先點檯面放下彈珠',
       useCoin: '使用銀幣：持珠 +{n} 顆', useLaserRed: '雷射筆（紅）：這一關攻擊燈 +1，定燈後亮 {lit} 顆',
-      useLaserGreen: '雷射筆（綠）：這一關補珠燈 +1', useFakeBoth: '假彈珠：倍率 +1、投珠 +1，變成 {mult} 倍、{bet} 顆！', useFakeMult: '假彈珠：倍率 +1，變成 {mult} 倍！',
+      useLaserGreen: '雷射筆（綠）：這一關補珠燈 +1',
+      useLaserRedBoost: '燈已經亮滿了！雷射筆（紅）改成強化紅燈：這一關每回合多強化 {n} 次',
+      useLaserGreenBoost: '燈已經亮滿了！雷射筆（綠）改成強化補珠燈：這一關每回合定燈後強化 {n} 次', useFakeBoth: '假彈珠：倍率 +1、投珠 +1，變成 {mult} 倍、{bet} 顆！', useFakeMult: '假彈珠：倍率 +1，變成 {mult} 倍！',
       useFakeBet: '假彈珠：投珠 +1，變成 {bet} 顆！', useStone: '丟石頭！對{name}造成 {d} 點傷害（無視防禦）', useStoneCrit: '丟石頭暴擊！對{name}造成 {d} 點傷害（無視防禦）',
       useAcid: '潑鹽酸！{name}的防禦降到 {def}', useHeavy: '沉重彈珠：這回合每顆珠的基本傷害變成 {n}',
       useHourglass: '沙漏翻過來了：鋼珠落下後可以選擇保留結果或返回上回合',
       useDrink: '嘶～～～ 紅燈全部變成補珠燈了！', useDrinkFlame: '嘶～～～ 紅燈全部變成補珠燈了！{f} 顆火焰燈變成綠色火焰補珠燈（補珠 ×1.5）',
-      boostRefillTag: '（火焰補珠燈 ×{x}）', useKey: '用老闆的鑰匙打開珠箱，拿回 {n} 顆彈珠！',
+      boostRefillTag: '（火焰補珠燈 ×{x}）', flameRefillTag: '（綠色火焰補珠燈 {n} 顆，補珠 ×1.5）', useKey: '用老闆的鑰匙打開珠箱，拿回 {n} 顆彈珠！',
       useShake: '搖晃機台！點檯面上任何地方放下彈珠', shakeWhere: '點檯面上（釘子區）放下彈珠',
       shakeHint: '點檯面放珠', shakePlaced: '「你不能那樣做！」彈珠放下去了，這顆傷害 ×3',
       shakePlacedMore: '「你不能那樣做！」彈珠放下去了，剩下 {n} 顆拉彈簧發射',
@@ -1100,12 +1102,14 @@
       itemNoLit: 'No red lights to convert', itemKeyEmpty: 'You haven\'t lost any balls yet', itemNeedBet: 'Bet first',
       itemPlacing: 'Tap the board to drop the ball first',
       useCoin: 'Silver Coin: +{n} balls', useLaserRed: 'Red laser: +1 attack light this stage ({lit} after locking)',
-      useLaserGreen: 'Green laser: +1 refill light this stage', useFakeBoth: 'Fake marble: +1 multiplier and +1 bet, now ×{mult} with {bet}!', useFakeMult: 'Fake marble: multiplier +1, now ×{mult}!',
+      useLaserGreen: 'Green laser: +1 refill light this stage',
+      useLaserRedBoost: 'Lights are full! The red laser upgrades red lights instead: {n} extra flame upgrade(s) every round this stage',
+      useLaserGreenBoost: 'Lights are full! The green laser upgrades refill lights instead: {n} flame upgrade(s) every round this stage after locking', useFakeBoth: 'Fake marble: +1 multiplier and +1 bet, now ×{mult} with {bet}!', useFakeMult: 'Fake marble: multiplier +1, now ×{mult}!',
       useFakeBet: 'Fake marble: +1 bet, now {bet}!', useStone: 'Threw a stone! {d} damage to the {name}, ignoring DEF', useStoneCrit: 'Critical stone! {d} damage to the {name}, ignoring DEF',
       useAcid: 'Acid! The {name}\'s DEF drops to {def}', useHeavy: 'Heavy marble: {n} base damage per ball this round',
       useHourglass: 'Hourglass flipped: after the ball lands, keep the result or rewind the round',
       useDrink: 'Slurrrp~ Every red light is now a refill light!', useDrinkFlame: 'Slurrrp~ Every red light is now a refill light! {f} flame lights became green-flame refill lights (×1.5 balls)',
-      boostRefillTag: ' (flame refill ×{x})', useKey: 'The shopkeeper\'s key opened the ball box: {n} balls back!',
+      boostRefillTag: ' (flame refill ×{x})', flameRefillTag: ' ({n} green-flame refill light(s), ×1.5 balls)', useKey: 'The shopkeeper\'s key opened the ball box: {n} balls back!',
       useShake: 'Shake the machine! Tap anywhere on the board to drop the ball', shakeWhere: 'Tap the pin area of the board to drop the ball',
       shakeHint: 'Tap to drop', shakePlaced: '"You can\'t do that!" Ball dropped (×3 damage)',
       shakePlacedMore: '"You can\'t do that!" Ball dropped. Shoot the other {n}',
@@ -1529,6 +1533,8 @@
     burn: 0,              // 燒紅彈珠：這隻怪物身上的燃燒層數
     stageLit: 0,          // 雷射筆（紅）：這一關多亮幾顆攻擊燈
     stageRefill: 0,       // 雷射筆（綠）：這一關多亮幾顆補珠燈
+    stageBoost: 0,        // 燈亮滿時用雷射筆（紅）：這一關每回合多強化幾次紅燈
+    stageRefillBoost: 0,  // 燈亮滿時用雷射筆（綠）：這一關每回合強化幾次補珠燈
     pinSet: null,         // 大冒險檯面上有哪些釘子（ALL_PINS 的索引）；null = 還沒開打，顯示完整釘陣
   };
   const boon = id => adv.boons[id] || 0;
@@ -1611,6 +1617,7 @@
       v: 1, idx: adv.monsterIdx, chest: adv.chest, status: adv.status,
       hp: adv.hp, maxHp: adv.maxHp, defDown: adv.defDown, burn: adv.burn,
       stageLit: adv.stageLit, stageRefill: adv.stageRefill, lost: adv.lost,
+      stageBoost: adv.stageBoost, stageRefillBoost: adv.stageRefillBoost,
       credits: state.credits + state.payoutQueue + unpaid,
       items: adv.items, boons: adv.boons, talent: adv.talent, rerollCost: adv.rerollCost,
       rewards: adv.rewards, loot: adv.loot, lootChoices: adv.lootChoices,
@@ -1645,6 +1652,8 @@
     adv.burn = d.burn;
     adv.stageLit = d.stageLit;
     adv.stageRefill = d.stageRefill;
+    adv.stageBoost = d.stageBoost || 0;
+    adv.stageRefillBoost = d.stageRefillBoost || 0;
     adv.lost = d.lost;
     adv.items = d.items || {};
     adv.boons = d.boons || {};
@@ -1731,7 +1740,7 @@
       adv.talent = adv.campaign ? talentPick : null;
     }
     adv.burn = 0;
-    adv.stageLit = adv.stageRefill = 0;
+    adv.stageLit = adv.stageRefill = adv.stageBoost = adv.stageRefillBoost = 0;
     // 寶箱沿用前一關的釘子；自由挑戰每場都重新擺
     if (!adv.chest) growPins(idx);
     else syncPins();             // 寶箱沿用前一關的釘陣，但沒有特殊釘子
@@ -1959,9 +1968,6 @@
     if (it.when === 'pre' && round.phase !== 'select') return 'itemPreOnly';
     if (it.when === 'post' && round.phase !== 'bet') return 'itemPostOnly';
     switch (id) {
-      case 'laserRed': case 'laserGreen':
-        if (litCount() + 1 + round.extraRefill >= SLOT_COUNT) return 'itemMaxLights';
-        break;
       case 'acid': if (monsterDef() === 0) return 'itemNoDef'; break;
       case 'hourglass': if (round.hourglass) return 'itemActive'; break;
       case 'drink': if (!round.lit.size) return 'itemNoLit'; break;
@@ -1995,17 +2001,30 @@
       Sound.coin();
     },
     laserRed() {
-      adv.stageLit++;
-      round.extraLit++;
-      rollLit(litCount());
-      say('useLaserRed', { lit: litCount() });
+      if (lightsFull()) {
+        // 燈已經亮滿：改成這一關每回合多強化 1 次紅燈
+        adv.stageBoost++;
+        rollLit(litCount());
+        say('useLaserRedBoost', { n: adv.stageBoost });
+      } else {
+        adv.stageLit++;
+        round.extraLit++;
+        rollLit(litCount());
+        say('useLaserRed', { lit: litCount() });
+      }
       Sound.lock();
     },
     laserGreen() {
-      adv.stageRefill++;
-      round.extraRefill++;
-      rollLit(litCount());
-      say('useLaserGreen');
+      if (lightsFull()) {
+        // 燈已經亮滿：改成這一關每回合強化 1 次補珠燈（定燈挑好補珠燈時強化）
+        adv.stageRefillBoost++;
+        say('useLaserGreenBoost', { n: adv.stageRefillBoost });
+      } else {
+        adv.stageRefill++;
+        round.extraRefill++;
+        rollLit(litCount());
+        say('useLaserGreen');
+      }
       Sound.lock();
     },
     fake() {
@@ -2203,6 +2222,19 @@
     }
   }
 
+  // 強化 u 次：先強化還沒強化的燈（list 已經是隨機順序），都強化過了再隨機挑一顆升到第二階
+  function upgradeLights(list, u) {
+    for (let k = 0; u > 0 && list.length; u--, k++) {
+      const fresh = list.filter(i => !round.boost[i]);
+      if (fresh.length) { round.boost[fresh[Math.floor(Math.random() * fresh.length)]] = 1; continue; }
+      const up = list.filter(i => round.boost[i] === 1);
+      if (!up.length) break;
+      round.boost[up[Math.floor(Math.random() * up.length)]] = 2;
+    }
+  }
+  // 燈已經亮滿：雷射筆沒辦法再多亮一顆燈
+  const lightsFull = () => litCount() + 1 + round.extraRefill >= SLOT_COUNT;
+
   function rollLit(n) {
     const slots = [...Array(SLOT_COUNT).keys()];
     for (let i = slots.length - 1; i > 0; i--) {
@@ -2210,15 +2242,9 @@
       [slots[i], slots[j]] = [slots[j], slots[i]];
     }
     round.lit = new Set(slots.slice(0, n));
-    // 火焰燈：先強化還沒強化的紅燈，紅燈都強化過了再隨機挑一顆升到第二階
+    // 火焰燈：強化孔第 3 顆起每顆強化 1 次，燈亮滿時用的雷射筆（紅）每支再多 1 次
     round.boost.fill(0);
-    const lit = slots.slice(0, n);
-    for (let u = boostCount(), k = 0; u > 0 && lit.length; u--, k++) {
-      if (k < lit.length) { round.boost[lit[k]] = 1; continue; }
-      const up = lit.filter(i => round.boost[i] === 1);
-      if (!up.length) break;
-      round.boost[up[Math.floor(Math.random() * up.length)]] = 2;
-    }
+    upgradeLights(slots.slice(0, n), boostCount() + (advMultRule() ? adv.stageBoost : 0));
     // 寶箱：燈全亮；投 1 顆強化珠出 3 排藍燈、2 顆再加 2 排紫燈、3 顆再加 1 排橘燈
     round.tiers.fill(0);
     if (chestStage()) {
@@ -2295,8 +2321,10 @@
       for (let n = 1 + round.extraRefill + boon('refillLight'); n > 0 && free.length; n--) {
         round.refills.add(free.splice(Math.floor(Math.random() * free.length), 1)[0]);
       }
+      upgradeLights([...round.refills], adv.stageRefillBoost);
       const f1 = [...round.lit].filter(i => round.boost[i] === 1).length, f2 = [...round.lit].filter(i => round.boost[i] === 2).length;
-      say(f2 ? 'lockedAdvFlame2' : f1 ? 'lockedAdvFlame' : 'lockedAdv', { lit: round.lit.size, f: f1 + f2, f2 });
+      const fr = [...round.refills].filter(i => round.boost[i]).length;
+      say(f2 ? 'lockedAdvFlame2' : f1 ? 'lockedAdvFlame' : 'lockedAdv', { lit: round.lit.size, f: f1 + f2, f2, fr });
     } else {
       say('locked', { mult: mult(), lit: round.lit.size });
     }
@@ -2309,6 +2337,7 @@
     const text = t(key, vars) + (vars.chain ? t('chainTag', { c: vars.chain }) : '')
       + (vars.boost > 1 ? t('boostTag', { x: vars.boost }) : '')
       + (vars.boostRefill > 1 ? t('boostRefillTag', { x: vars.boostRefill }) : '')
+      + (vars.fr ? t('flameRefillTag', { n: vars.fr }) : '')
       + (vars.flame ? t(vars.flame2 ? 'flameBetTag2' : 'flameBetTag', { w: vars.flame, w2: vars.flame2 }) : '');
     for (const el of msgEls) el.textContent = text;
     if (text !== msgText) { msgText = text; msgT = performance.now(); }
