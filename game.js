@@ -7,8 +7,8 @@
   // ===== 規則 =====
   // 倍率規則依模式不同（倍率越高，亮的燈越少）：
   // 經典：2/4/6/8/10 倍，強化孔每升一段扣 2 顆，亮燈 5 → 1
-  // 大冒險：從 ×1 起跳，強化孔每投 1 顆 +1 倍；前 2 顆各少一顆燈（7 → 5），
-  //         第 3 顆起不再少燈，改成隨機強化 1 顆紅燈（火焰燈：最終傷害 ×1.5，紅燈都強化過再疊到第二階 ×2）
+  // 大冒險：從 ×1 起跳，強化孔前 2 顆各 +1 倍、少一顆燈（×3，7 → 5 燈），
+  //         第 3 顆起倍率和燈數都不變，改成隨機強化 1 顆紅燈（火焰燈：最終傷害 ×1.5，紅燈都強化過再疊到第二階 ×2）
   const MULT_RULES = {
     classic: { mults: [2, 4, 6, 8, 10], cost: 2 },
     adv: { mults: [1, 2, 3, 4, 5, 6, 7], cost: 1 },
@@ -867,7 +867,8 @@
       multShort: '彈珠不足 {cost} 顆，不能提升倍率',
       multKeepOne: '加倍後至少要留 1 顆投珠，彈珠不足 {need} 顆時不能提升倍率',
       multUp: '{mult} 倍！定燈後亮 {lit} 顆，按藍色按鈕定燈',
-      multUpBoost: '{mult} 倍！紅燈 {lit} 顆，其中 {b} 次強化成火焰燈（傷害 ×1.5，強化兩次 ×2）', boostPop: '🔥×{x}', boostTag: '（火焰燈 ×{x}）',
+      multUpBoost: '{mult} 倍（倍率已到頂）！紅燈 {lit} 顆，強化 {b} 次成火焰燈（傷害 ×1.5，強化兩次 ×2）',
+      multMaxAdv: '強化孔已經投滿了：{max} 倍，強化 {b} 次', boostPop: '🔥×{x}', boostTag: '（火焰燈 ×{x}）',
       winPop: '+{win} 顆',
       winMsg: '中了！{mult} 倍 × {bet} 顆 = {win} 顆',
       losePop: '銘謝惠顧',
@@ -1000,7 +1001,8 @@
       multShort: 'Need {cost} balls to raise the multiplier',
       multKeepOne: 'Keep at least 1 ball to bet: you need {need} balls to raise the multiplier',
       multUp: '×{mult}! {lit} lit after locking',
-      multUpBoost: '×{mult}! {lit} red lights, {b} flame upgrades (×1.5 damage, ×2 when upgraded twice)', boostPop: '🔥×{x}', boostTag: ' (flame light ×{x})',
+      multUpBoost: '×{mult} (max multiplier)! {lit} red lights, {b} flame upgrades (×1.5 damage, ×2 when upgraded twice)',
+      multMaxAdv: 'Boost hole is full: ×{max}, {b} flame upgrades', boostPop: '🔥×{x}', boostTag: ' (flame light ×{x})',
       winPop: '+{win}',
       winMsg: 'Win! ×{mult} × {bet} = {win} balls',
       losePop: 'No luck',
@@ -2173,7 +2175,9 @@
 
   // 過關獎勵「基礎倍率」：大冒險打怪時每段倍率都 +1
   const multBonus = () => mode === 'adv' && !chestStage() ? boon('multBase') : 0;
-  const mult = () => multRule().mults[round.level] + multBonus();
+  // 大冒險：倍率只升到第 ADV_LIT_DROP 顆（×3），之後的強化珠只強化紅燈
+  const multAt = level => multRule().mults[advMultRule() ? Math.min(level, ADV_LIT_DROP) : level] + multBonus();
+  const mult = () => multAt(round.level);
 
   function ballAtShooter() {
     return balls.some(atShooter);
@@ -2387,6 +2391,7 @@
     if (round.phase !== 'select') { say('multLocked'); Sound.error(); return; }
     if (round.level >= multRule().mults.length - 1) {
       if (chestStage()) say('chestMultMax');
+      else if (advMultRule()) say('multMaxAdv', { max: multAt(round.level), b: boostCount() });
       else say('multMax', { max: multRule().mults[multRule().mults.length - 1] + multBonus() });
       Sound.error();
       return;
