@@ -88,17 +88,59 @@
       quote: { zh: '造成拉桿彈簧疲勞的兇手。', en: 'The reason the plunger spring wore out.' },
       effect: { zh: '這回合每顆彈珠的基本傷害增加 1', en: 'Base damage per ball +1 this round' },
     },
+    lighter: {
+      tier: 1, when: 'both',
+      name: { zh: '打火機', en: 'Lighter' },
+      quote: { zh: '「你是要拿來點菸的……對嗎？」── 柑仔店老闆', en: '"You\'re using it to light a cigarette... right?" — The shopkeeper' },
+      effect: { zh: '隨機把一根普通釘子變成燒紅釘，持續這一關', en: 'Turns a random normal pin into a red-hot pin for this stage' },
+    },
+    file: {
+      tier: 1, when: 'both',
+      name: { zh: '銼刀', en: 'File' },
+      quote: { zh: '就是一把銼刀。', en: 'It\'s just a file.' },
+      effect: { zh: '隨機把一根普通釘子變成螺旋尖刺（碰到的珠會分裂），持續這一關', en: 'Turns a random normal pin into a spiral spike (splits balls) for this stage' },
+    },
+    tissue: {
+      tier: 1, when: 'both',
+      name: { zh: '衛生紙', en: 'Tissues' },
+      quote: { zh: '「不要亂丟垃圾」── 柑仔店老闆', en: '"Don\'t litter." — The shopkeeper' },
+      effect: { zh: '隨機堵住一個破洞（變回普通釘子），持續這一關', en: 'Plugs a random hole (it becomes a normal pin) for this stage' },
+    },
+    laserRedHi: {
+      tier: 1, when: 'both',
+      name: { zh: '高功率雷射筆（紅）', en: 'High-power Laser (Red)' },
+      quote: { zh: '請不要對任何生物照射。', en: 'Do not point at any living thing.' },
+      effect: { zh: '隨機強化一顆攻擊燈成火焰燈（傷害 ×1.5），持續這一關（每回合都會強化）', en: 'Upgrades a random attack light to a flame light (×1.5 damage), every round this stage' },
+    },
+    laserGreenHi: {
+      tier: 1, when: 'both',
+      name: { zh: '高功率雷射筆（綠）', en: 'High-power Laser (Green)' },
+      quote: { zh: '請不要對任何生物照射。', en: 'Do not point at any living thing.' },
+      effect: { zh: '隨機強化一顆補珠燈成火焰補珠燈（補珠 ×1.5），持續這一關（每回合都會強化）', en: 'Upgrades a random refill light to a flame refill light (×1.5 balls), every round this stage' },
+    },
     hourglass: {
       tier: 2, when: 'both',
       name: { zh: '沙漏', en: 'Hourglass' },
       quote: { zh: '現在放的是正的還是反的？', en: 'Is it right side up or upside down right now?' },
       effect: { zh: '這回合的鋼珠全部落下後，先預告每顆的結果，可以選擇保留或返回上回合', en: 'After every ball lands this round, preview the results, then keep them or rewind the round' },
     },
-    drink: {
+    board: {
       tier: 2, when: 'post',
+      name: { zh: '電路板', en: 'Circuit Board' },
+      quote: { zh: '「這檯的燈不會亮哦」── 柑仔店老闆', en: '"The lights on this machine don\'t work." — The shopkeeper' },
+      effect: { zh: '把亮著的紅燈全部變成補珠燈（火焰燈變成綠色火焰的補珠燈，補珠數 ×1.5，強化兩次 ×2）', en: 'Turns every lit red light into a refill light (flame lights become green-flame refill lights: ×1.5 balls, ×2 if upgraded twice)' },
+    },
+    laserPurple: {
+      tier: 2, when: 'both',
+      name: { zh: '高功率雷射筆（紫）', en: 'High-power Laser (Purple)' },
+      quote: { zh: '請不要對任何生物照射。', en: 'Do not point at any living thing.' },
+      effect: { zh: '新增一顆超強化攻擊燈（紫色火焰，傷害 ×2）；燈已經亮滿時改成把一顆攻擊燈變成超強化燈，持續這一關', en: 'Adds a super flame attack light (purple flame, ×2 damage); if the lights are full, turns an attack light into one instead. Lasts this stage' },
+    },
+    drink: {
+      tier: 3, when: 'post',
       name: { zh: '鋁箔包飲料', en: 'Juice Box' },
       quote: { zh: '「嘶～～～～」', en: '"Slurrrrp~"' },
-      effect: { zh: '把亮著的紅燈全部變成補珠燈（火焰燈變成綠色火焰的補珠燈，補珠數 ×1.5，強化兩次 ×2）', en: 'Turns every lit red light into a refill light (flame lights become green-flame refill lights: ×1.5 balls, ×2 if upgraded twice)' },
+      effect: { zh: '落獎區 11 排全部亮成補珠燈；火焰燈變成火焰補珠燈（補珠 ×1.5，強化兩次 ×2）', en: 'Every one of the 11 lanes becomes a refill light; flame lights become flame refill lights (×1.5 balls, ×2 if upgraded twice)' },
     },
     key: {
       tier: 3, when: 'both',
@@ -169,7 +211,92 @@
       'KKK.........',
       '............',
     ];
+  const HI_LASER_MAP = [
+      '.......RRRRR',
+      '......RRRRR.',
+      '.....RRR....',
+      '....KWW.....',
+      '...KSSSK....',
+      '..KSYSSK....',
+      '..KSSBSK....',
+      '.KSSSSK.....',
+      'KSSYSK......',
+      'KSSSK.......',
+      'KKKK........',
+      '............',
+    ];
   const ITEM_ICONS = {
+    lighter: {
+      pal: { K: '#1f2937', S: '#d1d5db', R: '#dc2626', W: '#fca5a5', Y: '#fde047', O: '#fb923c' },
+      map: [
+        '.....Y......',
+        '....YOY.....',
+        '....YOY.....',
+        '.....O......',
+        '..KKKKKK....',
+        '..KSSSSKK...',
+        '..KSKKSKSK..',
+        '..KKKKKKKK..',
+        '..KRWRRRK...',
+        '..KRWRRRK...',
+        '..KRRRRRK...',
+        '..KKKKKKK...',
+      ],
+    },
+    file: {
+      pal: { K: '#111827', S: '#d1d5db', D: '#6b7280', B: '#92400e' },
+      map: [
+        '..........KK',
+        '.........KSK',
+        '........KSDK',
+        '.......KDSK.',
+        '......KSDK..',
+        '.....KDSK...',
+        '....KSDK....',
+        '...KKKK.....',
+        '..KBBK......',
+        '.KBBK.......',
+        'KBBK........',
+        'KKK.........',
+      ],
+    },
+    tissue: {
+      pal: { K: '#334155', W: '#ffffff', P: '#bae6fd' },
+      map: [
+        '.....WW.....',
+        '....WWWW....',
+        '.....WW.....',
+        '.KKKKKKKKKK.',
+        '.KPPPWWPPPK.',
+        '.KPPPPPPPPK.',
+        '.KPWPPPPWPK.',
+        '.KPPPPPPPPK.',
+        '.KPPPWWPPPK.',
+        '.KPPPPPPPPK.',
+        '.KKKKKKKKKK.',
+        '............',
+      ],
+    },
+    laserRedHi: { pal: { K: '#111827', S: '#4b5563', W: '#fff0f0', B: '#ef4444', Y: '#fbbf24', R: '#ff3b3b' }, map: HI_LASER_MAP },
+    laserGreenHi: { pal: { K: '#111827', S: '#4b5563', W: '#effff5', B: '#22c55e', Y: '#fbbf24', R: '#22e07a' }, map: HI_LASER_MAP },
+    laserPurple: { pal: { K: '#111827', S: '#4b5563', W: '#faf5ff', B: '#a855f7', Y: '#fbbf24', R: '#c084fc' }, map: HI_LASER_MAP },
+    board: {
+      pal: { K: '#052e16', G: '#15803d', Y: '#facc15', S: '#d1d5db' },
+      map: [
+        'KKKKKKKKKKKK',
+        'KGGGGGGGGGGK',
+        'KGYYYGGKKKGK',
+        'KGGGYGGKSKGK',
+        'KGGGYYYKKKGK',
+        'KGKKGGYGGGGK',
+        'KGKKGGYYYYGK',
+        'KGGGGGGGGYGK',
+        'KGYYYYGKKYGK',
+        'KGGGGYGKKGGK',
+        'KGGGGGGGGGGK',
+        'KKKKKKKKKKKK',
+      ],
+    },
     coin: {
       pal: { K: '#3f3f46', S: '#d4d4d8', W: '#ffffff', D: '#a1a1aa' },
       map: [
@@ -977,7 +1104,13 @@
       useFakeBet: '假彈珠：投珠 +1，變成 {bet} 顆！', useStone: '丟石頭！對{name}造成 {d} 點傷害（無視防禦）', useStoneCrit: '丟石頭暴擊！對{name}造成 {d} 點傷害（無視防禦）',
       useAcid: '潑鹽酸！{name}的防禦降到 {def}', useHeavy: '沉重彈珠：這回合每顆珠的基本傷害變成 {n}',
       useHourglass: '沙漏翻過來了：鋼珠落下後可以選擇保留結果或返回上回合',
-      useDrink: '嘶～～～ 紅燈全部變成補珠燈了！', useDrinkFlame: '嘶～～～ 紅燈全部變成補珠燈了！{f} 顆火焰燈變成綠色火焰補珠燈（補珠 ×1.5）',
+      useBoard: '換上電路板……紅燈全部變成補珠燈了！', useBoardFlame: '換上電路板……紅燈全部變成補珠燈了！{f} 顆火焰燈變成綠色火焰補珠燈（補珠 ×1.5）',
+      useDrink: '嘶～～～ 11 排全部亮成補珠燈了！', useDrinkFlame: '嘶～～～ 11 排全部亮成補珠燈了！{f} 顆火焰燈變成綠色火焰補珠燈（補珠 ×1.5）',
+      useLighter: '打火機：一根釘子燒紅了！這一關有效', useFile: '銼刀：磨出一根螺旋尖刺！這一關有效', useTissue: '衛生紙：堵住一個破洞！這一關有效',
+      filePop: '尖刺！', tissuePop: '堵住！',
+      useLaserRedHi: '高功率雷射筆（紅）：這一關每回合多強化 1 顆攻擊燈', useLaserGreenHi: '高功率雷射筆（綠）：這一關每回合強化 1 顆補珠燈',
+      useLaserPurpleAdd: '高功率雷射筆（紫）：多亮一顆超強化燈（傷害 ×2），這一關有效', useLaserPurple: '高功率雷射筆（紫）：一顆攻擊燈變成超強化燈（傷害 ×2），這一關有效',
+      itemAllRefill: '已經全部是補珠燈了', itemNoPin: '檯面上沒有普通釘子', itemNoHole: '這一關沒有破洞',
       boostRefillTag: '（火焰補珠燈 ×{x}）', flameRefillTag: '（綠色火焰補珠燈 {n} 顆，補珠 ×1.5）', useKey: '用老闆的鑰匙打開珠箱，拿回 {n} 顆彈珠！',
       useShake: '搖晃機台！點檯面上任何地方放下彈珠', shakeWhere: '點檯面上（釘子區）放下彈珠',
       shakeHint: '點檯面放珠', shakePlaced: '「你不能那樣做！」彈珠放下去了，這顆傷害 ×3',
@@ -1120,7 +1253,13 @@
       useFakeBet: 'Fake marble: +1 bet, now {bet}!', useStone: 'Threw a stone! {d} damage to the {name}, ignoring DEF', useStoneCrit: 'Critical stone! {d} damage to the {name}, ignoring DEF',
       useAcid: 'Acid! The {name}\'s DEF drops to {def}', useHeavy: 'Heavy marble: {n} base damage per ball this round',
       useHourglass: 'Hourglass flipped: after the ball lands, keep the result or rewind the round',
-      useDrink: 'Slurrrp~ Every red light is now a refill light!', useDrinkFlame: 'Slurrrp~ Every red light is now a refill light! {f} flame lights became green-flame refill lights (×1.5 balls)',
+      useBoard: 'Swapped the circuit board... every red light is now a refill light!', useBoardFlame: 'Swapped the circuit board... every red light is now a refill light! {f} flame lights became green-flame refill lights (×1.5 balls)',
+      useDrink: 'Slurrrp~ All 11 lanes are refill lights now!', useDrinkFlame: 'Slurrrp~ All 11 lanes are refill lights now! {f} flame lights became green-flame refill lights (×1.5 balls)',
+      useLighter: 'Lighter: a pin is red-hot now! Lasts this stage', useFile: 'File: filed a pin into a spiral spike! Lasts this stage', useTissue: 'Tissues: plugged a hole! Lasts this stage',
+      filePop: 'Spike!', tissuePop: 'Plugged!',
+      useLaserRedHi: 'High-power red laser: 1 extra attack light upgrade every round this stage', useLaserGreenHi: 'High-power green laser: 1 refill light upgrade every round this stage',
+      useLaserPurpleAdd: 'High-power purple laser: +1 super flame light (×2 damage) this stage', useLaserPurple: 'High-power purple laser: an attack light became a super flame light (×2 damage) this stage',
+      itemAllRefill: 'Every lane is already a refill light', itemNoPin: 'No normal pins on the board', itemNoHole: 'No holes in this stage',
       boostRefillTag: ' (flame refill ×{x})', flameRefillTag: ' ({n} green-flame refill light(s), ×1.5 balls)', useKey: 'The shopkeeper\'s key opened the ball box: {n} balls back!',
       useShake: 'Shake the machine! Tap anywhere on the board to drop the ball', shakeWhere: 'Tap the pin area of the board to drop the ball',
       shakeHint: 'Tap to drop', shakePlaced: '"You can\'t do that!" Ball dropped (×3 damage)',
@@ -1314,10 +1453,30 @@
     const keep = mode === 'adv' ? adv.pinSet : null;
     const special = mode === 'adv' && adv.monster && !adv.chest ? specialsFor(adv.monsterIdx) : null;
     ALL_PINS.forEach((p, i) => {
-      const kind = special && special.get(i);
+      // 打火機、銼刀改成的特殊釘子；衛生紙堵住的破洞變回普通釘子
+      const mod = special && adv.pinMods[i];
+      const kind = mod === 'plug' ? null : mod || (special && special.get(i));
       if (kind) pins.push({ x: p.x, y: p.y, kind, hitT: 0 });
-      else if (!keep || keep.has(i)) pins.push(p);
+      else if (mod === 'plug' || !keep || keep.has(i)) pins.push(p);
     });
+  }
+
+  // 道具改釘子：可以改的普通釘子、還沒堵住的破洞
+  function normalPinIdx() {
+    const special = specialsFor(adv.monsterIdx);
+    return [...(adv.pinSet || [])].filter(i => !special.has(i) && !adv.pinMods[i]);
+  }
+  function openHoleIdx() {
+    return [...specialsFor(adv.monsterIdx)].filter(([i, kind]) => kind === 'hole' && !adv.pinMods[i]).map(([i]) => i);
+  }
+  function modPin(list, kind) {
+    const i = list[Math.floor(Math.random() * list.length)];
+    adv.pinMods[i] = kind;
+    syncPins();
+    drawStatic();
+    const p = pins.find(q => q.x === ALL_PINS[i].x && q.y === ALL_PINS[i].y);
+    if (p && p.kind) p.hitT = 0.8;
+    return ALL_PINS[i];
   }
 
   // ===== 音效 =====
@@ -1546,6 +1705,8 @@
     stageLit: 0,          // 雷射筆（紅）：這一關多亮幾顆攻擊燈
     stageRefill: 0,       // 雷射筆（綠）：這一關多亮幾顆補珠燈
     run: null,            // 這趟冒險的紀錄：回合數、花費彈珠、單回合最大傷害 / 補珠
+    stageSuper: 0,        // 高功率雷射筆（紫）：這一關每回合有幾顆超強化燈（×2）
+    pinMods: {},          // 打火機、銼刀、衛生紙：這一關改掉的釘子（ALL_PINS 索引 → fire / spike / plug）
     stageBoost: 0,        // 燈亮滿時用雷射筆（紅）：這一關每回合多強化幾次紅燈
     stageRefillBoost: 0,  // 燈亮滿時用雷射筆（綠）：這一關每回合強化幾次補珠燈
     pinSet: null,         // 大冒險檯面上有哪些釘子（ALL_PINS 的索引）；null = 還沒開打，顯示完整釘陣
@@ -1630,7 +1791,7 @@
       v: 1, idx: adv.monsterIdx, chest: adv.chest, status: adv.status,
       hp: adv.hp, maxHp: adv.maxHp, defDown: adv.defDown, burn: adv.burn,
       stageLit: adv.stageLit, stageRefill: adv.stageRefill, lost: adv.lost,
-      stageBoost: adv.stageBoost, stageRefillBoost: adv.stageRefillBoost,
+      stageBoost: adv.stageBoost, stageRefillBoost: adv.stageRefillBoost, stageSuper: adv.stageSuper, pinMods: adv.pinMods,
       run: adv.run && { ...adv.run, spent: adv.run.spent - unpaid },
       credits: state.credits + state.payoutQueue + unpaid,
       items: adv.items, boons: adv.boons, talent: adv.talent, rerollCost: adv.rerollCost,
@@ -1705,6 +1866,8 @@
     adv.stageLit = d.stageLit;
     adv.stageRefill = d.stageRefill;
     adv.stageBoost = d.stageBoost || 0;
+    adv.stageSuper = d.stageSuper || 0;
+    adv.pinMods = d.pinMods || {};
     adv.run = d.run || newRunStats();
     adv.stageRefillBoost = d.stageRefillBoost || 0;
     adv.lost = d.lost;
@@ -1794,7 +1957,8 @@
       adv.run = adv.campaign ? newRunStats() : null;
     }
     adv.burn = 0;
-    adv.stageLit = adv.stageRefill = adv.stageBoost = adv.stageRefillBoost = 0;
+    adv.stageLit = adv.stageRefill = adv.stageBoost = adv.stageRefillBoost = adv.stageSuper = 0;
+    adv.pinMods = {};
     // 寶箱沿用前一關的釘子；自由挑戰每場都重新擺
     if (!adv.chest) growPins(idx);
     else syncPins();             // 寶箱沿用前一關的釘陣，但沒有特殊釘子
@@ -2024,7 +2188,10 @@
     switch (id) {
       case 'acid': if (monsterDef() === 0) return 'itemNoDef'; break;
       case 'hourglass': if (round.hourglass) return 'itemActive'; break;
-      case 'drink': if (!round.lit.size) return 'itemNoLit'; break;
+      case 'board': if (!round.lit.size) return 'itemNoLit'; break;
+      case 'drink': if (round.refills.size >= SLOT_COUNT) return 'itemAllRefill'; break;
+      case 'lighter': case 'file': if (!normalPinIdx().length) return 'itemNoPin'; break;
+      case 'tissue': if (!openHoleIdx().length) return 'itemNoHole'; break;
       case 'key': if (adv.lost <= 0) return 'itemKeyEmpty'; break;
       case 'fake':
         if (round.bet >= betCap() && !(round.phase === 'select' && round.level < multRule().mults.length - 1)) return 'itemBetCap';
@@ -2138,13 +2305,72 @@
       say('useHourglass');
       Sound.lock();
     },
-    drink() {
+    board() {
       // 火焰燈的強化跟著留下來（round.boost 不清掉），變成火焰補珠燈
       for (const i of round.lit) round.refills.add(i);
       const f = [...round.lit].filter(i => round.boost[i]).length;
       round.lit.clear();
+      say(f ? 'useBoardFlame' : 'useBoard', { f });
+      Sound.coin();
+    },
+    drink() {
+      // 11 排全部變成補珠燈；火焰燈、火焰補珠燈的強化留著
+      const f = [...round.lit].filter(i => round.boost[i]).length;
+      for (let i = 0; i < SLOT_COUNT; i++) round.refills.add(i);
+      round.lit.clear();
       say(f ? 'useDrinkFlame' : 'useDrink', { f });
       Sound.coin();
+    },
+    lighter() {
+      const p = modPin(normalPinIdx(), 'fire');
+      popups.push({ x: p.x, y: p.y - 10, text: '🔥', t: 0, color: '#fb923c' });
+      say('useLighter');
+      Sound.sizzle();
+    },
+    file() {
+      const p = modPin(normalPinIdx(), 'spike');
+      popups.push({ x: p.x, y: p.y - 10, text: t('filePop'), t: 0, color: '#67e8f9' });
+      say('useFile');
+      Sound.spike();
+    },
+    tissue() {
+      const p = modPin(openHoleIdx(), 'plug');
+      popups.push({ x: p.x, y: p.y - 10, text: t('tissuePop'), t: 0, color: '#e0f2fe' });
+      say('useTissue');
+      Sound.clunk();
+    },
+    laserRedHi() {
+      // 這一關每回合多強化 1 次紅燈；定燈後用的話，這回合馬上強化
+      adv.stageBoost++;
+      if (round.phase === 'bet') upgradeLights([...round.lit], 1);
+      else rollLit(litCount());
+      say('useLaserRedHi');
+      Sound.lock();
+    },
+    laserGreenHi() {
+      adv.stageRefillBoost++;
+      if (round.phase === 'bet') upgradeLights([...round.refills], 1);
+      say('useLaserGreenHi');
+      Sound.lock();
+    },
+    laserPurple() {
+      // 有空位就多亮一顆燈當超強化燈，沒空位就把一顆攻擊燈變成超強化燈
+      const add = !lightsFull();
+      adv.stageSuper++;
+      if (add) adv.stageLit++;
+      if (round.phase === 'bet') {
+        if (add) {
+          const free = [];
+          for (let i = 0; i < SLOT_COUNT; i++) if (!round.lit.has(i) && !round.refills.has(i)) free.push(i);
+          if (free.length) round.lit.add(free[Math.floor(Math.random() * free.length)]);
+        }
+        superLights([...round.lit], 1);
+      } else {
+        if (add) round.extraLit++;
+        rollLit(litCount());
+      }
+      say(add ? 'useLaserPurpleAdd' : 'useLaserPurple');
+      Sound.lock();
     },
     key() {
       const n = adv.lost;
@@ -2296,6 +2522,15 @@
       round.boost[up[Math.floor(Math.random() * up.length)]] = 2;
     }
   }
+  // 高功率雷射筆（紫）：直接把 u 顆燈升到第二階（先挑還沒強化的）
+  function superLights(list, u) {
+    for (; u > 0; u--) {
+      const pick = list.filter(i => !round.boost[i]);
+      const pool = pick.length ? pick : list.filter(i => round.boost[i] === 1);
+      if (!pool.length) break;
+      round.boost[pool[Math.floor(Math.random() * pool.length)]] = 2;
+    }
+  }
   // 定燈後會有幾顆補珠燈：基本 1 顆 + 雷射筆（綠）+ 過關獎勵「補珠燈數」
   const refillTotal = () => 1 + round.extraRefill + boon('refillLight');
   // 燈已經亮滿：紅燈 + 補珠燈已經佔滿 11 排，雷射筆再加燈就會蓋掉別的顏色
@@ -2310,6 +2545,7 @@
     round.lit = new Set(slots.slice(0, n));
     // 火焰燈：強化孔第 3 顆起每顆強化 1 次，燈亮滿時用的雷射筆（紅）每支再多 1 次
     round.boost.fill(0);
+    if (advMultRule()) superLights(slots.slice(0, n), adv.stageSuper);
     upgradeLights(slots.slice(0, n), boostCount() + (advMultRule() ? adv.stageBoost : 0));
     // 寶箱：燈全亮；投 1 顆強化珠出 3 排藍燈、2 顆再加 2 排紫燈、3 顆再加 1 排橘燈
     round.tiers.fill(0);
