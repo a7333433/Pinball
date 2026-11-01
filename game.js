@@ -882,6 +882,9 @@
       planFree: '自由挑戰', planCampaign: '冒險模式',
       campaignIntro: '最佳紀錄：打倒 {best} 隻怪物，全部通關 {clears} 次',
       campaignStart: '開始冒險',
+      resumeTitle: '繼續上次的冒險？', resumeText: '{stage}・持珠 {balls} 顆・天賦：{talent}',
+      resumeStage: '第 {stage}/{total} 關', resumeChest: '第 {stage} 關後的寶箱',
+      resumeBtn: '繼續冒險', resumeRestart: '重新開始', resumeMsg: '歡迎回來！從第 {stage} 關繼續冒險',
       stageClearTitle: '打倒了{name}！', nextStage: '下一關',
       statusBalls: '目前彈珠', statusItems: '已擁有道具', statusBallsN: '{n} 顆', statusNoItems: '無',
       campaignClearTitle: '全部通關！', campaignClearText: '你一路打倒了全部 {total} 隻怪物，最後還剩 {left} 顆彈珠！', campaignAgain: '再闖一次',
@@ -1003,6 +1006,9 @@
       planFree: 'Free fight', planCampaign: 'Adventure',
       campaignIntro: 'Best: {best} monsters defeated, {clears} full clears',
       campaignStart: 'Start adventure',
+      resumeTitle: 'Continue your adventure?', resumeText: '{stage} · {balls} balls · Talent: {talent}',
+      resumeStage: 'Stage {stage}/{total}', resumeChest: 'Treasure after stage {stage}',
+      resumeBtn: 'Continue', resumeRestart: 'Start over', resumeMsg: 'Welcome back! Continuing from stage {stage}',
       stageClearTitle: 'You beat the {name}!', nextStage: 'Next stage',
       statusBalls: 'Balls', statusItems: 'Items', statusBallsN: '{n}', statusNoItems: 'None',
       campaignClearTitle: 'Adventure cleared!', campaignClearText: 'You defeated all {total} monsters with {left} balls to spare!', campaignAgain: 'Play again',
@@ -1482,7 +1488,84 @@
   const campaignBalls = () => state.credits + state.payoutQueue + (adv.chest ? 0 : stageBonus());
   const campaignMidRun = () => adv.campaign && adv.status === 'won' && (adv.chest || adv.monsterIdx < LAST_STAGE) && campaignBalls() > 0;
 
+  // ===== 冒險進度存檔 =====
+  // 冒險模式（自由挑戰不存）每回合開始、選完獎勵、關掉頁面時存一次；
+  // 回合打到一半關掉：還沒發射的投珠、倍率珠退回，已經在檯面上的珠算用掉
+  const RUN_KEY = 'candy-pinball-run';
+  function saveRun() {
+    if (mode !== 'adv' || !adv.campaign || !adv.monster) return;
+    savedRun = null;                      // 正在玩的這趟就是最新進度，開場不用再問
+    if (adv.status !== 'playing' && !campaignMidRun()) { clearRun(); return; }   // 輸了、全破、沒珠了
+    const unpaid = round.phase === 'select' || round.phase === 'bet' ? round.betPaid + round.multPaid : 0;
+    const data = {
+      v: 1, idx: adv.monsterIdx, chest: adv.chest, status: adv.status,
+      hp: adv.hp, maxHp: adv.maxHp, defDown: adv.defDown, burn: adv.burn,
+      stageLit: adv.stageLit, stageRefill: adv.stageRefill, lost: adv.lost,
+      credits: state.credits + state.payoutQueue + unpaid,
+      items: adv.items, boons: adv.boons, talent: adv.talent, rerollCost: adv.rerollCost,
+      rewards: adv.rewards, loot: adv.loot, pins: adv.pinSet ? [...adv.pinSet] : null,
+    };
+    try { localStorage.setItem(RUN_KEY, JSON.stringify(data)); } catch (e) { /* 無痕模式 */ }
+  }
+  function clearRun() {
+    try { localStorage.removeItem(RUN_KEY); } catch (e) { /* 無痕模式 */ }
+  }
+  function loadRun() {
+    try {
+      const d = JSON.parse(localStorage.getItem(RUN_KEY));
+      if (d && d.v === 1 && MONSTERS[d.idx] && (d.status === 'playing' || d.status === 'won')) return d;
+    } catch (e) { /* 無痕模式、格式不對 */ }
+    return null;
+  }
+  let savedRun = loadRun();               // 上次沒打完的冒險（開場詢問要不要繼續）
+
+  // 從存檔接著玩：回到那一關（或過關畫面），回合從頭開始
+  function resumeRun() {
+    const d = savedRun;
+    savedRun = null;
+    Sound.init();
+    adv.campaign = true;
+    adv.monster = d.chest ? CHEST : MONSTERS[d.idx];
+    adv.chest = d.chest;
+    adv.monsterIdx = d.idx;
+    adv.status = d.status;
+    adv.hp = d.hp;
+    adv.maxHp = d.maxHp;
+    adv.defDown = d.defDown;
+    adv.burn = d.burn;
+    adv.stageLit = d.stageLit;
+    adv.stageRefill = d.stageRefill;
+    adv.lost = d.lost;
+    adv.items = d.items || {};
+    adv.boons = d.boons || {};
+    adv.talent = d.talent;
+    adv.rerollCost = d.rerollCost || 1;
+    adv.rewards = d.rewards;
+    adv.loot = d.loot;
+    adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = 0;
+    adv.pops.length = 0;
+    adv.pinSet = d.pins ? new Set(d.pins) : null;
+    syncPins();
+    drawStatic();
+    state.credits = 0;
+    state.payoutQueue = d.credits;        // 彈珠從出珠口重新掉出來
+    tray.length = 0;
+    spills.length = 0;
+    state.lastWin = null;
+    state.started = true;
+    newRound();
+    refreshOverlay();
+    say('resumeMsg', { stage: d.idx + 1 });
+    Sound.coin();
+  }
+  // 不繼續：回到一般的開場（存檔等開始新的冒險時才會被蓋掉）
+  function skipResume() {
+    savedRun = null;
+    refreshOverlay();
+  }
+
   function startAdventure() {
+    if (savedRun && advPlan === 'campaign' && adv.status === 'intro') { resumeRun(); return; }
     if (advPlan === 'campaign') {
       const cont = campaignMidRun();
       adv.campaign = true;
@@ -1658,6 +1741,7 @@
       say('advWinMsg', { name: monsterName() });
     }
     setTimeout(() => Sound.win(), 350);
+    setTimeout(saveRun, 0);
   }
 
   // ===== 過關獎勵 =====
@@ -1699,6 +1783,7 @@
     if (id === 'pin') for (let i = 0; i < 5; i++) removeRandomPin();
     Sound.coin();
     refreshOverlay();
+    saveRun();
   }
   function removeRandomPin() {
     if (!adv.pinSet) return;
@@ -1925,6 +2010,7 @@
     say('advLoseMsg');
     adv.laughSoundT = 0.7;      // 落敗音效之後竊笑一聲
     Sound.lose();
+    saveRun();
   }
 
   // 把托盤裡的珠子直接排好（切換模式時用，不用重新掉一次）
@@ -2042,6 +2128,7 @@
     adv.rescueSaid = false;
     rollLit(litCount());
     syncRestBalls();
+    saveRun();
     if (mode === 'adv') {
       if (adv.status === 'playing') {
         say(state.credits > 0 || state.payoutQueue > 0 ? 'selectHint' : 'advLoseMsg');
@@ -4719,6 +4806,7 @@
 
   // ---- 遊戲模式的畫面切換 ----
   const ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('overlay-coin'), ovItem = $('ov-item');
+  const ovRestart = $('ov-restart');
   const ovStatus = $('ov-status'), ovRewards = $('ov-rewards');
 
   // 過關獎勵：3 張卡片選 1 張，下面是重骰按鈕
@@ -4901,6 +4989,8 @@
     }
     const picking = show && mode === 'adv';
     const midRun = picking && campaignMidRun();
+    const resume = picking && !midRun && advPlan === 'campaign' && adv.status === 'intro' && !!savedRun;
+    if (ovRestart) ovRestart.hidden = !resume;
     if (picking) {
       const name = monsterName(), stage = adv.monsterIdx + 1, total = MONSTERS.length;
       // 結果只在「上一場的玩法」和目前選的玩法一樣時顯示，否則顯示該玩法的說明
@@ -4920,6 +5010,14 @@
           title = t('campaignClearTitle'); text = t('campaignClearText', { total, left: state.credits }); btn = t('campaignAgain');
         } else if (hasResult && adv.status === 'lost') {
           title = t('campaignLoseTitle'); text = t('campaignLoseText', { stage, name }); btn = t('campaignRetry');
+        } else if (resume) {
+          const d = savedRun;
+          title = t('resumeTitle');
+          text = t('resumeText', {
+            stage: t(d.chest ? 'resumeChest' : 'resumeStage', { stage: d.idx + 1, total: MONSTERS.length }),
+            balls: d.credits, talent: TALENTS[d.talent] ? TALENTS[d.talent].name[lang] : '-',
+          });
+          btn = t('resumeBtn');
         } else {
           title = t('advTitle');
           text = t('campaignIntro', { best: campaign.best, clears: campaign.clears });
@@ -4950,7 +5048,7 @@
     if (ovText) { ovText.textContent = text; ovText.hidden = !text; }
     if (ovBtn) { ovBtn.textContent = btn; ovBtn.hidden = !!(midRun && adv.rewards); }
     // 冒險模式要開新的一趟時先選天賦
-    const talents = picking && !midRun && advPlan === 'campaign';
+    const talents = picking && !midRun && advPlan === 'campaign' && !resume;
     if (ovRewards) {
       ovRewards.hidden = !(midRun && adv.rewards) && !talents;
       if (midRun && adv.rewards) renderRewards();
@@ -5027,6 +5125,10 @@
   for (const el of byAction('mute')) el.addEventListener('click', toggleMute);
   helpDlg.addEventListener('click', e => { if (e.target === helpDlg) helpDlg.close(); });   // 點背景關閉
   $('overlay-coin').addEventListener('click', overlayPrimary);
+  if (ovRestart) ovRestart.addEventListener('click', skipResume);
+  // 關掉或切走頁面時存一次（回合打到一半也記得目前的血量、持珠）
+  window.addEventListener('pagehide', saveRun);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) saveRun(); });
   for (const el of byAction('mode')) el.addEventListener('click', switchMode);
   for (const el of byAction('bag')) el.addEventListener('click', openBag);
   for (const el of byAction('stats')) el.addEventListener('click', openStats);

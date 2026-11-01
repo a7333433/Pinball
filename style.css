@@ -436,6 +436,18 @@ kbd {
 .ov-item[hidden] { display: none; }
 /* 大冒險的卡片不放切換模式、說明、語系（上方列／右側面板都有） */
 body[data-mode="adv"] .overlay-card .link { display: none; }
+/* 開場：有沒打完的冒險時，「繼續冒險」下面的「重新開始」 */
+.ov-restart {
+  font: inherit;
+  font-size: 14px;
+  color: var(--gold);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-top: 8px;
+}
+.ov-restart[hidden] { display: none; }
 .ov-status {
   width: 100%;
   padding: 10px 12px;
