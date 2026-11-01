@@ -117,12 +117,12 @@
     balls: { name: { zh: '彈珠補給', en: 'Ball Supply' }, desc: { zh: '持有彈珠數增加 10', en: '+10 balls' } },
     perBall: { name: { zh: '每珠增傷', en: 'Per-ball Damage' }, desc: { zh: '每顆投珠增加攻擊力 1（扣防禦前）', en: '+1 attack per ball bet (before DEF)' } },
     multBase: { name: { zh: '基礎倍率', en: 'Base Multiplier' }, desc: { zh: '倍率從 ×1 改成多 1 倍起跳（每段倍率都 +1）', en: 'Every multiplier step is ×1 higher' } },
-    litUp: { name: { zh: '攻擊燈數', en: 'More Red Lights' }, desc: { zh: '每回合紅燈（攻擊燈）多亮 1 顆', en: '+1 red (attack) light every round' } },
+    litUp: { name: { zh: '攻擊燈數', en: 'More Red Lights' }, desc: { zh: '每回合紅燈（攻擊燈）多亮 1 顆（只能拿一次）', en: '+1 red (attack) light every round (once only)' } },
     pierce: { name: { zh: '穿透傷害', en: 'Piercing' }, desc: { zh: '攻擊打破防禦時，追加 1 點忽視防禦的傷害', en: '+1 damage that ignores DEF on hits that break DEF' } },
     weight: { name: { zh: '加重彈珠', en: 'Heavier Marble' }, desc: { zh: '彈珠重量增加 0.5（撞釘子彈得比較低、比較不會亂跳）', en: 'Marble weight +0.5 (bounces lower and jitters less)' } },
     pin: { name: { zh: '拔釘子', en: 'Fewer Pins' }, desc: { zh: '落珠區的釘子隨機減少 5 根，之後每關也少長 5 根', en: 'Removes 5 random pins now, and 5 fewer grow in every later stage' } },
     refill: { name: { zh: '補珠加量', en: 'Bigger Refills' }, desc: { zh: '補珠燈補珠時多得 1 顆', en: '+1 ball on every refill light' } },
-    refillLight: { name: { zh: '補珠燈數', en: 'More Refill Lights' }, desc: { zh: '每回合補珠燈多 1 顆', en: '+1 refill light every round' } },
+    refillLight: { name: { zh: '補珠燈數', en: 'More Refill Lights' }, desc: { zh: '每回合補珠燈多 1 顆（只能拿一次）', en: '+1 refill light every round (once only)' } },
     chestRare: { name: { zh: '寶箱升級', en: 'Better Chests' }, desc: { zh: '寶箱關卡的稀有（藍）燈 +1、一般（白）燈 −1', en: 'Chests get +1 rare (blue) lane, −1 common (white) lane' } },
     critRate: { name: { zh: '暴擊率', en: 'Crit Rate' }, desc: { zh: '暴擊機率增加 20%', en: 'Crit chance +20%' } },
     critDmg: { name: { zh: '暴擊傷害', en: 'Crit Damage' }, desc: { zh: '暴擊傷害倍率增加 50%', en: 'Crit damage +50%' } },
@@ -1667,7 +1667,8 @@
     if (id === 'pin') return pins.length > 0;
     if (BOONS[id].talent && BOONS[id].talent !== adv.talent) return false;
     if (id === 'light') return !boon('light');    // 只能拿一次
-    if (id === 'roll') return !boon('roll');      // 只能拿一次
+    // 只能拿一次（攻擊燈、補珠燈疊太多會變成穩贏）
+    if (id === 'roll' || id === 'litUp' || id === 'refillLight') return !boon(id);
     return true;
   }
   function rollRewards() {
