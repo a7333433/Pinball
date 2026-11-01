@@ -2666,8 +2666,8 @@
     for (const p of pins) {
       if (Math.abs(p.x - b.x) > 14 || Math.abs(p.y - b.y) > 14) continue;
       if (p.kind === 'hole') {
-        // 破洞：碰到就掉進去
-        if (multiBall() && b.fired && Math.hypot(p.x - b.x, p.y - b.y) < BALL_R + HOLE_R - 3) { fallInHole(b, p); return; }
+        // 破洞：珠心進到洞口裡面才算掉進去
+        if (multiBall() && b.fired && Math.hypot(p.x - b.x, p.y - b.y) < HOLE_R) { fallInHole(b, p); return; }
         continue;
       }
       const hit = collideCircle(b, p.x, p.y, p.kind ? SPECIAL_R : PIN_R, p.kind === 'spike' ? 0.95 : 0.5);
