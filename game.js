@@ -2773,11 +2773,13 @@
     state.floorY = SHOOTER_FLOOR;
     if (ballAtShooter()) {
       // 彈簧上疊著的珠整疊一起射出：上面的最快、越下面稍慢一點，飛出去後才會拉開距離
+      // 每顆差 5%，但最上和最下最多差 20%，不然珠一多最下面幾顆力道拉滿也上不去
       const stack = balls.filter(atShooter).sort((a, b) => b.y - a.y);   // 由下往上
       const v = 600 + 640 * p, n = stack.length;
+      const step = n > 1 ? Math.min(0.05, 0.2 / (n - 1)) : 0;
       stack.forEach((b, i) => {
         b.y = Math.min(b.y, SHOOTER_FLOOR - BALL_R - i * BALL_R * 2);
-        b.vy = -v * (1 - 0.05 * (n - 1 - i));
+        b.vy = -v * (1 - step * (n - 1 - i));
         b.vx = 0;
         if (!b.fired) { b.fired = true; round.launched++; }
       });
