@@ -6,17 +6,17 @@
 
   // ===== 規則 =====
   // 倍率規則依模式不同（倍率越高，亮的燈越少）：
-  // 經典：2/4/6/8/10 倍，倍率孔每升一段扣 2 顆，亮燈 5 → 1
-  // 大冒險：從 ×1 起跳，倍率孔每投 1 顆 +1 倍；前 2 顆各少一顆燈（7 → 5），
+  // 經典：2/4/6/8/10 倍，強化孔每升一段扣 2 顆，亮燈 5 → 1
+  // 大冒險：從 ×1 起跳，強化孔每投 1 顆 +1 倍；前 2 顆各少一顆燈（7 → 5），
   //         第 3 顆起不再少燈，改成隨機強化 1 顆紅燈（火焰燈：最終傷害 ×1.5，紅燈都強化過再疊到第二階 ×2）
   const MULT_RULES = {
     classic: { mults: [2, 4, 6, 8, 10], cost: 2 },
     adv: { mults: [1, 2, 3, 4, 5, 6, 7], cost: 1 },
   };
-  // 寶箱關卡：燈全亮、不加倍；倍率孔每投 1 顆升一級寶箱（最多 3 顆）
+  // 寶箱關卡：燈全亮、不加倍；強化孔每投 1 顆升一級寶箱（最多 3 顆）
   const CHEST_RULE = { mults: [1, 1, 1, 1], cost: 1 };
   const multRule = () => chestStage() ? CHEST_RULE : MULT_RULES[mode];
-  const ADV_LIT_DROP = 2;          // 大冒險倍率孔前幾顆會少燈
+  const ADV_LIT_DROP = 2;          // 大冒險強化孔前幾顆會少燈
   const BOOST_MULT = [1, 1.5, 2];  // 火焰燈：沒強化 / 第一階 / 第二階的最終傷害倍數
   const advMultRule = () => mode === 'adv' && !chestStage();
   const litFor = level => multRule().mults.length - (advMultRule() ? Math.min(level, ADV_LIT_DROP) : level);
@@ -30,7 +30,7 @@
   // ===== 彈珠台大冒險：怪物 =====
   const ADV_BALLS = 50;       // 每場冒險有幾顆彈珠
   const BET_CAP = 3;          // 大冒險每回合最多投幾顆珠（過關獎勵「投珠上限」可以提高）
-  const REFILL_MULT = 2;      // 補珠燈：每顆落進補珠燈的珠補 2 顆彈珠（這回合第一次中還會退回倍率孔的珠）
+  const REFILL_MULT = 2;      // 補珠燈：每顆落進補珠燈的珠補 2 顆彈珠（這回合第一次中還會退回強化孔的珠）
   const CAMPAIGN_BONUS = 15;  // 冒險模式：每過一關額外補幾顆彈珠（剩下的彈珠也會帶到下一關）
   // 等級：每打倒一隻怪物升 1 級（從 Lv1 開始），每升一級過關補珠 +LEVEL_BONUS，每 2 級每顆珠攻擊 +1
   const LEVEL_BONUS = 2;
@@ -42,7 +42,7 @@
     { name: { zh: '史詩', en: 'Epic' }, color: '#c084fc', led: 'purple' },
     { name: { zh: '傳說', en: 'Legendary' }, color: '#fb923c', led: 'orange' },
   ];
-  // 寶箱投 1 / 2 / 3 顆倍率珠時，累加幾排藍 / 紫 / 橘燈（其餘都是白燈）
+  // 寶箱投 1 / 2 / 3 顆強化珠時，累加幾排藍 / 紫 / 橘燈（其餘都是白燈）
   const CHEST_LANES = [0, 3, 2, 1];
   // when：pre = 定燈前、post = 定燈後（發射前）、both = 兩者都可
   const ITEMS = {
@@ -850,7 +850,7 @@
   const I18N = {
     zh: {
       title: '柑仔店彈珠台',
-      selectHint: '燈在閃：可投倍率孔加倍，按藍色按鈕定燈',
+      selectHint: '燈在閃：可投強化孔加倍，按藍色按鈕定燈',
       insertCoin: '請投幣換彈珠',
       lockedAlready: '燈已經定了，往投珠孔投珠再發射',
       roundNotOver: '這一局還沒結束',
@@ -862,7 +862,7 @@
       betInfoAdv: '投珠 {bet}/{cap} 顆，發射時一次射出 {bet} 顆；每顆 {mult} 倍，中了造成 {win} 點傷害',
       betInfoAdvDef: '投珠 {bet}/{cap} 顆，發射時一次射出 {bet} 顆；每顆 {mult} 倍扣掉防禦 {def}，中了造成 {win} 點傷害',
       betCapMsg: '每回合最多投 {n} 顆珠（過關獎勵可以提高上限）', itemBetCap: '投珠已經到上限了',
-      multLocked: '燈已經定了，這一局不能再投倍率孔',
+      multLocked: '燈已經定了，這一局不能再投強化孔',
       multMax: '倍率最高 {max} 倍',
       multShort: '彈珠不足 {cost} 顆，不能提升倍率',
       multKeepOne: '加倍後至少要留 1 顆投珠，彈珠不足 {need} 顆時不能提升倍率',
@@ -877,13 +877,13 @@
       betFirst: '請先投珠再按發射鈕',
       fired: '發射！', firedN: '發射！{n} 顆鋼珠一起出發',
       moreBalls: '另有 {n} 顆',
-      hintMult: '加倍', hintLock: '定燈', hintBet: '投珠', hintPull: '拉桿發射',
-      cvBet: '投珠', cvBalls: '顆', cvLit: '亮{n}燈', cvMultHole: '倍率孔', cvBetHole: '投珠孔', cvCoinSlot: '投幣口',
+      hintMult: '強化', hintLock: '定燈', hintBet: '投珠', hintPull: '拉桿發射',
+      cvBet: '投珠', cvBalls: '顆', cvLit: '亮{n}燈', cvMultHole: '強化孔', cvBetHole: '投珠孔', cvCoinSlot: '投幣口',
       cvLock: '定燈', cvPull: '拉桿', cvChute: '出珠口', cvDisplay: '持珠',
       coin: '投幣', overlayText: '投一枚硬幣，換 20 顆彈珠！', overlayCoin: '投幣開始', howTo: '玩法說明',
       sign: '柑仔店<br><span>彈珠台</span>', stCredits: '持有彈珠', stBet: '投珠數', stMult: '倍率',
       stWin: '上局得珠', stBestWin: '最高分', stBest: '最多持珠', power: '力道',
-      btnMult: '投倍率孔', btnLock: '定燈', btnBet: '投珠孔', btnFire: '按住拉彈簧',
+      btnMult: '投強化孔', btnLock: '定燈', btnBet: '投珠孔', btnFire: '按住拉彈簧',
       langBtn: 'English', langShort: 'EN', close: '關閉',
       modeShort: '冒險', modeShortAdv: '經典', modeLong: '切換到大冒險', modeLongAdv: '切換到經典模式',
       planFree: '自由挑戰', planCampaign: '冒險模式',
@@ -914,7 +914,7 @@
       refillMsgCombo: '第 {k} 顆落進同一顆補珠燈！多補 {c} 顆，共補回 {n} 顆彈珠', comboPop: '疊{k} {text}',
       hitMsgCombo: '第 {k} 顆落進同一顆攻擊燈！攻擊 +{c} 共 {raw}，扣掉防禦 {def} 造成 {dmg} 點傷害',
       blockMsgCombo: '第 {k} 顆落進同一顆攻擊燈，但攻擊 {raw} 還是打不破防禦 {def}',
-      refillMsgMult: '命中補珠燈！退回倍率孔 {refund} 顆，再補 {bonus} 顆，共 {n} 顆',
+      refillMsgMult: '命中補珠燈！退回強化孔 {refund} 顆，再補 {bonus} 顆，共 {n} 顆',
       advMissMsg: '沒打中！{name}在嘲笑你', advWinMsg: '打倒了{name}！', advWinLv: '打倒了{name}！升到 Lv{lv}，過關補珠 +{bonus}', advWinLvAtk: '打倒了{name}！升到 Lv{lv}，攻擊 +1（共 +{atk}）、過關補珠 +{bonus}', advLoseMsg: '彈珠用完了…',
       dmgPop: '-{d} HP', advNoCoin: '大冒險模式不能投幣',
       advPressStart: '按「開始冒險」', laugh: '嘻嘻嘻',
@@ -934,10 +934,10 @@
       rewardStats: '查看數值', rwStat: '目前 {now} → {next}', rwOn: '有', rwOff: '沒有', rwPins: '每關少 {n} 根', rwBurnN: '{n} 層',
       statusBoons: '過關獎勵',
       chestName: '寶箱',
-      chestAppear: '寶箱出現了！投倍率孔提升寶箱等級（最多 3 顆），定燈後投 1 顆珠打開它',
+      chestAppear: '寶箱出現了！投強化孔提升寶箱等級（最多 3 顆），定燈後投 1 顆珠打開它',
       chestTierUp: '寶箱升級！{desc}。按藍色按鈕定燈',
       chestDesc1: '藍燈 3 顆', chestDesc2: '藍燈 3 顆、紫燈 2 顆', chestDesc3: '藍燈 3 顆、紫燈 2 顆、橘燈 1 顆',
-      chestMultMax: '寶箱最多投 3 顆倍率珠',
+      chestMultMax: '寶箱最多投 3 顆強化珠',
       lockedChest: '定燈！投 1 顆珠，再拉彈簧打開寶箱',
       chestBetOne: '寶箱關卡只能投 1 顆珠', chestBetMsg: '投珠 1 顆，拉彈簧發射打開寶箱！',
       chestOpenMsg: '打開寶箱！從{tier}道具裡選一個', chestPickMsg: '獲得道具「{item}」',
@@ -1007,13 +1007,13 @@
       betFirst: 'Bet first, then shoot',
       fired: 'Fire!', firedN: 'Fire! {n} balls are on their way',
       moreBalls: '+{n} more',
-      hintMult: 'Multiply', hintLock: 'Lock', hintBet: 'Bet', hintPull: 'Pull to shoot',
-      cvBet: 'BET', cvBalls: 'balls', cvLit: '{n} lit', cvMultHole: 'MULTIPLY', cvBetHole: 'BET', cvCoinSlot: 'COIN',
+      hintMult: 'Boost', hintLock: 'Lock', hintBet: 'Bet', hintPull: 'Pull to shoot',
+      cvBet: 'BET', cvBalls: 'balls', cvLit: '{n} lit', cvMultHole: 'BOOST', cvBetHole: 'BET', cvCoinSlot: 'COIN',
       cvLock: 'LOCK', cvPull: 'PULL', cvChute: 'PAYOUT', cvDisplay: 'BALLS',
       coin: 'Coin', overlayText: 'Insert a coin for 20 balls!', overlayCoin: 'Insert coin', howTo: 'How to play',
       sign: 'Candy<br><span>Pinball</span>', stCredits: 'Balls', stBet: 'Bet', stMult: 'Multiplier',
       stWin: 'Last win', stBestWin: 'High score', stBest: 'Most balls', power: 'Power',
-      btnMult: 'Multiply', btnLock: 'Lock', btnBet: 'Bet', btnFire: 'Hold to pull',
+      btnMult: 'Boost', btnLock: 'Lock', btnBet: 'Bet', btnFire: 'Hold to pull',
       langBtn: '中文', langShort: '中', close: 'Close',
       modeShort: 'Quest', modeShortAdv: 'Classic', modeLong: 'Pinball Quest', modeLongAdv: 'Classic mode',
       planFree: 'Free fight', planCampaign: 'Adventure',
@@ -1044,7 +1044,7 @@
       refillMsgCombo: 'Ball #{k} on the same refill light! +{c} extra, {n} balls back', comboPop: 'x{k} {text}',
       hitMsgCombo: 'Ball #{k} on the same red light! +{c} attack = {raw} − DEF {def}: {dmg} damage',
       blockMsgCombo: 'Ball #{k} on the same red light, but {raw} attack is still blocked by DEF {def}',
-      refillMsgMult: 'Refill light! {refund} multiplier balls back + {bonus} = {n} balls',
+      refillMsgMult: 'Refill light! {refund} boost balls back + {bonus} = {n} balls',
       advMissMsg: 'Missed! The {name} laughs', advWinMsg: 'Defeated the {name}!', advWinLv: 'Defeated the {name}! Level {lv}: stage bonus +{bonus}', advWinLvAtk: 'Defeated the {name}! Level {lv}: attack +1 (total +{atk}), stage bonus +{bonus}', advLoseMsg: 'Out of balls…',
       dmgPop: '-{d} HP', advNoCoin: 'No coins in Quest mode',
       advPressStart: 'Press Start', laugh: 'hehehe',
@@ -1064,10 +1064,10 @@
       rewardStats: 'View stats', rwStat: 'Now {now} → {next}', rwOn: 'yes', rwOff: 'no', rwPins: '{n} fewer per stage', rwBurnN: '{n} burn',
       statusBoons: 'Rewards',
       chestName: 'Treasure Chest',
-      chestAppear: 'A treasure chest! Use the multiplier hole to upgrade it (up to 3 balls), lock, then bet 1 ball to open it',
+      chestAppear: 'A treasure chest! Use the boost hole to upgrade it (up to 3 balls), lock, then bet 1 ball to open it',
       chestTierUp: 'Chest upgraded! {desc}. Press blue to lock',
       chestDesc1: '3 blue', chestDesc2: '3 blue, 2 purple', chestDesc3: '3 blue, 2 purple, 1 orange',
-      chestMultMax: 'The chest takes at most 3 multiplier balls',
+      chestMultMax: 'The chest takes at most 3 boost balls',
       lockedChest: 'Locked! Bet 1 ball, then shoot to open the chest',
       chestBetOne: 'Only 1 ball can be bet on the chest', chestBetMsg: 'Bet 1 ball. Shoot to open the chest!',
       chestOpenMsg: 'Chest opened! Pick a {tier} item', chestPickMsg: 'Got {item}',
@@ -1160,7 +1160,7 @@
   const TRAY_CAP = 190;             // 托盤裝得下的顆數；再多就從托盤滿出來、掉到機台外面（仍然計數）
   const DISPLAY = { x: 272, y: 856, w: 110, h: 46 };
   const DISPLAY_MAX = 9999;         // 持珠顯示器四位數的上限
-  // 出珠口（右緣 78）到持珠顯示器（左緣 272）之間：定燈按鈕底板（寬 60）、倍率孔（直徑 34）平均間隔約 33
+  // 出珠口（右緣 78）到持珠顯示器（左緣 272）之間：定燈按鈕底板（寬 60）、強化孔（直徑 34）平均間隔約 33
   const BUTTON = { x: 141, y: 876, r: 20 };   // 藍色定燈按鈕
 
   function mulberry32(a) {
@@ -1442,7 +1442,7 @@
     shakeT: 0,            // 搖晃機台時畫面晃動
   };
   const round = {
-    phase: 'select',      // select（燈在閃，可投倍率孔）| bet（燈已定，可投珠）| flying | win | lose
+    phase: 'select',      // select（燈在閃，可投強化孔）| bet（燈已定，可投珠）| flying | win | lose
     bet: 0,
     level: 0,             // 目前倍率段 multRule().mults[level]
     lit: new Set(),
@@ -1452,7 +1452,7 @@
     refills: new Set(),   // 大冒險：補珠燈在哪幾排
     tiers: new Array(SLOT_COUNT).fill(0),   // 寶箱：每一排的道具等級（0 白、1 藍、2 紫、3 橘）
     boost: new Array(SLOT_COUNT).fill(0),   // 火焰燈：每一排紅燈的強化階段（0 沒有、1 ×1.5、2 ×2）
-    betPaid: 0,           // 這局真的從持珠拿出來的投珠、倍率珠（退還時用；假彈珠送的不算）
+    betPaid: 0,           // 這局真的從持珠拿出來的投珠、強化珠（退還時用；假彈珠送的不算）
     multPaid: 0,
     extraLit: 0,          // 雷射筆（紅）：多亮幾顆攻擊燈
     extraRefill: 0,       // 雷射筆（綠）：多亮幾顆補珠燈
@@ -1464,7 +1464,7 @@
     hits: 0,              // 這回合打中攻擊燈幾顆、造成多少傷害、補回幾顆（結算訊息用）
     dmg: 0,
     gain: 0,
-    refunded: false,      // 補珠燈退回倍率珠：一回合只退一次
+    refunded: false,      // 補珠燈退回強化珠：一回合只退一次
   };
   const balls = [];       // 機台內的鋼珠：大冒險投幾顆就一次發射幾顆，其他時候只有一顆
   const restBall = () => ({ x: PLUNGER_X, y: SHOOTER_FLOOR - BALL_R - 1, vx: 0, vy: 0, still: 0, fired: false });
@@ -1590,7 +1590,7 @@
 
   // ===== 冒險進度存檔 =====
   // 冒險模式（自由挑戰不存）每回合開始、選完獎勵、關掉頁面時存一次；
-  // 回合打到一半關掉：還沒發射的投珠、倍率珠退回，已經在檯面上的珠算用掉
+  // 回合打到一半關掉：還沒發射的投珠、強化珠退回，已經在檯面上的珠算用掉
   const RUN_KEY = 'candy-pinball-run';
   function saveRun() {
     if (mode !== 'adv' || !adv.campaign || !adv.monster) return;
@@ -2144,7 +2144,7 @@
     state.charging = false;
     state.power = 0;
     state.floorY = SHOOTER_FLOOR;
-    // 這一局還沒結算就切換：投下去的珠和倍率孔的珠都退回
+    // 這一局還沒結算就切換：投下去的珠和強化孔的珠都退回
     if (round.phase === 'select' || round.phase === 'bet' || round.phase === 'flying') {
       state.credits += round.betPaid + round.multPaid;
       if (mode === 'adv') adv.lost = Math.max(0, adv.lost - round.betPaid - round.multPaid);
@@ -2205,12 +2205,12 @@
       if (!up.length) break;
       round.boost[up[Math.floor(Math.random() * up.length)]] = 2;
     }
-    // 寶箱：燈全亮；投 1 顆倍率珠出 3 排藍燈、2 顆再加 2 排紫燈、3 顆再加 1 排橘燈
+    // 寶箱：燈全亮；投 1 顆強化珠出 3 排藍燈、2 顆再加 2 排紫燈、3 顆再加 1 排橘燈
     round.tiers.fill(0);
     if (chestStage()) {
       let k = 0;
       for (let tier = 1; tier < CHEST_LANES.length; tier++) {
-        // 寶箱升級（過關獎勵）：沒投倍率珠也會多出藍燈
+        // 寶箱升級（過關獎勵）：沒投強化珠也會多出藍燈
         const n = (tier <= round.level ? CHEST_LANES[tier] : 0) + (tier === 1 ? boon('chestRare') : 0);
         for (let j = 0; j < n && k < SLOT_COUNT; j++) round.tiers[slots[k++]] = tier;
       }
@@ -2442,7 +2442,7 @@
       round.hits++;
       damageMonster(px, combo, shake ? 3 : 1, fire, round.boost[slot]);
     } else if (round.refills.has(slot)) {
-      // 補珠燈：每顆補 2 顆；這回合第一次中還會退回投進倍率孔的珠
+      // 補珠燈：每顆補 2 顆；這回合第一次中還會退回投進強化孔的珠
       const refund = round.refunded ? 0 : round.multPaid, bonus = refillBonus() + combo, n = refund + bonus;
       round.refunded = true;
       round.hits++;
@@ -2558,7 +2558,7 @@
       say('winMsg', { mult: mult(), bet: round.bet, win });
       Sound.win();
     } else if (mode === 'adv' && round.refills.has(slot)) {
-      // 補珠燈：不造成傷害，改成退回這局投進倍率孔的珠，再補 投珠數 × 2 顆
+      // 補珠燈：不造成傷害，改成退回這局投進強化孔的珠，再補 投珠數 × 2 顆
       const refund = round.multPaid, bonus = refillBonus(), n = refund + bonus;
       round.phase = 'win';
       state.payoutQueue += n;
@@ -3360,7 +3360,7 @@
     c.fillRect(30, 980, TR - 40, 58);
     c.restore();
 
-    // ---- 投珠孔（拉桿下方）、倍率孔（定燈按鈕旁）：白邊黑心的圓 ----
+    // ---- 投珠孔（拉桿下方）、強化孔（定燈按鈕旁）：白邊黑心的圓 ----
     for (const [hole, label] of [[HOLES.bet, t('cvBetHole')], [HOLES.mult, t('cvMultHole')]]) {
       c.beginPath();
       c.arc(hole.x + 1, hole.y + 2, hole.r + 1, 0, Math.PI * 2);
