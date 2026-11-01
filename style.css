@@ -496,6 +496,14 @@ body[data-mode="adv"] .overlay-card .link { display: none; }
 .stats-body .st-row { padding: 3px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.12); }
 .stats-body .st-label { min-width: 9em; }
 .stats-body h3:first-child { margin-top: 0; }
+.rec-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.rec-tabs button { flex: 1; padding: 6px 4px; font-size: 14px; }
+.rec-tabs button.active { background: var(--gold); color: #3b1d0a; }
+.rec-list { display: grid; gap: 6px; }
+.rec-run { padding: 6px 8px; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; font-size: 13px; }
+.rec-run b { color: var(--gold); }
+.rec-run.clear b { color: #86efac; }
+.rec-run small { display: block; opacity: 0.85; margin-top: 2px; font-size: 12px; }
 .ov-item b { font-size: 18px; text-shadow: 1px 1px 0 #000; }
 
 /* ---- 背包、沙漏 ---- */

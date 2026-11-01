@@ -116,6 +116,7 @@
           </ul>
           每個天賦另有 3 個專屬過關獎勵（卡片有橘框），只有選了該天賦才抽得到：合金鋼珠有破甲合金（無視 1 點防禦）、鎢鋼彈芯（暴擊完全無視防禦，只能拿一次）、連鎖暴擊（同一回合內每暴擊一次，這回合後面的珠攻擊 +1，下回合歸零）；燒紅彈珠有助燃（每次命中多疊 1 層）、悶燒（燃燒後保留 2/3、3/4…）、火種（補珠燈也疊 1 層）；外傷滾珠有撕裂（外傷比例 +25%）、碎甲（外傷觸發時怪物防禦 −1，每回合一次）、滾動補給（沒中燈的珠退回 1 顆，只能拿一次）。
         </li>
+        <li><strong>闖關紀錄</strong>：選天賦的畫面下面有「闖關紀錄」按鈕，可以看每個天賦的挑戰次數、最遠打到第幾隻、最少回合通關、通關最多剩珠、單回合最大傷害與補珠，以及最近 10 次冒險的回合數、最後持有彈珠、總共花費彈珠、單回合最大傷害、單回合最大補珠。</li>
         <li><strong>等級</strong>：從 Lv1 開始，每打倒一隻怪物升 1 級。每升一級，之後的過關補珠多 2 顆（第 1 關後補 15、第 2 關後 17…）；每 2 級每顆珠攻擊 +1（扣防禦前）。自由挑戰會當作前面的怪物都打過，等級照算。目前等級顯示在螢幕右上角和狀態面板。</li>
       </ol>
       <h3>寶箱與道具</h3>
@@ -170,6 +171,7 @@
           </ul>
           Each talent also has 3 exclusive rewards (orange cards) that only show up with that talent. Alloy: Armor Breaker (ignore 1 DEF), Tungsten Core (crits ignore DEF completely; once only), Chain Crit (each crit gives the later balls this round +1 attack; resets next round). Red-hot: Kindling (+1 burn per hit), Smolder (burn keeps ⅔, ¾… instead of half), Tinder (refill lights add 1 burn). Grinding: Rend (+25% grind damage), Shatter (grind lowers DEF by 1, once per round), Rolling Supply (balls that miss every light come back; once only).
         </li>
+        <li><strong>Run records</strong>: tap "Run records" under the talents to see, for each talent, your number of runs, furthest stage, fewest rounds for a clear, most balls left after a clear, best single-round damage and refill, plus your last 10 runs (rounds used, balls left, balls spent, best round damage and refill).</li>
         <li><strong>Levels</strong>: you start at Lv1 and gain a level for every monster you defeat. Each level adds 2 balls to later stage bonuses (15 after stage 1, 17 after stage 2…), and every 2 levels give +1 attack per ball (before DEF). Free fight counts the earlier monsters as defeated. Your level is shown top-right on the screen and in the stats panel.</li>
       </ol>
       <h3>Treasure chests and items</h3>
@@ -207,6 +209,13 @@
   <dialog id="stats" class="help stats-dlg">
     <h2 data-i18n="statsTitle">數值狀態</h2>
     <div id="stats-body" class="stats-body"></div>
+    <form method="dialog"><button class="btn coin" data-i18n="close">關閉</button></form>
+  </dialog>
+
+  <dialog id="records" class="help stats-dlg records-dlg">
+    <h2 data-i18n="recTitle">闖關紀錄</h2>
+    <div id="records-tabs" class="rec-tabs"></div>
+    <div id="records-body" class="stats-body"></div>
     <form method="dialog"><button class="btn coin" data-i18n="close">關閉</button></form>
   </dialog>
 

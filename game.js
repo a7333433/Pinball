@@ -949,6 +949,12 @@
       chestWinTitle: '獲得道具！',
       cvBag: '道具', btnBag: '背包', bagTitle: '背包', bagUse: '使用',
       cvStats: '狀態', btnStats: '狀態', statsTitle: '數值狀態',
+      recTitle: '闖關紀錄', recOpen: '闖關紀錄', recSecBest: '最佳紀錄', recSecRecent: '最近 10 次',
+      recRuns: '挑戰次數', recRunsN: '{runs} 次（全部通關 {clears} 次）', recStage: '最遠', recStageN: '打倒 {n}/{total} 隻',
+      recMinRounds: '最少回合通關', recRoundsN: '{n} 回合', recMaxLeft: '通關最多剩珠',
+      recMaxDmg: '單回合最大傷害', recMaxGain: '單回合最大補珠', recNone: '還沒有紀錄，選這個天賦去冒險吧！',
+      recClear: '全部通關！', recStopped: '打倒 {n}/{total} 隻',
+      recRunLine: '{rounds} 回合・最後持有 {left} 顆・總共花費 {spent} 顆・單回合最大傷害 {dmg}・單回合最大補珠 {gain} 顆',
       stSecBalls: '彈珠', stSecAttack: '攻擊（每顆珠）', stSecOther: '其他',
       stSecLevel: '等級', stLevel: '目前等級', stLevelAtk: '等級攻擊加成',
       stBetCap: '每回合投珠上限', stBonus: '下次過關補',
@@ -1086,6 +1092,12 @@
       chestWinTitle: 'New item!',
       cvBag: 'ITEMS', btnBag: 'Backpack', bagTitle: 'Backpack', bagUse: 'Use',
       cvStats: 'STATS', btnStats: 'Stats', statsTitle: 'Stats',
+      recTitle: 'Run records', recOpen: 'Run records', recSecBest: 'Best', recSecRecent: 'Last 10 runs',
+      recRuns: 'Runs', recRunsN: '{runs} ({clears} full clears)', recStage: 'Furthest', recStageN: '{n}/{total} monsters',
+      recMinRounds: 'Fewest rounds (clear)', recRoundsN: '{n} rounds', recMaxLeft: 'Most balls left (clear)',
+      recMaxDmg: 'Best round damage', recMaxGain: 'Best round refill', recNone: 'No runs yet. Pick this talent and go!',
+      recClear: 'Full clear!', recStopped: '{n}/{total} monsters',
+      recRunLine: '{rounds} rounds · {left} balls left · {spent} spent · best round damage {dmg} · best round refill {gain}',
       stSecBalls: 'Balls', stSecAttack: 'Attack (per ball)', stSecOther: 'Other',
       stSecLevel: 'Level', stLevel: 'Level', stLevelAtk: 'Level attack bonus',
       stBetCap: 'Max bet per round', stBonus: 'Next stage bonus',
@@ -1533,6 +1545,7 @@
     burn: 0,              // 燒紅彈珠：這隻怪物身上的燃燒層數
     stageLit: 0,          // 雷射筆（紅）：這一關多亮幾顆攻擊燈
     stageRefill: 0,       // 雷射筆（綠）：這一關多亮幾顆補珠燈
+    run: null,            // 這趟冒險的紀錄：回合數、花費彈珠、單回合最大傷害 / 補珠
     stageBoost: 0,        // 燈亮滿時用雷射筆（紅）：這一關每回合多強化幾次紅燈
     stageRefillBoost: 0,  // 燈亮滿時用雷射筆（綠）：這一關每回合強化幾次補珠燈
     pinSet: null,         // 大冒險檯面上有哪些釘子（ALL_PINS 的索引）；null = 還沒開打，顯示完整釘陣
@@ -1611,19 +1624,58 @@
   function saveRun() {
     if (mode !== 'adv' || !adv.campaign || !adv.monster) return;
     savedRun = null;                      // 正在玩的這趟就是最新進度，開場不用再問
-    if (adv.status !== 'playing' && !campaignMidRun()) { clearRun(); return; }   // 輸了、全破、沒珠了
+    if (adv.status !== 'playing' && !campaignMidRun()) { recordRun(); clearRun(); return; }   // 輸了、全破、沒珠了
     const unpaid = round.phase === 'select' || round.phase === 'bet' ? round.betPaid + round.multPaid : 0;
     const data = {
       v: 1, idx: adv.monsterIdx, chest: adv.chest, status: adv.status,
       hp: adv.hp, maxHp: adv.maxHp, defDown: adv.defDown, burn: adv.burn,
       stageLit: adv.stageLit, stageRefill: adv.stageRefill, lost: adv.lost,
       stageBoost: adv.stageBoost, stageRefillBoost: adv.stageRefillBoost,
+      run: adv.run && { ...adv.run, spent: adv.run.spent - unpaid },
       credits: state.credits + state.payoutQueue + unpaid,
       items: adv.items, boons: adv.boons, talent: adv.talent, rerollCost: adv.rerollCost,
       rewards: adv.rewards, loot: adv.loot, lootChoices: adv.lootChoices,
     };
     try { localStorage.setItem(RUN_KEY, JSON.stringify(data)); } catch (e) { /* 無痕模式 */ }
   }
+  // ===== 各天賦的闖關紀錄 =====
+  const RECORDS_KEY = 'candy-pinball-run-records';
+  const RECENT_MAX = 10;
+  const newRunStats = () => ({ rounds: 0, spent: 0, maxDmg: 0, maxGain: 0, done: false });
+  let runRecords = {};
+  try { runRecords = JSON.parse(localStorage.getItem(RECORDS_KEY)) || {}; } catch (e) { runRecords = {}; }
+  const talentRecord = id => runRecords[id] || { runs: 0, clears: 0, best: {}, recent: [] };
+  // 這趟冒險結束（全破、落敗、沒珠可帶到下一關）：記到該天賦的紀錄裡
+  function recordRun() {
+    const r = adv.run;
+    if (!r || r.done || !adv.talent) return;
+    r.done = true;
+    r.maxDmg = Math.max(r.maxDmg, round.dmg);     // 最後一擊那一幀可能還沒更新到
+    r.maxGain = Math.max(r.maxGain, round.gain);
+    const clear = adv.status === 'won' && adv.monsterIdx === LAST_STAGE;
+    const stage = adv.status === 'won' ? adv.monsterIdx + 1 : adv.monsterIdx;   // 打倒幾隻怪物
+    const left = adv.status === 'lost' ? 0 : state.credits + state.payoutQueue;
+    const entry = { date: Date.now(), clear, stage, rounds: r.rounds, left, spent: r.spent, maxDmg: r.maxDmg, maxGain: r.maxGain };
+    const rec = talentRecord(adv.talent), b = rec.best;
+    rec.runs++;
+    if (clear) {
+      rec.clears++;
+      b.minRounds = Math.min(b.minRounds ?? Infinity, r.rounds);
+      b.maxLeft = Math.max(b.maxLeft ?? 0, left);
+    }
+    b.stage = Math.max(b.stage ?? 0, stage);
+    b.maxDmg = Math.max(b.maxDmg ?? 0, r.maxDmg);
+    b.maxGain = Math.max(b.maxGain ?? 0, r.maxGain);
+    rec.recent.unshift(entry);
+    rec.recent.length = Math.min(rec.recent.length, RECENT_MAX);
+    runRecords[adv.talent] = rec;
+    try { localStorage.setItem(RECORDS_KEY, JSON.stringify(runRecords)); } catch (e) { /* 無痕模式 */ }
+  }
+  // 退回還沒用到的珠：不算花費
+  function runRefund(n) {
+    if (mode === 'adv' && adv.campaign && adv.run) adv.run.spent -= n;
+  }
+
   function clearRun() {
     try { localStorage.removeItem(RUN_KEY); } catch (e) { /* 無痕模式 */ }
   }
@@ -1653,6 +1705,7 @@
     adv.stageLit = d.stageLit;
     adv.stageRefill = d.stageRefill;
     adv.stageBoost = d.stageBoost || 0;
+    adv.run = d.run || newRunStats();
     adv.stageRefillBoost = d.stageRefillBoost || 0;
     adv.lost = d.lost;
     adv.items = d.items || {};
@@ -1738,6 +1791,7 @@
       adv.boons = {};
       adv.rewards = null;
       adv.talent = adv.campaign ? talentPick : null;
+      adv.run = adv.campaign ? newRunStats() : null;
     }
     adv.burn = 0;
     adv.stageLit = adv.stageRefill = adv.stageBoost = adv.stageRefillBoost = 0;
@@ -2059,6 +2113,7 @@
         const refund = round.betPaid + round.multPaid;
         state.payoutQueue += refund;
         adv.lost = Math.max(0, adv.lost - refund);
+        runRefund(refund);
         round.bet = round.level = 0;
         round.lit.clear();
         round.refills.clear();
@@ -2118,6 +2173,7 @@
     const i = balls.findIndex(atShooter);
     if (i >= 0) balls.splice(i, 1);
     balls.push({ x: p.x, y: p.y, vx: 0, vy: 0, still: 0, fired: true, shake: true });
+    countRound();
     round.launched++;
     const left = shots() - round.launched;
     syncRestBalls();
@@ -2125,6 +2181,11 @@
     state.shakeT = 0.3;
     say(left > 0 ? 'shakePlacedMore' : 'shakePlaced', { n: left });
     Sound.clunk();
+  }
+
+  // 闖關紀錄：這回合第一顆珠發射時算用了一回合
+  function countRound() {
+    if (round.launched === 0 && mode === 'adv' && adv.campaign && adv.run) adv.run.rounds++;
   }
 
   // 彈珠用完時，背包裡還有能補珠或送投珠的道具，就先不判輸
@@ -2178,7 +2239,10 @@
     // 這一局還沒結算就切換：投下去的珠和強化孔的珠都退回
     if (round.phase === 'select' || round.phase === 'bet' || round.phase === 'flying') {
       state.credits += round.betPaid + round.multPaid;
-      if (mode === 'adv') adv.lost = Math.max(0, adv.lost - round.betPaid - round.multPaid);
+      if (mode === 'adv') {
+        adv.lost = Math.max(0, adv.lost - round.betPaid - round.multPaid);
+        runRefund(round.betPaid + round.multPaid);
+      }
     }
     state.credits += state.payoutQueue;
     state.payoutQueue = 0;
@@ -2347,7 +2411,10 @@
 
   function takeBall(hole, delay = 0) {
     state.credits--;
-    if (mode === 'adv' && adv.campaign) adv.lost++;
+    if (mode === 'adv' && adv.campaign) {
+      adv.lost++;
+      if (adv.run) adv.run.spent++;
+    }
     let from = { x: CHUTE.x, y: TRAY.back + 10 };
     if (tray.length > state.credits) {
       let idx = 0;
@@ -2532,7 +2599,7 @@
   // 怪物在這回合中途被打倒：檯面上剩下的珠收掉，還沒發射的退回
   function endEarly() {
     const unfired = Math.min(round.betPaid, shots() - round.launched);
-    if (unfired > 0) state.payoutQueue += unfired;
+    if (unfired > 0) { state.payoutQueue += unfired; runRefund(unfired); }
     balls.length = 0;
     round.phase = 'win';
     round.resetT = 1.6;
@@ -2670,6 +2737,7 @@
     const n = round.betPaid + round.multPaid;
     state.payoutQueue += n;
     adv.lost = Math.max(0, adv.lost - n);
+    runRefund(n);
     round.phase = 'rewind';
     round.resetT = 0.6;
     round.landSlot = -1;
@@ -2944,6 +3012,10 @@
     }
 
     state.shakeT = Math.max(0, state.shakeT - dt);
+    if (mode === 'adv' && adv.run) {
+      adv.run.maxDmg = Math.max(adv.run.maxDmg, round.dmg);
+      adv.run.maxGain = Math.max(adv.run.maxGain, round.gain);
+    }
     if (round.phase === 'burn') updateBurn(dt);
     if (round.phase === 'win' || round.phase === 'lose' || round.phase === 'rewind') {
       round.resetT -= dt;
@@ -2992,7 +3064,7 @@
         b.y = Math.min(b.y, SHOOTER_FLOOR - BALL_R - i * BALL_R * 2);
         b.vy = -v * (1 - step * (n - 1 - i));
         b.vx = 0;
-        if (!b.fired) { b.fired = true; round.launched++; }
+        if (!b.fired) { b.fired = true; countRound(); round.launched++; }
       });
       round.phase = 'flying';
       Sound.spring(p);
@@ -5141,6 +5213,76 @@
   }
   if (statsDlg) statsDlg.addEventListener('click', e => { if (e.target === statsDlg) statsDlg.close(); });
 
+  // ---- 各天賦的闖關紀錄 ----
+  const recordsDlg = $('records'), recordsTabs = $('records-tabs'), recordsBody = $('records-body');
+  let recordsTalent = talentPick;
+  function renderRecords() {
+    recordsTabs.textContent = '';
+    for (const id of TALENT_IDS) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn' + (id === recordsTalent ? ' active' : '');
+      b.textContent = TALENTS[id].name[lang];
+      b.addEventListener('click', () => { Sound.clunk(); recordsTalent = id; renderRecords(); });
+      recordsTabs.append(b);
+    }
+    recordsBody.textContent = '';
+    const rec = talentRecord(recordsTalent), best = rec.best;
+    const h = title => { const e = document.createElement('h3'); e.textContent = t(title); recordsBody.append(e); };
+    const row = (label, value) => {
+      const r = document.createElement('div');
+      r.className = 'st-row';
+      const l = document.createElement('span');
+      l.className = 'st-label';
+      l.textContent = t(label);
+      const v = document.createElement('div');
+      v.className = 'st-value';
+      v.textContent = value;
+      r.append(l, v);
+      recordsBody.append(r);
+    };
+    const balls = n => t('statusBallsN', { n });
+    h('recSecBest');
+    row('recRuns', t('recRunsN', { runs: rec.runs, clears: rec.clears }));
+    row('recStage', best.stage ? t('recStageN', { n: best.stage, total: MONSTERS.length }) : '-');
+    row('recMinRounds', best.minRounds != null ? t('recRoundsN', { n: best.minRounds }) : '-');
+    row('recMaxLeft', best.maxLeft != null ? balls(best.maxLeft) : '-');
+    row('recMaxDmg', best.maxDmg ? String(best.maxDmg) : '-');
+    row('recMaxGain', best.maxGain ? balls(best.maxGain) : '-');
+    h('recSecRecent');
+    if (!rec.recent.length) {
+      const p = document.createElement('p');
+      p.textContent = t('recNone');
+      recordsBody.append(p);
+      return;
+    }
+    const list = document.createElement('div');
+    list.className = 'rec-list';
+    for (const e of rec.recent) {
+      const d = document.createElement('div');
+      d.className = 'rec-run' + (e.clear ? ' clear' : '');
+      const head = document.createElement('b');
+      const date = new Date(e.date);
+      head.textContent = `${date.getMonth() + 1}/${date.getDate()} ` + (e.clear ? t('recClear') : t('recStopped', { n: e.stage, total: MONSTERS.length }));
+      const info = document.createElement('small');
+      info.textContent = t('recRunLine', { rounds: e.rounds, left: e.left, spent: e.spent, dmg: e.maxDmg, gain: e.maxGain });
+      d.append(head, info);
+      list.append(d);
+    }
+    recordsBody.append(list);
+  }
+  function openRecords() {
+    if (!recordsDlg) return;
+    Sound.init();
+    cancelCharge();
+    stopBetHold();
+    Sound.clunk();
+    recordsTalent = talentPick;
+    renderRecords();
+    recordsDlg.showModal();
+  }
+  if (recordsDlg) recordsDlg.addEventListener('click', e => { if (e.target === recordsDlg) recordsDlg.close(); });
+
   function openCodex() {
     if (mode !== 'adv' || !codexDlg) return;
     Sound.init();
@@ -5313,6 +5455,13 @@
       });
       ovRewards.append(b);
     }
+    // 下面放「闖關紀錄」按鈕
+    const rec = document.createElement('button');
+    rec.type = 'button';
+    rec.className = 'btn rw-reroll';
+    rec.textContent = t('recOpen');
+    rec.addEventListener('click', openRecords);
+    ovRewards.append(rec);
   }
 
   // 過關卡片的「目前狀態」：彈珠數、背包裡的道具
