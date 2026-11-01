@@ -483,6 +483,8 @@ body[data-mode="adv"] .overlay-card .link { display: none; }
 .rw-card b { color: var(--gold); font-size: 16px; }
 .rw-card span { font-size: 14px; }
 .rw-card small { font-size: 12px; opacity: 0.7; }
+.rw-card .rw-stat { font-size: 13px; font-style: normal; color: #86efac; }
+.rw-bar { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
 .rw-reroll { justify-self: center; padding: 8px 20px; font-size: 14px; }
 .st-row { display: flex; align-items: center; gap: 10px; }
 .st-label { flex-shrink: 0; min-width: 5em; color: var(--gold); font-weight: bold; font-size: 14px; }

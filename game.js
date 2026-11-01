@@ -924,6 +924,7 @@
       hgRefillHurt: '鋼珠落進補珠燈，將補回 {n} 顆彈珠並造成 {dmg} 點傷害。',
       rewardTalent: '{name}專屬', stArmor: '破甲', stTrauma: '外傷比例',
       rewardTitle: '選擇過關獎勵', rewardReroll: '重骰（{n} 顆彈珠）', rewardHave: '已有 ×{n}',
+      rewardStats: '查看數值', rwStat: '目前 {now} → {next}', rwOn: '有', rwOff: '沒有', rwPins: '每關少 {n} 根', rwBurnN: '{n} 層',
       statusBoons: '過關獎勵',
       chestName: '寶箱',
       chestAppear: '寶箱出現了！投倍率孔提升寶箱等級（最多 3 顆），定燈後投 1 顆珠打開它',
@@ -1051,6 +1052,7 @@
       hgRefillHurt: 'The ball landed on a refill light: {n} balls back and {dmg} damage.',
       rewardTalent: '{name} only', stArmor: 'Armor break', stTrauma: 'Grind rate',
       rewardTitle: 'Choose a reward', rewardReroll: 'Reroll ({n} balls)', rewardHave: 'Have ×{n}',
+      rewardStats: 'View stats', rwStat: 'Now {now} → {next}', rwOn: 'yes', rwOff: 'no', rwPins: '{n} fewer per stage', rwBurnN: '{n} burn',
       statusBoons: 'Rewards',
       chestName: 'Treasure Chest',
       chestAppear: 'A treasure chest! Use the multiplier hole to upgrade it (up to 3 balls), lock, then bet 1 ball to open it',
@@ -5025,7 +5027,50 @@
   const ovRestart = $('ov-restart');
   const ovStatus = $('ov-status'), ovRewards = $('ov-rewards');
 
-  // 過關獎勵：3 張卡片選 1 張，下面是重骰按鈕
+  // 過關獎勵卡片上的「目前 → 拿了之後」數值
+  const pctOf = x => Math.round(x * 100) + '%';
+  const plusOf = n => (n > 0 ? '+' : '') + n;
+  const yesNo = on => t(on ? 'rwOn' : 'rwOff');
+  const minusOf = n => n ? '−' + n : '0';
+  const BOON_STAT = {
+    perBall: () => plusOf(boon('perBall') + talentAtk()),
+    multBase: () => '×' + (1 + boon('multBase')),
+    litUp: () => plusOf(boon('litUp')),
+    pierce: () => plusOf(boon('pierce')),
+    weight: () => '×' + (1 + 0.5 * boon('weight')).toFixed(1),
+    pin: () => t('rwPins', { n: 5 * boon('pin') }),
+    refill: () => t('statusBallsN', { n: refillBonus() }),
+    refillLight: () => t('stRefillLightsN', { n: 1 + boon('refillLight') }),
+    chestRare: () => plusOf(boon('chestRare')),
+    critRate: () => pctOf(critRate()),
+    critDmg: () => pctOf(critMult()),
+    betCap: () => t('statusBallsN', { n: betCap() }),
+    armor: () => minusOf(boon('armor')),
+    light: () => yesNo(boon('light')),
+    chainCrit: () => plusOf(boon('chainCrit')),
+    kindle: () => t('rwBurnN', { n: 1 + boon('kindle') }),
+    smolder: () => `${boon('smolder') + 1}/${boon('smolder') + 2}`,
+    tinder: () => t('rwBurnN', { n: boon('tinder') }),
+    rend: () => pctOf(traumaRate()),
+    shatter: () => minusOf(boon('shatter')),
+    roll: () => yesNo(boon('roll')),
+  };
+  function boonStat(id) {
+    if (id === 'balls') {
+      const n = state.credits + state.payoutQueue;
+      return t('rwStat', { now: t('statusBallsN', { n }), next: t('statusBallsN', { n: n + 10 }) });
+    }
+    const f = BOON_STAT[id];
+    if (!f) return '';
+    const n = adv.boons[id] || 0, now = f();
+    adv.boons[id] = n + 1;
+    const next = f();
+    adv.boons[id] = n;
+    if (!n) delete adv.boons[id];
+    return t('rwStat', { now, next });
+  }
+
+  // 過關獎勵：3 張卡片選 1 張，下面是重骰、看數值按鈕
   function renderRewards() {
     ovRewards.textContent = '';
     const head = document.createElement('p');
@@ -5041,6 +5086,13 @@
       const desc = document.createElement('span');
       desc.textContent = BOONS[id].desc[lang];
       b.append(name, desc);
+      const stat = boonStat(id);
+      if (stat) {
+        const st = document.createElement('em');
+        st.className = 'rw-stat';
+        st.textContent = stat;
+        b.append(st);
+      }
       if (BOONS[id].talent) {
         b.classList.add('rw-talent');
         const tag = document.createElement('small');
@@ -5061,7 +5113,15 @@
     re.textContent = t('rewardReroll', { n: adv.rerollCost });
     re.disabled = state.credits < adv.rerollCost;
     re.addEventListener('click', rerollRewards);
-    ovRewards.append(re);
+    const sb = document.createElement('button');
+    sb.type = 'button';
+    sb.className = 'btn rw-reroll';
+    sb.textContent = t('rewardStats');
+    sb.addEventListener('click', openStats);
+    const bar = document.createElement('div');
+    bar.className = 'rw-bar';
+    bar.append(re, sb);
+    ovRewards.append(bar);
   }
 
   // 冒險模式開始前選天賦：點卡片選取，按「開始冒險」才生效
