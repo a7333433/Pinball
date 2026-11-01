@@ -98,7 +98,7 @@
       tier: 2, when: 'post',
       name: { zh: '鋁箔包飲料', en: 'Juice Box' },
       quote: { zh: '「嘶～～～～」', en: '"Slurrrrp~"' },
-      effect: { zh: '把亮著的紅燈全部變成補珠燈', en: 'Turns every lit red light into a refill light' },
+      effect: { zh: '把亮著的紅燈全部變成補珠燈（火焰燈變成綠色火焰的補珠燈，補珠數 ×1.5，強化兩次 ×2）', en: 'Turns every lit red light into a refill light (flame lights become green-flame refill lights: ×1.5 balls, ×2 if upgraded twice)' },
     },
     key: {
       tier: 3, when: 'both',
@@ -969,7 +969,8 @@
       useFakeBet: '假彈珠：投珠 +1，變成 {bet} 顆！', useStone: '丟石頭！對{name}造成 {d} 點傷害（無視防禦）', useStoneCrit: '丟石頭暴擊！對{name}造成 {d} 點傷害（無視防禦）',
       useAcid: '潑鹽酸！{name}的防禦降到 {def}', useHeavy: '沉重彈珠：這回合每顆珠的基本傷害變成 {n}',
       useHourglass: '沙漏翻過來了：鋼珠落下後可以選擇保留結果或返回上回合',
-      useDrink: '嘶～～～ 紅燈全部變成補珠燈了！', useKey: '用老闆的鑰匙打開珠箱，拿回 {n} 顆彈珠！',
+      useDrink: '嘶～～～ 紅燈全部變成補珠燈了！', useDrinkFlame: '嘶～～～ 紅燈全部變成補珠燈了！{f} 顆火焰燈變成綠色火焰補珠燈（補珠 ×1.5）',
+      boostRefillTag: '（火焰補珠燈 ×{x}）', useKey: '用老闆的鑰匙打開珠箱，拿回 {n} 顆彈珠！',
       useShake: '搖晃機台！點檯面上任何地方放下彈珠', shakeWhere: '點檯面上（釘子區）放下彈珠',
       shakeHint: '點檯面放珠', shakePlaced: '「你不能那樣做！」彈珠放下去了，這顆傷害 ×3',
       shakePlacedMore: '「你不能那樣做！」彈珠放下去了，剩下 {n} 顆拉彈簧發射',
@@ -1103,7 +1104,8 @@
       useFakeBet: 'Fake marble: +1 bet, now {bet}!', useStone: 'Threw a stone! {d} damage to the {name}, ignoring DEF', useStoneCrit: 'Critical stone! {d} damage to the {name}, ignoring DEF',
       useAcid: 'Acid! The {name}\'s DEF drops to {def}', useHeavy: 'Heavy marble: {n} base damage per ball this round',
       useHourglass: 'Hourglass flipped: after the ball lands, keep the result or rewind the round',
-      useDrink: 'Slurrrp~ Every red light is now a refill light!', useKey: 'The shopkeeper\'s key opened the ball box: {n} balls back!',
+      useDrink: 'Slurrrp~ Every red light is now a refill light!', useDrinkFlame: 'Slurrrp~ Every red light is now a refill light! {f} flame lights became green-flame refill lights (×1.5 balls)',
+      boostRefillTag: ' (flame refill ×{x})', useKey: 'The shopkeeper\'s key opened the ball box: {n} balls back!',
       useShake: 'Shake the machine! Tap anywhere on the board to drop the ball', shakeWhere: 'Tap the pin area of the board to drop the ball',
       shakeHint: 'Tap to drop', shakePlaced: '"You can\'t do that!" Ball dropped (×3 damage)',
       shakePlacedMore: '"You can\'t do that!" Ball dropped. Shoot the other {n}',
@@ -2063,9 +2065,11 @@
       Sound.lock();
     },
     drink() {
+      // 火焰燈的強化跟著留下來（round.boost 不清掉），變成火焰補珠燈
       for (const i of round.lit) round.refills.add(i);
+      const f = [...round.lit].filter(i => round.boost[i]).length;
       round.lit.clear();
-      say('useDrink');
+      say(f ? 'useDrinkFlame' : 'useDrink', { f });
       Sound.coin();
     },
     key() {
@@ -2304,6 +2308,7 @@
     lastMsg = [key, vars];
     const text = t(key, vars) + (vars.chain ? t('chainTag', { c: vars.chain }) : '')
       + (vars.boost > 1 ? t('boostTag', { x: vars.boost }) : '')
+      + (vars.boostRefill > 1 ? t('boostRefillTag', { x: vars.boostRefill }) : '')
       + (vars.flame ? t(vars.flame2 ? 'flameBetTag2' : 'flameBetTag', { w: vars.flame, w2: vars.flame2 }) : '');
     for (const el of msgEls) el.textContent = text;
     if (text !== msgText) { msgText = text; msgT = performance.now(); }
@@ -2458,15 +2463,17 @@
       damageMonster(px, combo, shake ? 3 : 1, fire, round.boost[slot]);
     } else if (round.refills.has(slot)) {
       // 補珠燈：每顆補 2 顆；這回合第一次中還會退回投進強化孔的珠
-      const refund = round.refunded ? 0 : round.multPaid, bonus = refillBonus() + combo, n = refund + bonus;
+      // 火焰補珠燈（鋁箔包飲料把火焰燈變成的補珠燈）：最終補珠數 ×1.5 / ×2
+      const boost = round.boost[slot];
+      const refund = round.refunded ? 0 : round.multPaid, bonus = refillBonus() + combo, n = Math.round((refund + bonus) * BOOST_MULT[boost]);
       round.refunded = true;
       round.hits++;
       round.gain += n;
       state.payoutQueue += n;
       adv.lost = Math.max(0, adv.lost - n);
-      const pop = t('refillPop', { n });
-      popups.push({ x: px, y: SLOT_TOP - 16, text: combo ? t('comboPop', { k: combo + 1, text: pop }) : pop, t: 0, color: '#4ade80', big: combo > 0 });
-      say(combo ? 'refillMsgCombo' : refund ? 'refillMsgMult' : 'refillMsg', { n, refund, bonus, k: combo + 1, c: combo });
+      const pop = t('refillPop', { n }) + (boost ? ' ' + t('boostPop', { x: BOOST_MULT[boost] }) : '');
+      popups.push({ x: px, y: SLOT_TOP - 16, text: combo ? t('comboPop', { k: combo + 1, text: pop }) : pop, t: 0, color: '#4ade80', big: combo > 0 || boost > 0 });
+      say(combo ? 'refillMsgCombo' : refund ? 'refillMsgMult' : 'refillMsg', { n, refund, bonus, k: combo + 1, c: combo, boostRefill: BOOST_MULT[boost] });
       Sound.coin();
       if (hasTalent('burn')) adv.burn += boon('tinder');
       if (hasTalent('trauma')) {
@@ -2609,7 +2616,7 @@
         const { raw, def, dmg } = computeHit(false, combo);
         text = dmg > 0 ? t('hgHit', { dmg: Math.round(dmg * (i === round.shakeIdx ? 3 : 1) * BOOST_MULT[round.boost[slot]]) }) : t('hgBlock', { raw, def });
       } else if (round.refills.has(slot)) {
-        const n = refund + refillBonus() + combo;
+        const n = Math.round((refund + refillBonus() + combo) * BOOST_MULT[round.boost[slot]]);
         text = hasTalent('trauma') ? t('hgRefillHurt', { n, dmg: Math.round(n * traumaRate()) }) : t('hgRefill', { n });
         refund = 0;
       } else {
@@ -4170,7 +4177,9 @@
     }
     for (const i of round.refills) {
       const on = landed.has(i) ? blink : true;
-      led(ctx, B.left + (i + 0.5) * SLOT_W, LED_Y, 6, on, 'green');
+      const x = B.left + (i + 0.5) * SLOT_W;
+      if (!chest && round.boost[i]) drawBoostFlame(x, LED_Y, round.boost[i] + 2, t, i);
+      led(ctx, x, LED_Y, 6, on, 'green');
     }
     ctx.fillStyle = 'rgba(255,255,255,0.08)';
     for (const i of landed) {
@@ -4180,9 +4189,12 @@
   }
 
   // 火焰燈：紅燈後面一團往上竄的像素火焰（第一階紅橘色、第二階暗紫色），整排落點也染上火光
+  // 3、4：火焰補珠燈（鋁箔包飲料）的綠色火焰，第二階深綠色
   const BOOST_FLAME = [null,
     { glow: 'rgba(255, 90, 30, ', cols: ['#fde047', '#fb923c', '#dc2626'] },
-    { glow: 'rgba(126, 34, 206, ', cols: ['#e9d5ff', '#a855f7', '#581c87'] }];
+    { glow: 'rgba(126, 34, 206, ', cols: ['#e9d5ff', '#a855f7', '#581c87'] },
+    { glow: 'rgba(34, 197, 94, ', cols: ['#d9f99d', '#4ade80', '#15803d'] },
+    { glow: 'rgba(6, 95, 70, ', cols: ['#a7f3d0', '#10b981', '#064e3b'] }];
   function drawBoostFlame(x, y, tier, time, seed) {
     const F = BOOST_FLAME[tier], P = 3;
     // 落點區淡淡的火光
@@ -4194,7 +4206,7 @@
     // 燈後面的火舌
     for (let k = 0; k < 3; k++) {
       const fx = x + (k - 1) * 7;
-      const h = Math.round((tier === 2 ? 10 : 8) * (k === 1 ? 1 : 0.75) * (0.6 + 0.4 * Math.abs(Math.sin(time * (8 + k * 2.3) + seed * 1.7 + k))));
+      const h = Math.round((tier % 2 === 0 ? 10 : 8) * (k === 1 ? 1 : 0.75) * (0.6 + 0.4 * Math.abs(Math.sin(time * (8 + k * 2.3) + seed * 1.7 + k))));
       for (let r = 0; r < h; r++) {
         const f = r / h;
         const w = Math.max(1, Math.round((1 - f) * (k === 1 ? 3 : 2)));
