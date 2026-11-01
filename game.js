@@ -1191,15 +1191,19 @@
     if (y < ARC.y && x > ARC.x - 70 && Math.hypot(x - ARC.x, y - ARC.y) > INNER_R - 14) return false;
     return true;
   }
-  for (let k = 0; k < 7; k++) {
-    const x = 72 + k * 54, y = 238;
-    if (pinFits(x, y)) caps.push({ x, y });
+  // 釘陣以檯面中心為軸左右對稱：一邊放不下（牆、發射彎軌），另一邊的那根也不放
+  const PIN_CX = (B.left + LANE_X) / 2;
+  const mirrorXs = d => d === 0 ? [PIN_CX] : [PIN_CX - d, PIN_CX + d];
+  for (let d = 24; d <= 220; d += 48) {
+    const xs = mirrorXs(d);
+    if (xs.every(x => pinFits(x, 238))) for (const x of xs) caps.push({ x, y: 238 });
   }
+  const PIN_GROUPS = [];        // 左右成對的釘子（ALL_PINS 的索引），正中間的自己一組
   for (let row = 0, y = 270; y <= 562; row++, y += 28) {
-    for (let x = 58 + (row % 2 ? 18 : 0); x <= 438; x += 36) {
-      if (!pinFits(x, y)) continue;
-      if (caps.some(c => Math.hypot(c.x - x, c.y - y) < 24)) continue;
-      pins.push({ x, y });
+    for (let d = row % 2 ? 18 : 0; d <= 220; d += 36) {
+      const xs = mirrorXs(d);
+      if (!xs.every(x => pinFits(x, y) && !caps.some(c => Math.hypot(c.x - x, c.y - y) < 24))) continue;
+      PIN_GROUPS.push(xs.map(x => pins.push({ x, y }) - 1));
     }
   }
   const ALL_PINS = pins.slice();
@@ -1221,25 +1225,37 @@
     }
     return a;
   }
-  // 大冒險的釘子照這個固定順序一根一根長出來
-  const PIN_ORDER = shuffledIdx(ALL_PINS.length, 20261101);
+  // 大冒險的釘子照這個固定順序一對一對長出來
+  const PIN_ORDER = shuffledIdx(PIN_GROUPS.length, 20261101).map(g => PIN_GROUPS[g]);
+  function stagePins(idx) {
+    const set = new Set(), target = pinTarget(idx);
+    for (const g of PIN_ORDER) {
+      if (set.size >= target) break;
+      for (const i of g) set.add(i);
+    }
+    return set;
+  }
 
   // ===== 特殊釘子（大冒險打怪時才有，每關的位置固定）=====
   // fire 燒紅釘：碰過的珠造成傷害時燃燒 +1 層；spike 螺旋尖刺：彈開並分裂成 2 顆；hole 破洞：珠直接消失
   const SPECIAL_R = 3.6, HOLE_R = 6;
-  const specialCount = idx => ({ fire: 2 + Math.floor(idx / 4), spike: 2 + Math.floor(idx / 5), hole: Math.floor((idx + 1) / 3) });
+  // 每關有幾對特殊釘子（左右對稱，一對 2 根）
+  const specialPairs = idx => ({ fire: 1 + Math.floor(idx / 6), spike: 1 + Math.floor(idx / 7), hole: idx < 3 ? 0 : idx < 9 ? 1 : 2 });
   const specialCache = {};
   function specialsFor(idx) {
     if (specialCache[idx]) return specialCache[idx];
-    const order = shuffledIdx(ALL_PINS.length, 9001 + idx * 131);
-    const map = new Map(), count = specialCount(idx);
+    // 只用左右成對、兩根相隔夠遠的位置
+    const pairs = PIN_GROUPS.filter(g => g.length === 2 && ALL_PINS[g[1]].x - ALL_PINS[g[0]].x >= 50);
+    const order = shuffledIdx(pairs.length, 9001 + idx * 131).map(k => pairs[k]);
+    const map = new Map(), count = specialPairs(idx);
+    const far = (a, b) => Math.hypot(ALL_PINS[a].x - ALL_PINS[b].x, ALL_PINS[a].y - ALL_PINS[b].y) >= 50;
     for (const kind of ['hole', 'spike', 'fire']) {
       for (let n = count[kind], k = 0; n > 0 && k < order.length; k++) {
-        const i = order[k], p = ALL_PINS[i];
-        if (map.has(i)) continue;
-        if (kind === 'hole' && p.y < 340) continue;      // 破洞不放在最上面幾排
-        if ([...map.keys()].some(j => Math.hypot(ALL_PINS[j].x - p.x, ALL_PINS[j].y - p.y) < 50)) continue;
-        map.set(i, kind);
+        const g = order[k];
+        if (g.some(i => map.has(i))) continue;
+        if (kind === 'hole' && ALL_PINS[g[0]].y < 340) continue;      // 破洞不放在最上面幾排
+        if (!g.every(i => [...map.keys()].every(j => far(i, j)))) continue;
+        for (const i of g) map.set(i, kind);
         n--;
       }
     }
@@ -1565,7 +1581,7 @@
       stageLit: adv.stageLit, stageRefill: adv.stageRefill, lost: adv.lost,
       credits: state.credits + state.payoutQueue + unpaid,
       items: adv.items, boons: adv.boons, talent: adv.talent, rerollCost: adv.rerollCost,
-      rewards: adv.rewards, loot: adv.loot, pins: adv.pinSet ? [...adv.pinSet] : null,
+      rewards: adv.rewards, loot: adv.loot,
     };
     try { localStorage.setItem(RUN_KEY, JSON.stringify(data)); } catch (e) { /* 無痕模式 */ }
   }
@@ -1606,7 +1622,7 @@
     adv.loot = d.loot;
     adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = 0;
     adv.pops.length = 0;
-    adv.pinSet = d.pins ? new Set(d.pins) : null;
+    adv.pinSet = stagePins(d.idx);
     syncPins();
     drawStatic();
     state.credits = 0;
@@ -1647,9 +1663,9 @@
 
   // 第 idx 關的釘子數：第 1 關 0 根，平均增加到最後一關全部；「拔釘子」每層少 5 根
   const pinTarget = idx => Math.max(0, Math.round(ALL_PINS.length * idx / LAST_STAGE) - 5 * boon('pin'));
-  // 每一關的釘陣固定：照 PIN_ORDER 取前 pinTarget(idx) 根
+  // 每一關的釘陣固定：照 PIN_ORDER 一對一對取到 pinTarget(idx) 根
   function growPins(idx) {
-    adv.pinSet = new Set(PIN_ORDER.slice(0, pinTarget(idx)));
+    adv.pinSet = stagePins(idx);
     syncPins();
     drawStatic();
   }
