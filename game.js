@@ -850,7 +850,7 @@
   const I18N = {
     zh: {
       title: '柑仔店彈珠台',
-      selectHint: '燈在閃：可投強化孔加倍，按藍色按鈕定燈',
+      selectHint: '燈在閃：可投強化孔提高倍率、強化紅燈，按藍色按鈕定燈',
       insertCoin: '請投幣換彈珠',
       lockedAlready: '燈已經定了，往投珠孔投珠再發射',
       roundNotOver: '這一局還沒結束',
@@ -907,6 +907,9 @@
       blockMsg: '被擋下了！{raw} 點攻擊打不破防禦 {def}，造成 0 傷害', blockPop: '擋下！', blockScreen: '0',
       hitMsg: '命中！{mult} 倍，造成 {dmg} 點傷害',
       lockedAdv: '定燈！亮 {lit} 顆紅燈，綠燈是補珠燈。往投珠孔投珠，投幾顆就一次發射幾顆',
+      lockedAdvFlame: '定燈！亮 {lit} 顆紅燈，其中 {f} 顆是火焰燈（傷害 ×1.5），綠燈是補珠燈。往投珠孔投珠',
+      lockedAdvFlame2: '定燈！亮 {lit} 顆紅燈，其中 {f} 顆是火焰燈（×1.5，紫色火焰 {f2} 顆 ×2），綠燈是補珠燈。往投珠孔投珠',
+      flameBetTag: '（火焰燈 {w} 點）', flameBetTag2: '（火焰燈 {w} 點、紫色火焰 {w2} 點）',
       roundSumDmg: '這回合 {n} 顆珠打中 {hit} 顆，共造成 {dmg} 點傷害',
       roundSumGain: '這回合 {n} 顆珠打中 {hit} 顆，補回 {gain} 顆彈珠',
       roundSumBoth: '這回合 {n} 顆珠打中 {hit} 顆，共造成 {dmg} 點傷害、補回 {gain} 顆彈珠',
@@ -1037,6 +1040,9 @@
       blockMsg: 'Blocked! {raw} attack can\'t break DEF {def}. 0 damage', blockPop: 'Blocked!', blockScreen: '0',
       hitMsg: 'Hit! ×{mult} = {dmg} damage',
       lockedAdv: 'Locked! {lit} red lights. Green = refill. Every ball you bet is fired at once',
+      lockedAdvFlame: 'Locked! {lit} red lights, {f} of them flame lights (×1.5 damage). Green = refill. Bet to fire',
+      lockedAdvFlame2: 'Locked! {lit} red lights, {f} flame lights (×1.5; {f2} purple ×2). Green = refill. Bet to fire',
+      flameBetTag: ' (flame light: {w})', flameBetTag2: ' (flame: {w}, purple flame: {w2})',
       roundSumDmg: '{hit} of {n} balls hit: {dmg} damage in total',
       roundSumGain: '{hit} of {n} balls hit: {gain} balls back',
       roundSumBoth: '{hit} of {n} balls hit: {dmg} damage and {gain} balls back',
@@ -2281,7 +2287,8 @@
       for (let n = 1 + round.extraRefill + boon('refillLight'); n > 0 && free.length; n--) {
         round.refills.add(free.splice(Math.floor(Math.random() * free.length), 1)[0]);
       }
-      say('lockedAdv', { lit: round.lit.size });
+      const f1 = [...round.lit].filter(i => round.boost[i] === 1).length, f2 = [...round.lit].filter(i => round.boost[i] === 2).length;
+      say(f2 ? 'lockedAdvFlame2' : f1 ? 'lockedAdvFlame' : 'lockedAdv', { lit: round.lit.size, f: f1 + f2, f2 });
     } else {
       say('locked', { mult: mult(), lit: round.lit.size });
     }
@@ -2292,7 +2299,8 @@
   function say(key, vars = {}) {
     lastMsg = [key, vars];
     const text = t(key, vars) + (vars.chain ? t('chainTag', { c: vars.chain }) : '')
-      + (vars.boost > 1 ? t('boostTag', { x: vars.boost }) : '');
+      + (vars.boost > 1 ? t('boostTag', { x: vars.boost }) : '')
+      + (vars.flame ? t(vars.flame2 ? 'flameBetTag2' : 'flameBetTag', { w: vars.flame, w2: vars.flame2 }) : '');
     for (const el of msgEls) el.textContent = text;
     if (text !== msgText) { msgText = text; msgT = performance.now(); }
   }
@@ -2337,7 +2345,9 @@
     if (chestStage()) {
       say('chestBetMsg');
     } else if (mode === 'adv') {
-      say(monsterDef() > 0 ? 'betInfoAdvDef' : 'betInfoAdv', { bet: round.bet, cap: betCap(), mult: mult(), win: computeHit(false).dmg, def: monsterDef() });
+      const win = computeHit(false).dmg, hasF2 = round.boost.some((b, i) => b === 2 && round.lit.has(i));
+      say(monsterDef() > 0 ? 'betInfoAdvDef' : 'betInfoAdv', { bet: round.bet, cap: betCap(), mult: mult(), win, def: monsterDef(),
+        flame: boostCount() && win ? Math.round(win * BOOST_MULT[1]) : 0, flame2: hasF2 && win ? Math.round(win * BOOST_MULT[2]) : 0 });
     } else {
       say('betInfo', { bet: round.bet, mult: mult(), win: raw });
     }
