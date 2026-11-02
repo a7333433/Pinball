@@ -2677,9 +2677,28 @@
     }
   }
 
+  // 蜘蛛吐網：從怪物螢幕飛到釘子上（WEB_FLY 秒），落地後網才有效
+  const WEB_FLY = 0.55, WEB_GAP = 0.2, WEB_OPEN = 0.25;
+  const webShots = [];
+  function updateWebShots(dt) {
+    for (const s of webShots) {
+      const was = s.t;
+      s.t += dt;
+      if (was < 0 && s.t >= 0) Sound.tone(700, 0.18, 'triangle', 0.06, 0, 1400);   // 噗咻
+      if (!s.done && s.t >= WEB_FLY) {
+        s.done = true;
+        s.p.web = true;
+        s.p.webT = 0;
+        Sound.tone(260, 0.1, 'square', 0.04);
+      }
+    }
+    for (let i = webShots.length - 1; i >= 0; i--) if (webShots[i].done) webShots.splice(i, 1);
+  }
+
   // 怪物技能每回合的準備：蜘蛛網、繃帶、骨盾；小惡龍燒掉的燈在定燈後才決定
   function rollSkills() {
     for (const p of ALL_PINS) p.web = p.webUsed = false;
+    webShots.length = 0;
     round.bandage = null;
     round.burnt = -1;
     round.struck = false;      // 蝙蝠：這回合有沒有珠造成傷害
@@ -2689,7 +2708,7 @@
     const normal = normalPinIdx();
     const pick = list => list.splice(Math.floor(Math.random() * list.length), 1)[0];
     if (skill() === 'spider') {
-      for (let n = SPIDER_WEBS; n > 0 && normal.length; n--) ALL_PINS[pick(normal)].web = true;
+      for (let n = SPIDER_WEBS, k = 0; n > 0 && normal.length; n--, k++) webShots.push({ p: ALL_PINS[pick(normal)], t: -0.3 - k * WEB_GAP, done: false });
     } else {
       // 繃帶：隨機一根釘子，連到旁邊的另一根
       for (let tries = 0; tries < 20 && normal.length; tries++) {
@@ -3452,6 +3471,7 @@
       adv.run.maxDmg = Math.max(adv.run.maxDmg, round.dmg);
       adv.run.maxGain = Math.max(adv.run.maxGain, round.gain);
     }
+    if (webShots.length) updateWebShots(dt);
     if (round.phase === 'burn') updateBurn(dt);
     if (round.phase === 'win' || round.phase === 'lose' || round.phase === 'rewind') {
       round.resetT -= dt;
@@ -5262,20 +5282,46 @@
   function drawSkillFx(time) {
     if (mode !== 'adv' || !skill()) return;
     ctx.save();
+    // 飛行中的蜘蛛絲：從蜘蛛嘴巴畫一道弧線到釘子，後面拖一條細絲
+    for (const s of webShots) {
+      if (s.t <= 0) continue;
+      const k = Math.min(1, s.t / WEB_FLY), sx = SCREEN.x + SCREEN.w / 2, sy = SCREEN.y + 70;
+      const cx = (sx + s.p.x) / 2, cy = sy + (s.p.y - sy) * 0.35;   // 微微往外彎的弧線
+      const bz = (a, c, b) => (1 - k) * (1 - k) * a + 2 * (1 - k) * k * c + k * k * b;
+      const x = bz(sx, cx, s.p.x), y = bz(sy, cy, s.p.y);
+      ctx.strokeStyle = 'rgba(241,245,249,0.75)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      for (let j = 0; j <= 12; j++) {
+        const kk = k * j / 12, px = (1 - kk) * (1 - kk) * sx + 2 * (1 - kk) * kk * cx + kk * kk * s.p.x;
+        const py = (1 - kk) * (1 - kk) * sy + 2 * (1 - kk) * kk * cy + kk * kk * s.p.y;
+        if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.fillStyle = '#f8fafc';
+      ctx.shadowColor = '#fff';
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
     for (const p of pins) {
       if (!p.web) continue;
-      // 蜘蛛網：放射線 + 兩圈網
+      // 蜘蛛網：放射線 + 兩圈網；剛落地時從小張開
+      p.webT = Math.min(WEB_OPEN, (p.webT ?? WEB_OPEN) + 1 / 60);
+      const open = p.webT / WEB_OPEN, R = 11 * (0.3 + 0.7 * open);
       ctx.strokeStyle = p.webUsed ? 'rgba(229,231,235,0.45)' : 'rgba(241,245,249,0.85)';
       ctx.lineWidth = 0.8;
       ctx.beginPath();
       for (let k = 0; k < 8; k++) {
-        const a = k * Math.PI / 4;
+        const a = k * Math.PI / 4 + (1 - open) * 1.5;
         ctx.moveTo(p.x, p.y);
-        ctx.lineTo(p.x + Math.cos(a) * 11, p.y + Math.sin(a) * 11);
+        ctx.lineTo(p.x + Math.cos(a) * R, p.y + Math.sin(a) * R);
       }
-      for (const r of [5, 9]) {
+      for (const r of [5 * R / 11, 9 * R / 11]) {
         for (let k = 0; k <= 8; k++) {
-          const a = k * Math.PI / 4, x = p.x + Math.cos(a) * r, y = p.y + Math.sin(a) * r;
+          const a = k * Math.PI / 4 + (1 - open) * 1.5, x = p.x + Math.cos(a) * r, y = p.y + Math.sin(a) * r;
           if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
       }
