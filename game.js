@@ -2725,12 +2725,26 @@
     if (was < WEB_FLY && bd.t >= WEB_FLY) Sound.tone(220, 0.1, 'square', 0.04);
   }
 
+  // 小惡龍噴火：火焰從怪物螢幕噴到那顆燈（DRAGON_FLY 秒），燒到時爆開
+  const DRAGON_FLY = 0.55, DRAGON_BURST = 0.8;
+  function updateDragonFire(dt) {
+    const fx = round.burnFx, was = fx.t;
+    fx.t += dt;
+    if (was < DRAGON_FLY && fx.t >= DRAGON_FLY) {
+      popups.push({ x: B.left + (fx.slot + 0.5) * SLOT_W, y: SLOT_TOP - 16, text: t('dragonPop'), t: 0, color: '#fb923c', big: true });
+      state.shakeT = Math.max(state.shakeT, 0.2);
+      Sound.burn();
+    }
+    if (fx.t >= DRAGON_FLY + DRAGON_BURST) round.burnFx = null;
+  }
+
   // 怪物技能每回合的準備：蜘蛛網、繃帶、骨盾；小惡龍燒掉的燈在定燈後才決定
   function rollSkills() {
     for (const p of ALL_PINS) p.web = p.webUsed = false;
     webShots.length = 0;
     round.bandage = null;
     round.burnt = -1;
+    round.burnFx = null;
     round.struck = false;      // 蝙蝠：這回合有沒有珠造成傷害
     round.bone = skill() === 'skeleton';
     round.skillMsg = null;
@@ -2785,12 +2799,12 @@
         if (lights.length) {
           const s = lights[Math.floor(Math.random() * lights.length)];
           burnt = t(round.lit.has(s) ? 'dragonRed' : 'dragonGreen');
+          round.burnFx = { slot: s, t: 0, green: round.refills.has(s), boost: round.boost[s] };   // 噴火動畫：火焰到之前那顆燈還亮著
           round.lit.delete(s);
           round.refills.delete(s);
           round.boost[s] = 0;
           round.burnt = s;
-          popups.push({ x: B.left + (s + 0.5) * SLOT_W, y: SLOT_TOP - 16, text: t('dragonPop'), t: 0, color: '#fb923c', big: true });
-          Sound.burn();
+          Sound.tone(160, 0.5, 'sawtooth', 0.07, 0, 60);    // 呼——
         }
       }
       const f1 = [...round.lit].filter(i => round.boost[i] === 1).length, f2 = [...round.lit].filter(i => round.boost[i] === 2).length;
@@ -3578,6 +3592,7 @@
     if (webShots.length) updateWebShots(dt);
     if (round.bandage && round.bandage.t < WEB_FLY) updateBandage(dt);
     if (round.phase === 'reel') updateReel(dt);
+    if (round.burnFx) updateDragonFire(dt);
     // 石像怪血量掉過門檻：宣告石化
     if (skill() === 'gargoyle' && adv.status === 'playing') {
       const tier = STONE_TIERS.length - STONE_TIERS.findIndex(([h]) => adv.hp / adv.maxHp <= h);
@@ -4920,7 +4935,12 @@
       ctx.textBaseline = 'middle';
       ctx.fillText('🎃', x, LED_Y);
     }
-    if (round.burnt >= 0) {
+    const flying = round.burnFx && round.burnFx.t < DRAGON_FLY;
+    if (flying) {
+      const fx = round.burnFx, x = B.left + (fx.slot + 0.5) * SLOT_W;
+      led(ctx, x, LED_Y, 6, true, fx.green ? 'green' : 'red');
+    }
+    if (round.burnt >= 0 && !flying) {
       const x = B.left + (round.burnt + 0.5) * SLOT_W;
       ctx.fillStyle = 'rgba(20, 10, 5, 0.6)';
       ctx.fillRect(x - SLOT_W / 2 + 3, SLOT_TOP, SLOT_W - 6, SLOT_FLOOR - SLOT_TOP);
@@ -5523,6 +5543,7 @@
         drawBandage(bd.ax, bd.ay, bd.bx, bd.by, bd.n >= BANDAGE_CAP);   // 纏滿了變淡
       }
     }
+    if (round.burnFx) drawDragonFire(time);
     if (skill() === 'lich' && adv.shields) {
       // 魔法護盾：每一排上方一道紫色光弧
       for (let i = 0; i < SLOT_COUNT; i++) {
@@ -5535,6 +5556,52 @@
         ctx.beginPath();
         ctx.arc(x, SLOT_TOP + 14, SLOT_W / 2 - 4, Math.PI * 1.1, Math.PI * 1.9);
         ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  // 小惡龍的火焰：一串火球從嘴巴噴到燈上，燒到後在那一排竄起火舌
+  function drawDragonFire(time) {
+    const fx = round.burnFx, m = monsterMouth();
+    const tx = B.left + (fx.slot + 0.5) * SLOT_W, ty = LED_Y;
+    const cx = (m.x + tx) / 2 + (tx > m.x ? 40 : -40), cy = (m.y + ty) / 2;   // 微微彎的火柱
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    if (fx.t < DRAGON_FLY + 0.15) {
+      for (let j = 0; j < 16; j++) {
+        const q = (fx.t - j * 0.025) / DRAGON_FLY;
+        if (q <= 0 || q > 1.08) continue;
+        const k = Math.min(1, q);
+        const x = (1 - k) * (1 - k) * m.x + 2 * (1 - k) * k * cx + k * k * tx + Math.sin(time * 30 + j) * 2;
+        const y = (1 - k) * (1 - k) * m.y + 2 * (1 - k) * k * cy + k * k * ty;
+        const r = 9 - j * 0.4;
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r * 1.8);
+        g.addColorStop(0, 'rgba(255, 240, 180, 0.9)');
+        g.addColorStop(0.4, 'rgba(251, 146, 60, 0.7)');
+        g.addColorStop(1, 'rgba(220, 38, 38, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, r * 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    if (fx.t >= DRAGON_FLY) {
+      // 燒到了：那一排竄起火舌，慢慢熄掉
+      const k = 1 - (fx.t - DRAGON_FLY) / DRAGON_BURST;
+      for (let j = 0; j < 9; j++) {
+        const sd = Math.abs(Math.sin(j * 78.233) * 43758.5453) % 1;
+        const q = ((fx.t - DRAGON_FLY) * 2.2 + sd) % 1;
+        const x = tx + (sd - 0.5) * (SLOT_W - 8), y = ty + 14 - q * 70;
+        const r = (7 + sd * 5) * (1 - q * 0.6);
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, `rgba(255, 236, 150, ${0.9 * k})`);
+        g.addColorStop(0.5, `rgba(249, 115, 22, ${0.6 * k})`);
+        g.addColorStop(1, 'rgba(185, 28, 28, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
     ctx.restore();
