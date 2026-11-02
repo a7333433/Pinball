@@ -1015,7 +1015,6 @@
       langBtn: 'English', langShort: 'EN', close: '關閉',
       modeShort: '冒險', modeShortAdv: '經典', modeLong: '切換到大冒險', modeLongAdv: '切換到經典模式',
       planFree: '自由挑戰', planCampaign: '冒險模式',
-      campaignIntro: '最佳紀錄：打倒 {best} 隻怪物，全部通關 {clears} 次',
       campaignStart: '開始冒險',
       resumeTitle: '繼續上次的冒險？', resumeText: '{stage}・持珠 {balls} 顆・天賦：{talent}',
       resumeStage: '第 {stage}/{total} 關', resumeChest: '第 {stage} 關後的寶箱',
@@ -1164,7 +1163,6 @@
       langBtn: '中文', langShort: '中', close: 'Close',
       modeShort: 'Quest', modeShortAdv: 'Classic', modeLong: 'Pinball Quest', modeLongAdv: 'Classic mode',
       planFree: 'Free fight', planCampaign: 'Adventure',
-      campaignIntro: 'Best: {best} monsters defeated, {clears} full clears',
       campaignStart: 'Start adventure',
       resumeTitle: 'Continue your adventure?', resumeText: '{stage} · {balls} balls · Talent: {talent}',
       resumeStage: 'Stage {stage}/{total}', resumeChest: 'Treasure after stage {stage}',
@@ -5846,7 +5844,6 @@
           btn = t('resumeBtn');
         } else {
           title = t('advTitle');
-          text = t('campaignIntro', { best: campaign.best, clears: campaign.clears });
           btn = t('campaignStart');
         }
       } else {
