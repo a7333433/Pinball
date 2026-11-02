@@ -205,7 +205,7 @@
     bat: { name: { zh: '吸血', en: 'Leech' }, desc: { zh: `這回合沒有任何一顆珠造成傷害，回合結束回 ${BAT_HEAL} 血`, en: `If no ball deals damage this round, it heals ${BAT_HEAL} HP at round end` } },
     spider: { name: { zh: '結網', en: 'Web' }, desc: { zh: `每回合在 ${SPIDER_WEBS} 根普通釘子上結網，第一顆碰到的珠會被黏住（之後的珠會被它彈開），落珠結束後被蜘蛛收走`, en: `Each round it webs ${SPIDER_WEBS} normal pins. The first ball to touch a web sticks there (later balls bounce off it) and is taken when the round ends` } },
     ghost: { name: { zh: '穿透', en: 'Phase' }, desc: { zh: `落進攻擊燈的珠有 ${GHOST_DODGE * 100}% 機率被閃避（燃燒、外傷照算）`, en: `Balls in attack lights have a ${GHOST_DODGE * 100}% chance to miss (burn and grind still hit)` } },
-    pumpkin: { name: { zh: '南瓜燈', en: 'Pumpkin Lamp' }, desc: { zh: `這一關固定有一排南瓜燈（不會亮成攻擊燈或補珠燈），每進一顆珠，南瓜頭回 ${PUMPKIN_HEAL * 100}% 血`, en: `One lane is a pumpkin lamp for the whole stage (never an attack or refill light). Each ball in it heals ${PUMPKIN_HEAL * 100}% HP` } },
+    pumpkin: { name: { zh: '南瓜燈', en: 'Pumpkin Lamp' }, desc: { zh: `每回合隨機一排變成南瓜燈（不會亮成攻擊燈或補珠燈），每進一顆珠，南瓜頭回 ${PUMPKIN_HEAL * 100}% 血`, en: `Each round a random lane becomes a pumpkin lamp (never an attack or refill light). Each ball in it heals ${PUMPKIN_HEAL * 100}% HP` } },
     mummy: { name: { zh: '繃帶', en: 'Bandage' }, desc: { zh: '每回合在兩根釘子之間拉一條繃帶，第一顆碰到的珠會被黏住（之後的珠會被它彈開），落珠結束後被木乃伊收走', en: 'Each round it ties a bandage between two pins. The first ball to touch it sticks there (later balls bounce off it) and is taken when the round ends' } },
     skeleton: { name: { zh: '骨盾', en: 'Bone Shield' }, desc: { zh: '每回合有一面骨盾，擋下第一顆造成傷害的珠（燃燒、外傷不擋）', en: 'Each round a bone shield blocks the first ball that would deal damage (burn and grind are not blocked)' } },
     dragon: { name: { zh: '噴火', en: 'Fire Breath' }, desc: { zh: '每回合定燈後燒掉一顆燈（攻擊燈或補珠燈），那一排這回合不能用', en: 'After you lock each round, it burns one light (attack or refill); that lane is dead this round' } },
@@ -2008,7 +2008,7 @@
     adv.burn = 0;
     adv.stageLit = adv.stageRefill = adv.stageBoost = adv.stageRefillBoost = adv.stageSuper = 0;
     adv.pinMods = {};
-    // 怪物技能：南瓜燈固定一排；巫妖的護盾全滿
+    // 怪物技能：南瓜燈（每回合再換位置）；巫妖的護盾全滿
     adv.pumpkin = skill() === 'pumpkin' ? Math.floor(Math.random() * SLOT_COUNT) : -1;
     adv.shields = skill() === 'lich' ? Array(SLOT_COUNT).fill(true) : null;
     adv.lichT = 0;
@@ -2714,6 +2714,8 @@
     round.struck = false;      // 蝙蝠：這回合有沒有珠造成傷害
     round.bone = skill() === 'skeleton';
     round.skillMsg = null;
+    // 南瓜頭：每回合換一排當南瓜燈（要在決定亮燈之前）
+    if (skill() === 'pumpkin' && adv.status === 'playing') adv.pumpkin = Math.floor(Math.random() * SLOT_COUNT);
     // 怪物已經被打倒（過關後開的下一回合）就不再吐網、甩繃帶
     if (adv.status !== 'playing' || (skill() !== 'spider' && skill() !== 'mummy')) return;
     const normal = normalPinIdx();
