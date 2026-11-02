@@ -152,7 +152,7 @@
       tier: 3, when: 'post',
       name: { zh: '搖晃機台', en: 'Shake the Machine' },
       quote: { zh: '「你不能那樣做！」── 柑仔店老闆', en: '"You can\'t do that!" — The shopkeeper' },
-      effect: { zh: '把 1 顆彈珠直接放在檯面上任何地方，讓它從那裡落下，這顆珠的傷害 ×3（其他的珠照常發射）', en: 'Drop 1 ball anywhere on the board; that ball deals ×3 damage (the rest are shot as usual)' },
+      effect: { zh: '這回合不用發射：每一顆彈珠都由你點檯面上的位置放下，讓它從那裡落下', en: 'No shooting this round: tap the board to choose where each ball drops from' },
     },
   };
   const ITEM_IDS = Object.keys(ITEMS);
@@ -1111,9 +1111,9 @@
       useLaserPurpleAdd: '高功率雷射筆（紫）：多亮一顆超強化燈（傷害 ×2），這一關有效', useLaserPurple: '高功率雷射筆（紫）：一顆攻擊燈變成超強化燈（傷害 ×2），這一關有效',
       itemAllRefill: '已經全部是補珠燈了', itemNoPin: '檯面上沒有普通釘子', itemNoHole: '這一關沒有破洞',
       boostRefillTag: '（火焰補珠燈 ×{x}）', flameRefillTag: '（綠色火焰補珠燈 {n} 顆，補珠 ×1.5）', useKey: '用老闆的鑰匙打開珠箱，拿回 {n} 顆彈珠！',
-      useShake: '搖晃機台！點檯面上任何地方放下彈珠', shakeWhere: '點檯面上（釘子區）放下彈珠',
-      shakeHint: '點檯面放珠', shakePlaced: '「你不能那樣做！」彈珠放下去了，這顆傷害 ×3',
-      shakePlacedMore: '「你不能那樣做！」彈珠放下去了，剩下 {n} 顆拉彈簧發射',
+      useShake: '搖晃機台！這回合的 {n} 顆彈珠，點檯面上的位置一顆一顆放下', shakeWhere: '點檯面上（釘子區）放下彈珠',
+      shakeHint: '點檯面放珠', shakePlaced: '「你不能那樣做！」彈珠全部放下去了',
+      shakePlacedMore: '「你不能那樣做！」放下去了，還有 {n} 顆，繼續點檯面放珠',
       outUseItem: '彈珠用完了！背包裡還有能用的道具',
       hgTitle: '沙漏', hgKeep: '保留結果', hgRewindBtn: '返回上回合',
       hgHit: '鋼珠落進亮燈的那一排，將造成 {dmg} 點傷害。',
@@ -1259,9 +1259,9 @@
       useLaserPurpleAdd: 'High-power purple laser: +1 super flame light (×2 damage) this stage', useLaserPurple: 'High-power purple laser: an attack light became a super flame light (×2 damage) this stage',
       itemAllRefill: 'Every lane is already a refill light', itemNoPin: 'No normal pins on the board', itemNoHole: 'No holes in this stage',
       boostRefillTag: ' (flame refill ×{x})', flameRefillTag: ' ({n} green-flame refill light(s), ×1.5 balls)', useKey: 'The shopkeeper\'s key opened the ball box: {n} balls back!',
-      useShake: 'Shake the machine! Tap anywhere on the board to drop the ball', shakeWhere: 'Tap the pin area of the board to drop the ball',
-      shakeHint: 'Tap to drop', shakePlaced: '"You can\'t do that!" Ball dropped (×3 damage)',
-      shakePlacedMore: '"You can\'t do that!" Ball dropped. Shoot the other {n}',
+      useShake: 'Shake the machine! Tap the board to drop each of your {n} balls this round', shakeWhere: 'Tap the pin area of the board to drop the ball',
+      shakeHint: 'Tap to drop', shakePlaced: '"You can\'t do that!" All balls dropped',
+      shakePlacedMore: '"You can\'t do that!" Dropped. {n} more, keep tapping the board',
       outUseItem: 'Out of balls! Your backpack still has items that can help',
       hgTitle: 'Hourglass', hgKeep: 'Keep result', hgRewindBtn: 'Rewind',
       hgHit: 'The ball landed in a lit lane: {dmg} damage.',
@@ -2386,25 +2386,25 @@
     shake() {
       round.placing = true;
       state.shakeT = 0.6;
-      say('useShake');
+      say('useShake', { n: shots() - round.launched });
       Sound.thud();
       setTimeout(() => Sound.thud(), 150);
     },
   };
 
-  // 搖晃機台：點檯面放珠（釘子區，避開上方彎軌和下方落獎區）
+  // 搖晃機台：這回合每顆珠都點檯面放下（釘子區，避開上方彎軌和下方落獎區）
   const PLACE_ZONE = { x0: B.left + 12, x1: LANE_X - 12, y0: 290, y1: SLOT_TOP - 20 };
   const inPlaceZone = p => p.x > PLACE_ZONE.x0 && p.x < PLACE_ZONE.x1 && p.y > PLACE_ZONE.y0 && p.y < PLACE_ZONE.y1;
   function placeBall(p) {
     if (!inPlaceZone(p)) { say('shakeWhere'); Sound.error(); return; }
-    round.placing = false;
-    // 拿發射口那顆來放，剩下的珠還是要拉彈簧發射
+    // 拿發射口那顆來放；全部放完才結束放珠
     const i = balls.findIndex(atShooter);
     if (i >= 0) balls.splice(i, 1);
-    balls.push({ x: p.x, y: p.y, vx: 0, vy: 0, still: 0, fired: true, shake: true });
+    balls.push({ x: p.x, y: p.y, vx: 0, vy: 0, still: 0, fired: true });
     countRound();
     round.launched++;
     const left = shots() - round.launched;
+    round.placing = left > 0;
     syncRestBalls();
     round.phase = 'flying';
     state.shakeT = 0.3;
@@ -2580,7 +2580,6 @@
     round.extraLit = mode === 'adv' ? adv.stageLit : 0;
     round.extraRefill = mode === 'adv' ? adv.stageRefill : 0;
     round.heavy = 0;
-    round.shakeIdx = -1;
     round.fireIdx = new Set();   // 這回合碰過燒紅釘的珠（第幾顆落下）
     round.hourglass = round.placing = false;
     round.landed = [];
@@ -2768,7 +2767,6 @@
   function land(b, slot) {
     balls.splice(balls.indexOf(b), 1);
     round.landed.push(slot);
-    if (b.shake) round.shakeIdx = round.landed.length - 1;
     if (b.fire) round.fireIdx.add(round.landed.length - 1);
     if (!multiBall()) {
       round.landSlot = slot;
@@ -2777,7 +2775,7 @@
       return;
     }
     // 大冒險：每顆落下就結算（用了沙漏就等全部落下再一起預告）
-    if (!round.hourglass && slot >= 0 && adv.status === 'playing') resolveBall(slot, !!b.shake, !!b.fire);
+    if (!round.hourglass && slot >= 0 && adv.status === 'playing') resolveBall(slot, !!b.fire);
     if (adv.status === 'won') { endEarly(); return; }
     if (round.launched < shots() || balls.length) return;    // 還有珠沒發射或還在檯面上
     if (round.hourglass) {
@@ -2790,14 +2788,14 @@
   }
 
   // 大冒險一顆珠的結果：攻擊燈造成傷害、補珠燈補珠、其他沒中
-  function resolveBall(slot, shake = false, fire = false) {
+  function resolveBall(slot, fire = false) {
     const px = B.left + (slot + 0.5) * SLOT_W;
     // 同一顆燈疊珠：這回合第 k 顆落進同一顆燈的珠，攻擊 +(k−1)／補珠 +(k−1)
     const combo = round.stack[slot] || 0;
     round.stack[slot] = combo + 1;
     if (round.lit.has(slot)) {
       round.hits++;
-      damageMonster(px, combo, shake ? 3 : 1, fire, round.boost[slot]);
+      damageMonster(px, combo, 1, fire, round.boost[slot]);
     } else if (round.refills.has(slot)) {
       // 補珠燈：每顆補 2 顆；這回合第一次中還會退回投進強化孔的珠
       // 火焰補珠燈（鋁箔包飲料把火焰燈變成的補珠燈）：最終補珠數 ×1.5 / ×2
@@ -2951,7 +2949,7 @@
       if (slot >= 0) stack[slot] = combo + 1;
       if (round.lit.has(slot)) {
         const { raw, def, dmg } = computeHit(false, combo);
-        text = dmg > 0 ? t('hgHit', { dmg: Math.round(dmg * (i === round.shakeIdx ? 3 : 1) * BOOST_MULT[round.boost[slot]]) }) : t('hgBlock', { raw, def });
+        text = dmg > 0 ? t('hgHit', { dmg: Math.round(dmg * BOOST_MULT[round.boost[slot]]) }) : t('hgBlock', { raw, def });
       } else if (round.refills.has(slot)) {
         const n = Math.round((refund + refillBonus() + combo) * BOOST_MULT[round.boost[slot]]);
         text = hasTalent('trauma') ? t('hgRefillHurt', { n, dmg: Math.round(n * traumaRate()) }) : t('hgRefill', { n });
@@ -2967,7 +2965,7 @@
   function chooseHourglass(keep) {
     if (round.phase !== 'choose') return;
     if (keep) {
-      round.landed.forEach((slot, i) => { if (slot >= 0 && adv.status === 'playing') resolveBall(slot, i === round.shakeIdx, round.fireIdx.has(i)); });
+      round.landed.forEach((slot, i) => { if (slot >= 0 && adv.status === 'playing') resolveBall(slot, round.fireIdx.has(i)); });
       if (adv.status === 'won') endEarly();
       else finishRound();
       return;
@@ -3048,7 +3046,7 @@
       b.r = SPLIT_R;
       p.hitT = 0.5;
       const sp = Math.max(160, Math.hypot(b.vx, b.vy));
-      const twin = { ...b, shake: false };
+      const twin = { ...b };
       const ang = Math.atan2(b.vy, b.vx);
       b.vx = Math.cos(ang - 0.5) * sp; b.vy = Math.sin(ang - 0.5) * sp;
       twin.vx = Math.cos(ang + 0.5) * sp; twin.vy = Math.sin(ang + 0.5) * sp;
