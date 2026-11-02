@@ -195,12 +195,15 @@
   };
   const TALENT_IDS = Object.keys(TALENTS);
   // 怪物技能：key 是 MONSTERS 的索引（第幾關 − 1）
-  const MONSTER_SKILLS = { 2: 'bat', 3: 'spider', 4: 'ghost', 5: 'pumpkin', 7: 'mummy', 8: 'skeleton', 10: 'dragon', 11: 'hound', 13: 'lich' };
+  const MONSTER_SKILLS = { 2: 'bat', 3: 'spider', 4: 'ghost', 5: 'pumpkin', 6: 'zombie', 7: 'mummy', 8: 'skeleton', 9: 'vampire', 10: 'dragon', 11: 'hound', 12: 'gargoyle', 13: 'lich' };
   const BAT_HEAL = 5;          // 蝙蝠：這回合沒有珠造成傷害，回幾血
   const SPIDER_WEBS = 2;       // 蜘蛛：每回合結幾張網
   const GHOST_DODGE = 0.15;    // 幽靈：攻擊燈的珠被閃避的機率
   const PUMPKIN_HEAL = 0.05;   // 南瓜頭：每顆珠進南瓜燈回最大 HP 的幾成
   const LICH_REFILL = 3;       // 巫妖：每幾回合補滿魔法護盾
+  const ZOMBIE_REGEN = 0.03;   // 殭屍：每回合結束回最大 HP 的幾成
+  const VAMPIRE_HEAL = 2;      // 吸血鬼：每顆沒落進任何燈的珠回幾血
+  const GARGOYLE_EVERY = 3, GARGOYLE_MAX = 3;   // 石像怪：每幾回合防禦 +1、最多加幾點
   const SKILLS = {
     bat: { name: { zh: '吸血', en: 'Leech' }, desc: { zh: `這回合沒有任何一顆珠造成傷害，回合結束回 ${BAT_HEAL} 血`, en: `If no ball deals damage this round, it heals ${BAT_HEAL} HP at round end` } },
     spider: { name: { zh: '結網', en: 'Web' }, desc: { zh: `每回合在 ${SPIDER_WEBS} 根普通釘子上結網，第一顆碰到的珠會被黏住（之後的珠會被它彈開），落珠結束後被蜘蛛收走`, en: `Each round it webs ${SPIDER_WEBS} normal pins. The first ball to touch a web sticks there (later balls bounce off it) and is taken when the round ends` } },
@@ -210,6 +213,9 @@
     skeleton: { name: { zh: '骨盾', en: 'Bone Shield' }, desc: { zh: '每回合有一面骨盾，擋下第一顆造成傷害的珠（燃燒、外傷不擋）', en: 'Each round a bone shield blocks the first ball that would deal damage (burn and grind are not blocked)' } },
     dragon: { name: { zh: '噴火', en: 'Fire Breath' }, desc: { zh: '每回合定燈後燒掉一顆燈（攻擊燈或補珠燈），那一排這回合不能用', en: 'After you lock each round, it burns one light (attack or refill); that lane is dead this round' } },
     hound: { name: { zh: '撲火', en: 'Fireproof' }, desc: { zh: '受到的燃燒傷害減半', en: 'Takes half damage from burn' } },
+    zombie: { name: { zh: '再生', en: 'Regenerate' }, desc: { zh: `每回合結束回最大 HP 的 ${ZOMBIE_REGEN * 100}%`, en: `Heals ${ZOMBIE_REGEN * 100}% of max HP at the end of every round` } },
+    vampire: { name: { zh: '吸珠', en: 'Drain' }, desc: { zh: `每顆沒落進任何燈的珠，吸血鬼回 ${VAMPIRE_HEAL} 血`, en: `Every ball that lands on no light heals it ${VAMPIRE_HEAL} HP` } },
+    gargoyle: { name: { zh: '石化', en: 'Petrify' }, desc: { zh: `每 ${GARGOYLE_EVERY} 回合防禦 +1，最多 +${GARGOYLE_MAX}（鹽酸、碎甲可以抵掉）`, en: `DEF +1 every ${GARGOYLE_EVERY} rounds, up to +${GARGOYLE_MAX} (Acid and Shatter offset it)` } },
     lich: { name: { zh: '魔法護盾', en: 'Magic Ward' }, desc: { zh: `落獎區每一排上方都有魔法護盾，擋下第一顆落進那一排的珠；每 ${LICH_REFILL} 回合補滿`, en: `Every lane has a magic ward that blocks the first ball landing in it; wards refill every ${LICH_REFILL} rounds` } },
   };
   let talentPick = 'alloy';
@@ -1027,7 +1033,8 @@
       wardRefillPop: '護盾補滿！', wardRefill: '巫妖的魔法護盾全部補滿了！',
       healPop: '回 {n} 血', pumpkinMsg: '珠掉進南瓜燈，南瓜頭回了 {n} 血', dodgePop: '閃避', ghostMsg: '幽靈穿過去了，這顆珠沒打到',
       boneScreen: '骨盾', bonePop: '骨盾擋下', boneMsg: '骨盾擋下了這顆珠的 {dmg} 點傷害（下回合再長出來）',
-      batMsg: '這回合沒打到，蝙蝠吸血回了 {n} 血', burnMsgHound: '燃燒！地獄犬抗火，傷害減半只受到 {dmg} 點（剩 {left} 層）',
+      batMsg: '這回合沒打到，蝙蝠吸血回了 {n} 血', zombieMsg: '殭屍再生，回了 {n} 血', drainPop: '吸 {n} 血',
+      petrifyScreen: '石化', petrifyMsg: '石像怪石化了，防禦變成 {def}！', burnMsgHound: '燃燒！地獄犬抗火，傷害減半只受到 {dmg} 點（剩 {left} 層）',
       hgWard: '被魔法護盾擋下', hgPumpkin: '掉進南瓜燈（南瓜頭回 {n} 血）', hgBone: '被骨盾擋下', hgStuck: '被黏住收走',
       betFirst: '請先投珠再按發射鈕',
       fired: '發射！', firedN: '發射！{n} 顆鋼珠一起出發',
@@ -1185,7 +1192,8 @@
       wardRefillPop: 'Wards back!', wardRefill: 'The Lich restored all magic wards!',
       healPop: '+{n} HP', pumpkinMsg: 'Into the pumpkin lamp: the Pumpkin Head heals {n} HP', dodgePop: 'Miss', ghostMsg: 'The ghost phased through: that ball missed',
       boneScreen: 'BONE', bonePop: 'Blocked', boneMsg: 'The bone shield blocked {dmg} damage (it grows back next round)',
-      batMsg: 'No hits this round: the bat heals {n} HP', burnMsgHound: 'Burn! The hellhound only takes half: {dmg} damage ({left} left)',
+      batMsg: 'No hits this round: the bat heals {n} HP', zombieMsg: 'The zombie regenerates {n} HP', drainPop: '+{n} HP',
+      petrifyScreen: 'STONE', petrifyMsg: 'The gargoyle hardens: DEF is now {def}!', burnMsgHound: 'Burn! The hellhound only takes half: {dmg} damage ({left} left)',
       hgWard: 'Blocked by a ward', hgPumpkin: 'Pumpkin lamp (heals {n} HP)', hgBone: 'Blocked by the bone shield', hgStuck: 'Stuck and taken',
       betFirst: 'Bet first, then shoot',
       fired: 'Fire!', firedN: 'Fire! {n} balls are on their way',
@@ -1832,7 +1840,7 @@
       credits: state.credits + state.payoutQueue + unpaid,
       items: adv.items, boons: adv.boons, talent: adv.talent, rerollCost: adv.rerollCost,
       rewards: adv.rewards, loot: adv.loot, lootChoices: adv.lootChoices,
-      pumpkin: adv.pumpkin, shields: adv.shields, lichT: adv.lichT,
+      pumpkin: adv.pumpkin, shields: adv.shields, lichT: adv.lichT, defUp: adv.defUp, skillT: adv.skillT,
     };
     try { localStorage.setItem(RUN_KEY, JSON.stringify(data)); } catch (e) { /* 無痕模式 */ }
   }
@@ -1927,6 +1935,8 @@
     adv.pumpkin = d.pumpkin ?? -1;
     adv.shields = d.shields || null;
     adv.lichT = d.lichT || 0;
+    adv.defUp = d.defUp || 0;
+    adv.skillT = d.skillT || 0;
     adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = 0;
     adv.pops.length = 0;
     adv.pinSet = stagePins(d.idx);
@@ -2012,6 +2022,7 @@
     adv.pumpkin = skill() === 'pumpkin' ? Math.floor(Math.random() * SLOT_COUNT) : -1;
     adv.shields = skill() === 'lich' ? Array(SLOT_COUNT).fill(true) : null;
     adv.lichT = 0;
+    adv.defUp = adv.skillT = 0;    // 石像怪：加了幾點防禦、離下次石化還有幾回合
     // 寶箱沿用前一關的釘子；自由挑戰每場都重新擺
     if (!adv.chest) growPins(idx);
     else syncPins();             // 寶箱沿用前一關的釘陣，但沒有特殊釘子
@@ -2024,7 +2035,7 @@
   }
 
   // 鹽酸會把防禦往下降
-  const monsterDef = () => adv.monster ? Math.max(0, adv.monster.def - adv.defDown) : 0;
+  const monsterDef = () => adv.monster ? Math.max(0, adv.monster.def + (adv.defUp || 0) - adv.defDown) : 0;   // defUp：石像怪石化
   // 目前這隻怪物的技能（寶箱、經典模式沒有）
   const skill = () => mode === 'adv' && adv.monster && !adv.chest ? MONSTER_SKILLS[adv.monsterIdx] || null : null;
   const skillName = () => skill() ? SKILLS[skill()].name[lang] : '';
@@ -3015,6 +3026,15 @@
       Sound.miss();
       return;
     }
+    // 吸血鬼：沒落進任何燈的珠讓牠回血（之後照常算滾動補給）
+    if (skill() === 'vampire' && !round.lit.has(slot) && !round.refills.has(slot)) {
+      const n = Math.min(VAMPIRE_HEAL, adv.maxHp - adv.hp);
+      if (n > 0) {
+        adv.hp += n;
+        adv.pops.push({ text: '+' + n, t: 0, color: '#4ade80' });
+        popups.push({ x: px, y: SLOT_TOP - 34, text: t('drainPop', { n }), t: 0, color: '#f87171' });
+      }
+    }
     // 幽靈：落進攻擊燈也可能被閃避
     if (skill() === 'ghost' && round.lit.has(slot) && Math.random() < GHOST_DODGE) {
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('dodgePop'), t: 0, color: '#cbd5e1' });
@@ -3052,7 +3072,7 @@
         noteBall(dmg, 0);
         if (boon('shatter') && !round.shattered && adv.monster && monsterDef() > 0) {
           round.shattered = true;
-          adv.defDown = Math.min(adv.monster.def, adv.defDown + boon('shatter'));
+          adv.defDown = Math.min(adv.monster.def + (adv.defUp || 0), adv.defDown + boon('shatter'));
         }
         say('traumaMsg', { n, dmg });
       }
@@ -3085,6 +3105,18 @@
       adv.hp += n;
       adv.pops.push({ text: '+' + n, t: 0, color: '#4ade80' });
       round.skillMsg = ['batMsg', { n }];
+    }
+    if (skill() === 'zombie' && adv.hp < adv.maxHp) {
+      const n = Math.min(adv.maxHp - adv.hp, Math.max(1, Math.round(adv.maxHp * ZOMBIE_REGEN)));
+      adv.hp += n;
+      adv.pops.push({ text: '+' + n, t: 0, color: '#4ade80' });
+      round.skillMsg = ['zombieMsg', { n }];
+    }
+    if (skill() === 'gargoyle' && adv.defUp < GARGOYLE_MAX && ++adv.skillT >= GARGOYLE_EVERY) {
+      adv.skillT = 0;
+      adv.defUp++;
+      adv.pops.push({ text: t('petrifyScreen'), t: 0, color: '#93c5fd' });
+      round.skillMsg = ['petrifyMsg', { def: monsterDef() }];
     }
     if (skill() === 'lich' && adv.shields && ++adv.lichT >= LICH_REFILL) {
       adv.lichT = 0;
@@ -4727,6 +4759,7 @@
         let label = '★' + skillName();
         if (skill() === 'skeleton' && round.bone) label += ' ●';
         if (skill() === 'lich' && adv.shields) label += ` ${adv.shields.filter(Boolean).length}/${SLOT_COUNT}`;
+        if (skill() === 'gargoyle') label += adv.defUp >= GARGOYLE_MAX ? ` +${adv.defUp}` : ` +${adv.defUp}（${GARGOYLE_EVERY - adv.skillT}）`;
         ctx.font = `bold 13px ${SANS}`;
         textBacking(S.x + 4, S.y + 27, ctx.measureText(label).width + 12, 18);
         ctx.fillStyle = '#fca5a5';
