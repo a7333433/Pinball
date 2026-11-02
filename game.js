@@ -1936,7 +1936,7 @@
     adv.pumpkin = d.pumpkin ?? -1;
     adv.shields = d.shields || null;
     adv.lichT = d.lichT || 0;
-    adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = 0;
+    adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = adv.healT = 0;
     adv.pops.length = 0;
     adv.pinSet = stagePins(d.idx);
     syncPins();
@@ -1995,7 +1995,7 @@
     adv.monsterIdx = idx;
     adv.maxHp = adv.hp = adv.chest ? 1 : Math.max(1, Math.round(m.hp * (0.9 + Math.random() * 0.2)));
     adv.status = 'playing';
-    adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = 0;
+    adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = adv.healT = 0;
     adv.pops.length = 0;
     adv.defDown = 0;
     adv.loot = adv.lootChoices = null;
@@ -3029,6 +3029,7 @@
       const n = Math.max(1, Math.round(adv.maxHp * PUMPKIN_HEAL));
       adv.hp = Math.min(adv.maxHp, adv.hp + n);
       adv.pops.push({ text: '+' + n, t: 0, color: '#4ade80' });
+      healFx(HEAL_FX * 0.6);
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('healPop', { n }), t: 0, color: '#fb923c' });
       say('pumpkinMsg', { n });
       Sound.miss();
@@ -3040,6 +3041,7 @@
       if (n > 0) {
         adv.hp += n;
         adv.pops.push({ text: '+' + n, t: 0, color: '#4ade80' });
+        healFx(HEAL_FX * 0.5);
         popups.push({ x: px, y: SLOT_TOP - 34, text: t('drainPop', { n }), t: 0, color: '#f87171' });
       }
     }
@@ -3106,18 +3108,29 @@
     round.resetT = 1.6;
   }
 
+  // 怪物回血的特效：怪物身上一圈綠光，綠色十字往上飄（t 秒；殭屍再生最久）
+  const HEAL_FX = 1.4;
+  function healFx(dur) {
+    if (dur >= (adv.healT || 0)) adv.healT = adv.healDur = dur;
+    Sound.tone(523, 0.14, 'triangle', 0.07);
+    Sound.tone(784, 0.14, 'triangle', 0.07, 0.09);
+    Sound.tone(1047, 0.22, 'triangle', 0.07, 0.18);
+  }
+
   // 回合結束的怪物技能：蝙蝠吸血、巫妖補護盾（訊息接在回合總結後面）
   function roundSkills() {
     if (skill() === 'bat' && !round.struck && adv.hp < adv.maxHp) {
       const n = Math.min(BAT_HEAL, adv.maxHp - adv.hp);
       adv.hp += n;
       adv.pops.push({ text: '+' + n, t: 0, color: '#4ade80' });
+      healFx(HEAL_FX * 0.7);
       round.skillMsg = ['batMsg', { n }];
     }
     if (skill() === 'zombie' && adv.hp < adv.maxHp) {
       const n = Math.min(adv.maxHp - adv.hp, Math.max(1, Math.round(adv.maxHp * ZOMBIE_REGEN)));
       adv.hp += n;
-      adv.pops.push({ text: '+' + n, t: 0, color: '#4ade80' });
+      adv.pops.push({ text: '+' + n, t: 0, color: '#4ade80', big: true });
+      healFx(HEAL_FX);
       round.skillMsg = ['zombieMsg', { n }];
     }
     if (skill() === 'lich' && adv.shields && ++adv.lichT >= LICH_REFILL) {
@@ -3531,6 +3544,7 @@
       checkAdvDefeat();
       adv.hitT = Math.max(0, adv.hitT - dt);
       adv.laughT = Math.max(0, adv.laughT - dt);
+      if (adv.healT > 0) adv.healT = Math.max(0, adv.healT - dt);
       // 落敗：落敗音效之後竊笑一聲（畫面上會一直笑，聲音只出一次）
       if (adv.status === 'lost' && adv.laughSoundT > 0) {
         adv.laughSoundT -= dt;
@@ -4672,6 +4686,31 @@
     }
   }
 
+  // 回血特效：綠色光暈一閃一閃，像素十字從腳下往上飄
+  function drawHealFx(cx, y0, size, time) {
+    const k = adv.healT / (adv.healDur || HEAL_FX), p = 1 - k;   // k：剩下多少（1 → 0）
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const cy = y0 + size / 2;
+    const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, size * 0.75);
+    g.addColorStop(0, `rgba(74, 222, 128, ${0.45 * k * (0.75 + 0.25 * Math.sin(time * 18))})`);
+    g.addColorStop(1, 'rgba(74, 222, 128, 0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(cx - size, y0 - 10, size * 2, size + 20);
+    ctx.globalCompositeOperation = 'source-over';
+    const P = 3;
+    for (let i = 0; i < 10; i++) {
+      const sd = Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1;
+      const q = (p * 1.4 + i / 10) % 1;                 // 每顆十字自己的上升進度
+      const x = Math.round(cx + (sd - 0.5) * size * 1.1), y = Math.round(y0 + size + 4 - q * (size + 18));
+      ctx.globalAlpha = Math.min(1, k * 1.5) * Math.sin(Math.PI * q);
+      ctx.fillStyle = i % 3 ? '#4ade80' : '#bbf7d0';
+      ctx.fillRect(x - P / 2, y - P * 1.5, P, P * 3);   // 直
+      ctx.fillRect(x - P * 1.5, y - P / 2, P * 3, P);   // 橫
+    }
+    ctx.restore();
+  }
+
   function drawAdvScreen(time) {
     const S = SCREEN;
     const PIXEL_FONT = '"Courier New", Consolas, monospace';
@@ -4727,6 +4766,7 @@
       if (burning) drawBurnGlow(cx, y0, size, time);
       if (visible) drawMonster(m, x0, y0, adv.hitT > 0 && Math.floor(adv.hitT * 20) % 2 === 0, laughing, opened);
       if (burning) drawBurnFx(m, x0, y0, size, time);
+      if (adv.healT > 0 && visible) drawHealFx(cx, y0, size, time);
       if (opened && adv.loot) {
         // 拿到的道具從寶箱旁邊浮出來
         const icon = ITEM_ICONS[adv.loot], IP = 4;
