@@ -1051,7 +1051,7 @@
       stWinAdv: '上次傷害', stBestWinAdv: '勝場', stBestAdv: '敗場',
       hitMsgTotal: '命中！攻擊 {raw}，扣掉防禦 {def}，加上加成共造成 {dmg} 點傷害',
       critMsg: '暴擊！造成 {dmg} 點傷害', critPop: '暴擊 -{d}', chainPop: '連鎖+{c}', chainTag: '（連鎖暴擊 +{c}）',
-      talentTitle: '選擇天賦（整趟冒險有效）', stTalent: '天賦', stBurn: '燃燒層數',
+      talentTitle: '選擇天賦（整趟冒險有效）', talentInfo: '說明', talentInfoBoons: '專屬過關獎勵', stTalent: '天賦', stBurn: '燃燒層數',
       burnStart: '燃燒中…… 🔥 {n} 層', splitPop: '分裂！', holePop: '掉進破洞',
       pinInfoFire: '燒紅釘：碰到的珠造成傷害時，怪物燃燒 +1 層（可以跟燒紅彈珠疊加）',
       pinInfoSpike: '螺旋尖刺：碰到的珠會彈開並分裂成兩顆小珠（分裂出來的珠不會再分裂）',
@@ -1199,7 +1199,7 @@
       stWinAdv: 'Last hit', stBestWinAdv: 'Wins', stBestAdv: 'Losses',
       hitMsgTotal: 'Hit! {raw} attack − DEF {def}, with bonuses {dmg} damage',
       critMsg: 'Critical hit! {dmg} damage', critPop: 'CRIT -{d}', chainPop: 'chain+{c}', chainTag: ' (chain crit +{c})',
-      talentTitle: 'Choose a talent (lasts the whole adventure)', stTalent: 'Talent', stBurn: 'Burn',
+      talentTitle: 'Choose a talent (lasts the whole adventure)', talentInfo: 'Info', talentInfoBoons: 'Exclusive rewards', stTalent: 'Talent', stBurn: 'Burn',
       burnStart: 'Burning... 🔥 {n} stacks', splitPop: 'Split!', holePop: 'Hole!',
       pinInfoFire: 'Red-hot pin: a ball that touches it adds +1 burn when it deals damage (stacks with Red-hot Marble)',
       pinInfoSpike: 'Spiral spike: a ball that touches it bounces off and splits into two smaller balls (split balls cannot split again)',
@@ -5505,6 +5505,33 @@
     }
     recordsBody.append(list);
   }
+  // 天賦說明：效果 + 這個天賦專屬的過關獎勵
+  const talentInfoDlg = $('talent-info');
+  function openTalentInfo(id) {
+    if (!talentInfoDlg) return;
+    Sound.init();
+    Sound.clunk();
+    $('talent-info-name').textContent = TALENTS[id].name[lang];
+    const body = $('talent-info-body');
+    body.textContent = '';
+    const p = document.createElement('p');
+    p.textContent = TALENTS[id].desc[lang];
+    const h = document.createElement('h3');
+    h.textContent = t('talentInfoBoons');
+    const list = document.createElement('ul');
+    list.className = 'ti-boons';
+    for (const k of Object.keys(BOONS).filter(k => BOONS[k].talent === id)) {
+      const li = document.createElement('li');
+      const n = document.createElement('b');
+      n.textContent = BOONS[k].name[lang];
+      li.append(n, '：' + BOONS[k].desc[lang]);
+      list.append(li);
+    }
+    body.append(p, h, list);
+    talentInfoDlg.showModal();
+  }
+  if (talentInfoDlg) talentInfoDlg.addEventListener('click', e => { if (e.target === talentInfoDlg) talentInfoDlg.close(); });
+
   function openRecords() {
     if (!recordsDlg) return;
     Sound.init();
@@ -5670,16 +5697,17 @@
     head.className = 'rw-head';
     head.textContent = t('talentTitle');
     ovRewards.append(head);
+    // 卡片只放名稱，旁邊的「說明」按鈕跳出效果和專屬獎勵
     for (const id of TALENT_IDS) {
+      const row = document.createElement('div');
+      row.className = 'rw-talent-row';
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'rw-card' + (id === talentPick ? ' selected' : '');
       b.setAttribute('aria-pressed', String(id === talentPick));
       const name = document.createElement('b');
       name.textContent = TALENTS[id].name[lang];
-      const desc = document.createElement('span');
-      desc.textContent = TALENTS[id].desc[lang];
-      b.append(name, desc);
+      b.append(name);
       b.addEventListener('click', () => {
         Sound.init();
         Sound.clunk();
@@ -5687,7 +5715,14 @@
         try { localStorage.setItem('candy-pinball-talent', id); } catch (e) { /* 無痕模式 */ }
         refreshOverlay();
       });
-      ovRewards.append(b);
+      const info = document.createElement('button');
+      info.type = 'button';
+      info.className = 'btn rw-info';
+      info.textContent = t('talentInfo');
+      info.setAttribute('aria-label', t('talentInfo') + '：' + TALENTS[id].name[lang]);
+      info.addEventListener('click', () => openTalentInfo(id));
+      row.append(b, info);
+      ovRewards.append(row);
     }
     // 下面放「闖關紀錄」按鈕
     const rec = document.createElement('button');

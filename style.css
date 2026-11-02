@@ -488,6 +488,11 @@ body[data-mode="adv"] .overlay-card .link { display: none; }
 .rw-card .rw-stat { font-size: 13px; font-style: normal; color: #86efac; }
 .rw-bar { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
 .rw-reroll { justify-self: center; padding: 8px 20px; font-size: 14px; }
+.rw-talent-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.rw-talent-row .rw-card { justify-content: center; }
+.rw-info { padding: 6px 12px; font-size: 14px; }
+.ti-boons { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ti-boons b { color: #fb923c; }
 .st-row { display: flex; align-items: center; gap: 10px; }
 .st-label { flex-shrink: 0; min-width: 5em; color: var(--gold); font-weight: bold; font-size: 14px; }
 .st-value { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 15px; }
