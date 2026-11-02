@@ -200,6 +200,7 @@
   const SPIDER_WEBS = 2;       // 蜘蛛：每回合結幾張網
   const GHOST_DODGE = 0.15;    // 幽靈：攻擊燈的珠被閃避的機率
   const PUMPKIN_HEAL = 0.05;   // 南瓜頭：每顆珠進南瓜燈回最大 HP 的幾成
+  const BANDAGE_CAP = 3;       // 木乃伊：一條繃帶最多纏住幾顆珠（纏滿才失效）
   const LICH_REFILL = 3;       // 巫妖：每幾回合補滿魔法護盾
   const ZOMBIE_REGEN = 0.03;   // 殭屍：每回合結束回最大 HP 的幾成
   const VAMPIRE_HEAL = 2;      // 吸血鬼：每顆沒落進任何燈的珠回幾血
@@ -210,7 +211,7 @@
     spider: { name: { zh: '結網', en: 'Web' }, desc: { zh: `每回合在 ${SPIDER_WEBS} 根普通釘子上結網，第一顆碰到的珠會被黏住（之後的珠會被它彈開），落珠結束後被蜘蛛收走`, en: `Each round it webs ${SPIDER_WEBS} normal pins. The first ball to touch a web sticks there (later balls bounce off it) and is taken when the round ends` } },
     ghost: { name: { zh: '穿透', en: 'Phase' }, desc: { zh: `落進攻擊燈的珠有 ${GHOST_DODGE * 100}% 機率被閃避（燃燒、外傷照算）`, en: `Balls in attack lights have a ${GHOST_DODGE * 100}% chance to miss (burn and grind still hit)` } },
     pumpkin: { name: { zh: '南瓜燈', en: 'Pumpkin Lamp' }, desc: { zh: `每回合隨機一排變成南瓜燈（不會亮成攻擊燈或補珠燈），每進一顆珠，南瓜頭回 ${PUMPKIN_HEAL * 100}% 血`, en: `Each round a random lane becomes a pumpkin lamp (never an attack or refill light). Each ball in it heals ${PUMPKIN_HEAL * 100}% HP` } },
-    mummy: { name: { zh: '繃帶', en: 'Bandage' }, desc: { zh: '每回合在兩根釘子之間拉一條繃帶，第一顆碰到的珠會被黏住（之後的珠會被它彈開），落珠結束後被木乃伊收走', en: 'Each round it ties a bandage between two pins. The first ball to touch it sticks there (later balls bounce off it) and is taken when the round ends' } },
+    mummy: { name: { zh: '繃帶', en: 'Bandage' }, desc: { zh: `每回合在兩根釘子之間拉一條繃帶，碰到的珠會被纏住（最多 ${BANDAGE_CAP} 顆，纏滿才失效；其他珠撞到被纏住的珠會彈開），落珠結束後被木乃伊收走`, en: `Each round it ties a bandage between two pins. Balls that touch it get stuck (up to ${BANDAGE_CAP}; other balls bounce off them) and are taken when the round ends` } },
     skeleton: { name: { zh: '骨盾', en: 'Bone Shield' }, desc: { zh: '每回合有一面骨盾，擋下第一顆造成傷害的珠（燃燒、外傷不擋）', en: 'Each round a bone shield blocks the first ball that would deal damage (burn and grind are not blocked)' } },
     dragon: { name: { zh: '噴火', en: 'Fire Breath' }, desc: { zh: '每回合定燈後燒掉一顆燈（攻擊燈或補珠燈），那一排這回合不能用', en: 'After you lock each round, it burns one light (attack or refill); that lane is dead this round' } },
     hound: { name: { zh: '撲火', en: 'Fireproof' }, desc: { zh: '受到的燃燒傷害減半', en: 'Takes half damage from burn' } },
@@ -2748,7 +2749,7 @@
         const near = normal.map(i => ALL_PINS[i]).filter(q => q !== a && Math.hypot(q.x - a.x, q.y - a.y) < 64);
         if (!near.length) continue;
         const b = near[Math.floor(Math.random() * near.length)];
-        round.bandage = { ax: a.x, ay: a.y, bx: b.x, by: b.y, used: false, t: -0.3 };   // t：甩出去的動畫時間，到 WEB_FLY 才有效
+        round.bandage = { ax: a.x, ay: a.y, bx: b.x, by: b.y, n: 0, t: -0.3 };   // n：纏住幾顆了   // t：甩出去的動畫時間，到 WEB_FLY 才有效
         break;
       }
     }
@@ -3404,10 +3405,10 @@
     for (const s of walls) impact = Math.max(impact, collideWall(b, s));
     // 木乃伊的繃帶：第一顆碰到的珠黏住
     const bd = round.bandage;
-    if (bd && !bd.used && bd.t >= WEB_FLY && multiBall() && b.fired) {
+    if (bd && bd.n < BANDAGE_CAP && bd.t >= WEB_FLY && multiBall() && b.fired) {
       const dx = bd.bx - bd.ax, dy = bd.by - bd.ay;
       const k = Math.max(0, Math.min(1, ((b.x - bd.ax) * dx + (b.y - bd.ay) * dy) / (dx * dx + dy * dy)));
-      if (Math.hypot(b.x - (bd.ax + dx * k), b.y - (bd.ay + dy * k)) < ballR(b) + 1.5) { bd.used = true; b.band = true; stickBall(b); return; }
+      if (Math.hypot(b.x - (bd.ax + dx * k), b.y - (bd.ay + dy * k)) < ballR(b) + 1.5) { bd.n++; b.band = true; stickBall(b); return; }
     }
     // 發射軌道底部（彈簧頭）
     if (b.x > LANE_X && b.y + BALL_R > state.floorY) {
@@ -5519,7 +5520,7 @@
         drawBandage(m.x, m.y, m.x + (bd.ax - m.x) * e, m.y + (bd.ay - m.y) * e, false);
         drawBandage(m.x, m.y, m.x + (bd.bx - m.x) * e, m.y + (bd.by - m.y) * e, false);
       } else {
-        drawBandage(bd.ax, bd.ay, bd.bx, bd.by, bd.used);
+        drawBandage(bd.ax, bd.ay, bd.bx, bd.by, bd.n >= BANDAGE_CAP);   // 纏滿了變淡
       }
     }
     if (skill() === 'lich' && adv.shields) {
