@@ -2100,16 +2100,21 @@
     }
     adv.rewards = pool.slice(0, 3);
   }
+  // 重骰的費用也算還在出珠口排隊的彈珠（讀檔後彈珠是從出珠口重新掉出來的）
+  const rerollBalls = () => state.credits + state.payoutQueue;
   function rerollRewards() {
     Sound.init();
-    if (!adv.rewards || state.credits < adv.rerollCost) { Sound.error(); return; }
-    state.credits -= adv.rerollCost;
+    if (!adv.rewards || rerollBalls() < adv.rerollCost) { Sound.error(); return; }
+    const fromQueue = Math.min(state.payoutQueue, adv.rerollCost);
+    state.payoutQueue -= fromQueue;
+    state.credits -= adv.rerollCost - fromQueue;
     if (tray.length > state.credits) tray.length = state.credits;
     adv.lost += adv.rerollCost;
     adv.rerollCost++;
     rollRewards();
     Sound.clunk();
     refreshOverlay();
+    saveRun();          // 重新整理不能把重骰的彈珠和次數拿回來
   }
   function pickReward(id) {
     Sound.init();
@@ -5677,7 +5682,7 @@
     re.type = 'button';
     re.className = 'btn rw-reroll';
     re.textContent = t('rewardReroll', { n: adv.rerollCost });
-    re.disabled = state.credits < adv.rerollCost;
+    re.disabled = rerollBalls() < adv.rerollCost;
     re.addEventListener('click', rerollRewards);
     const sb = document.createElement('button');
     sb.type = 'button';
