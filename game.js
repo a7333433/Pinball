@@ -2125,6 +2125,8 @@
 
   function defeatMonster() {
     adv.status = 'won';
+    webShots.length = 0;          // 還在飛的蜘蛛網、繃帶也不要了
+    if (round.bandage && round.bandage.t < WEB_FLY) round.bandage = null;
     adv.dieT = 1.4;
     adv.endT = 1.8;
     adv.wins++;
@@ -2712,7 +2714,8 @@
     round.struck = false;      // 蝙蝠：這回合有沒有珠造成傷害
     round.bone = skill() === 'skeleton';
     round.skillMsg = null;
-    if (skill() !== 'spider' && skill() !== 'mummy') return;
+    // 怪物已經被打倒（過關後開的下一回合）就不再吐網、甩繃帶
+    if (adv.status !== 'playing' || (skill() !== 'spider' && skill() !== 'mummy')) return;
     const normal = normalPinIdx();
     const pick = list => list.splice(Math.floor(Math.random() * list.length), 1)[0];
     if (skill() === 'spider') {
