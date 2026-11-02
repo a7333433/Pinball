@@ -448,17 +448,6 @@ body[data-mode="adv"] .overlay-card .link { display: none; }
   margin-top: 8px;
 }
 .ov-restart[hidden] { display: none; }
-.ov-status {
-  width: 100%;
-  padding: 10px 12px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 2px solid rgba(255, 209, 102, 0.5);
-  border-radius: 10px;
-  display: grid;
-  gap: 8px;
-  text-align: left;
-}
-.ov-status[hidden] { display: none; }
 /* ---- 過關獎勵 ---- */
 .ov-rewards { width: 100%; display: grid; gap: 8px; }
 .ov-rewards[hidden] { display: none; }

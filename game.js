@@ -1020,7 +1020,7 @@
       resumeStage: '第 {stage}/{total} 關', resumeChest: '第 {stage} 關後的寶箱',
       resumeBtn: '繼續冒險', resumeRestart: '重新開始', resumeMsg: '歡迎回來！從第 {stage} 關繼續冒險',
       stageClearTitle: '打倒了{name}！', nextStage: '下一關',
-      statusBalls: '目前彈珠', statusItems: '已擁有道具', statusBallsN: '{n} 顆', statusNoItems: '無',
+      statusItems: '已擁有道具', statusBallsN: '{n} 顆', statusNoItems: '無',
       campaignClearTitle: '全部通關！', campaignClearText: '你一路打倒了全部 {total} 隻怪物，最後還剩 {left} 顆彈珠！', campaignAgain: '再闖一次',
       campaignLoseTitle: '闖關失敗…', campaignLoseText: '在第 {stage} 關被{name}擋下了，要從第 1 關重新開始。', campaignRetry: '從第 1 關重來',
       campaignAppear: '第 {stage} 關：野生的{name}出現了！HP {hp}，防禦 {def}',
@@ -1168,7 +1168,7 @@
       resumeStage: 'Stage {stage}/{total}', resumeChest: 'Treasure after stage {stage}',
       resumeBtn: 'Continue', resumeRestart: 'Start over', resumeMsg: 'Welcome back! Continuing from stage {stage}',
       stageClearTitle: 'You beat the {name}!', nextStage: 'Next stage',
-      statusBalls: 'Balls', statusItems: 'Items', statusBallsN: '{n}', statusNoItems: 'None',
+      statusItems: 'Items', statusBallsN: '{n}', statusNoItems: 'None',
       campaignClearTitle: 'Adventure cleared!', campaignClearText: 'You defeated all {total} monsters with {left} balls to spare!', campaignAgain: 'Play again',
       campaignLoseTitle: 'Adventure failed…', campaignLoseText: 'The {name} stopped you at stage {stage}. Start over from stage 1.', campaignRetry: 'Restart from stage 1',
       campaignAppear: 'Stage {stage}: a wild {name} appears! HP {hp}, DEF {def}',
@@ -5558,7 +5558,7 @@
   // ---- 遊戲模式的畫面切換 ----
   const ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('overlay-coin'), ovItem = $('ov-item');
   const ovRestart = $('ov-restart');
-  const ovStatus = $('ov-status'), ovRewards = $('ov-rewards');
+  const ovRewards = $('ov-rewards');
 
   // 寶箱道具：同一個稀有度的 3 張道具卡片選 1 張
   function renderLoot() {
@@ -5733,40 +5733,6 @@
     ovRewards.append(rec);
   }
 
-  // 過關卡片的「目前狀態」：彈珠數、背包裡的道具
-  function renderStatus() {
-    ovStatus.textContent = '';
-    const row = (label, ...content) => {
-      const r = document.createElement('div');
-      r.className = 'st-row';
-      const l = document.createElement('span');
-      l.className = 'st-label';
-      l.textContent = label;
-      const v = document.createElement('div');
-      v.className = 'st-value';
-      v.append(...content);
-      r.append(l, v);
-      ovStatus.append(r);
-    };
-    row(t('statusBalls'), t('statusBallsN', { n: state.credits + state.payoutQueue }));
-    const ids = ITEM_IDS.filter(id => adv.items[id] > 0);
-    const items = ids.map(id => {
-      const chip = document.createElement('span');
-      chip.className = 'st-item';
-      chip.title = itemName(id);
-      chip.append(itemIcon(id, 2), '×' + adv.items[id]);
-      return chip;
-    });
-    row(t('statusItems'), ...(items.length ? items : [t('statusNoItems')]));
-    const boons = BOON_IDS.filter(id => boon(id) > 0).map(id => {
-      const chip = document.createElement('span');
-      chip.className = 'st-item';
-      chip.title = BOONS[id].desc[lang];
-      chip.textContent = `${BOONS[id].name[lang]} ×${boon(id)}`;
-      return chip;
-    });
-    row(t('statusBoons'), ...(boons.length ? boons : [t('statusNoItems')]));
-  }
   const pickEl = $('monster-pick');
   const planEl = $('adv-plan');
   if (planEl) {
@@ -5913,10 +5879,6 @@
       if (midRun && adv.lootChoices) renderLoot();
       else if (midRun && adv.rewards) renderRewards();
       else if (talents) renderTalents();
-    }
-    if (ovStatus) {
-      ovStatus.hidden = !midRun;
-      if (midRun) renderStatus();
     }
     // 寶箱結果：顯示拿到的道具圖示
     if (ovItem) {
