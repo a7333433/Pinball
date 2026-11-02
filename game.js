@@ -1078,7 +1078,8 @@
       recTitle: '闖關紀錄', recOpen: '闖關紀錄', recSecBest: '最佳紀錄', recSecRecent: '最近 10 次',
       recRuns: '挑戰次數', recRunsN: '{runs} 次（全部通關 {clears} 次）', recStage: '最遠', recStageN: '打倒 {n}/{total} 隻',
       recMinRounds: '最少回合通關', recRoundsN: '{n} 回合', recMaxLeft: '通關最多剩珠',
-      recMaxDmg: '單回合最大傷害', recMaxGain: '單回合最大補珠', recNone: '還沒有紀錄，選這個天賦去冒險吧！',
+      recMaxDmg: '單回合最大傷害', recMaxGain: '單回合最大補珠', recBallDmg: '單顆最大傷害', recBallGain: '單顆最大補珠',
+      recRunBall: '・單顆最大傷害 {dmg}・單顆最大補珠 {gain} 顆', recNone: '還沒有紀錄，選這個天賦去冒險吧！',
       recClear: '全部通關！', recStopped: '打倒 {n}/{total} 隻',
       recRunLine: '{rounds} 回合・最後持有 {left} 顆・總共花費 {spent} 顆・單回合最大傷害 {dmg}・單回合最大補珠 {gain} 顆',
       stSecBalls: '彈珠', stSecAttack: '攻擊（每顆珠）', stSecOther: '其他',
@@ -1226,7 +1227,8 @@
       recTitle: 'Run records', recOpen: 'Run records', recSecBest: 'Best', recSecRecent: 'Last 10 runs',
       recRuns: 'Runs', recRunsN: '{runs} ({clears} full clears)', recStage: 'Furthest', recStageN: '{n}/{total} monsters',
       recMinRounds: 'Fewest rounds (clear)', recRoundsN: '{n} rounds', recMaxLeft: 'Most balls left (clear)',
-      recMaxDmg: 'Best round damage', recMaxGain: 'Best round refill', recNone: 'No runs yet. Pick this talent and go!',
+      recMaxDmg: 'Best round damage', recMaxGain: 'Best round refill', recBallDmg: 'Best single-ball damage', recBallGain: 'Best single-ball refill',
+      recRunBall: ' · best ball damage {dmg} · best ball refill {gain}', recNone: 'No runs yet. Pick this talent and go!',
       recClear: 'Full clear!', recStopped: '{n}/{total} monsters',
       recRunLine: '{rounds} rounds · {left} balls left · {spent} spent · best round damage {dmg} · best round refill {gain}',
       stSecBalls: 'Balls', stSecAttack: 'Attack (per ball)', stSecOther: 'Other',
@@ -1800,7 +1802,14 @@
   // ===== 各天賦的闖關紀錄 =====
   const RECORDS_KEY = 'candy-pinball-run-records';
   const RECENT_MAX = 10;
-  const newRunStats = () => ({ rounds: 0, spent: 0, maxDmg: 0, maxGain: 0, done: false });
+  const newRunStats = () => ({ rounds: 0, spent: 0, maxDmg: 0, maxGain: 0, ballDmg: 0, ballGain: 0, done: false });
+  // 單顆彈珠的最大傷害（攻擊燈；外傷滾珠落進補珠燈的外傷也算）、最大補珠
+  function noteBall(dmg, gain) {
+    const r = mode === 'adv' && adv.run;
+    if (!r) return;
+    r.ballDmg = Math.max(r.ballDmg ?? 0, dmg);
+    r.ballGain = Math.max(r.ballGain ?? 0, gain);
+  }
   let runRecords = {};
   try { runRecords = JSON.parse(localStorage.getItem(RECORDS_KEY)) || {}; } catch (e) { runRecords = {}; }
   const talentRecord = id => runRecords[id] || { runs: 0, clears: 0, best: {}, recent: [] };
@@ -1814,7 +1823,7 @@
     const clear = adv.status === 'won' && adv.monsterIdx === LAST_STAGE;
     const stage = adv.status === 'won' ? adv.monsterIdx + 1 : adv.monsterIdx;   // 打倒幾隻怪物
     const left = adv.status === 'lost' ? 0 : state.credits + state.payoutQueue;
-    const entry = { date: Date.now(), clear, stage, rounds: r.rounds, left, spent: r.spent, maxDmg: r.maxDmg, maxGain: r.maxGain };
+    const entry = { date: Date.now(), clear, stage, rounds: r.rounds, left, spent: r.spent, maxDmg: r.maxDmg, maxGain: r.maxGain, ballDmg: r.ballDmg ?? 0, ballGain: r.ballGain ?? 0 };
     const rec = talentRecord(adv.talent), b = rec.best;
     rec.runs++;
     if (clear) {
@@ -1825,6 +1834,8 @@
     b.stage = Math.max(b.stage ?? 0, stage);
     b.maxDmg = Math.max(b.maxDmg ?? 0, r.maxDmg);
     b.maxGain = Math.max(b.maxGain ?? 0, r.maxGain);
+    b.ballDmg = Math.max(b.ballDmg ?? 0, entry.ballDmg);
+    b.ballGain = Math.max(b.ballGain ?? 0, entry.ballGain);
     rec.recent.unshift(entry);
     rec.recent.length = Math.min(rec.recent.length, RECENT_MAX);
     runRecords[adv.talent] = rec;
@@ -2035,6 +2046,7 @@
     if (fire && mode === 'adv' && !adv.chest) adv.burn++;
     adv.hp = Math.max(0, adv.hp - dmg);
     round.dmg += dmg;
+    if (!adv.chest) noteBall(dmg, 0);
     adv.hitT = 0.5;
     adv.pops.push({ text: '-' + dmg, t: 0, color: crit ? '#ffd166' : undefined, big: crit });
     const pop = t(crit ? 'critPop' : 'dmgPop', { d: dmg }) + (chain ? ' ' + t('chainPop', { c: chain }) : '')
@@ -2396,6 +2408,7 @@
   const PLACE_ZONE = { x0: B.left + 12, x1: LANE_X - 12, y0: 290, y1: SLOT_TOP - 20 };
   const inPlaceZone = p => p.x > PLACE_ZONE.x0 && p.x < PLACE_ZONE.x1 && p.y > PLACE_ZONE.y0 && p.y < PLACE_ZONE.y1;
   function placeBall(p) {
+    if (!round.placing || round.launched >= shots()) return;
     if (!inPlaceZone(p)) { say('shakeWhere'); Sound.error(); return; }
     // 拿發射口那顆來放；全部放完才結束放珠
     const i = balls.findIndex(atShooter);
@@ -2804,6 +2817,7 @@
       round.refunded = true;
       round.hits++;
       round.gain += n;
+      noteBall(0, n);
       state.payoutQueue += n;
       adv.lost = Math.max(0, adv.lost - n);
       const pop = t('refillPop', { n }) + (boost ? ' ' + t('boostPop', { x: BOOST_MULT[boost] }) : '');
@@ -2814,6 +2828,7 @@
       if (hasTalent('trauma')) {
         const dmg = Math.round(n * traumaRate());
         extraDamage(dmg, '#f472b6');
+        noteBall(dmg, 0);
         if (boon('shatter') && !round.shattered && adv.monster && monsterDef() > 0) {
           round.shattered = true;
           adv.defDown = Math.min(adv.monster.def, adv.defDown + boon('shatter'));
@@ -5486,6 +5501,8 @@
     row('recMaxLeft', best.maxLeft != null ? balls(best.maxLeft) : '-');
     row('recMaxDmg', best.maxDmg ? String(best.maxDmg) : '-');
     row('recMaxGain', best.maxGain ? balls(best.maxGain) : '-');
+    row('recBallDmg', best.ballDmg ? String(best.ballDmg) : '-');
+    row('recBallGain', best.ballGain ? balls(best.ballGain) : '-');
     h('recSecRecent');
     if (!rec.recent.length) {
       const p = document.createElement('p');
@@ -5502,7 +5519,8 @@
       const date = new Date(e.date);
       head.textContent = `${date.getMonth() + 1}/${date.getDate()} ` + (e.clear ? t('recClear') : t('recStopped', { n: e.stage, total: MONSTERS.length }));
       const info = document.createElement('small');
-      info.textContent = t('recRunLine', { rounds: e.rounds, left: e.left, spent: e.spent, dmg: e.maxDmg, gain: e.maxGain });
+      info.textContent = t('recRunLine', { rounds: e.rounds, left: e.left, spent: e.spent, dmg: e.maxDmg, gain: e.maxGain })
+        + (e.ballDmg != null ? t('recRunBall', { dmg: e.ballDmg, gain: e.ballGain }) : '');   // 舊紀錄沒有單顆數值
       d.append(head, info);
       list.append(d);
     }
