@@ -1023,7 +1023,7 @@
       holdToFire: '輕點檯面不會發射：按住檯面拉彈簧，放開才發射',
       skillTag: '。技能「{s}」（點怪物螢幕看說明）', skillInfo: '技能「{s}」：{d}',
       dragonRed: '攻擊燈', dragonGreen: '補珠燈', dragonTag: '。小惡龍噴火燒掉了一顆{kind}！', dragonPop: '燒掉了！',
-      webPop: '黏住了！', bandagePop: '被纏住了！', stuckTaken: '收走', wardPop: '護盾', wardMsg: '魔法護盾擋下了這顆珠（還剩 {n} 面）',
+      webPop: '黏住了！', reelMsg: '蜘蛛把黏著 {n} 顆珠的網收回去了！', bandagePop: '被纏住了！', stuckTaken: '收走', wardPop: '護盾', wardMsg: '魔法護盾擋下了這顆珠（還剩 {n} 面）',
       wardRefillPop: '護盾補滿！', wardRefill: '巫妖的魔法護盾全部補滿了！',
       healPop: '回 {n} 血', pumpkinMsg: '珠掉進南瓜燈，南瓜頭回了 {n} 血', dodgePop: '閃避', ghostMsg: '幽靈穿過去了，這顆珠沒打到',
       boneScreen: '骨盾', bonePop: '骨盾擋下', boneMsg: '骨盾擋下了這顆珠的 {dmg} 點傷害（下回合再長出來）',
@@ -1181,7 +1181,7 @@
       holdToFire: 'A quick tap does not shoot: hold on the board to pull the spring, then let go',
       skillTag: '. Skill: {s} (tap the monster screen for details)', skillInfo: 'Skill {s}: {d}',
       dragonRed: 'attack light', dragonGreen: 'refill light', dragonTag: '. The Baby Dragon burned one {kind}!', dragonPop: 'Burned!',
-      webPop: 'Stuck!', bandagePop: 'Tangled!', stuckTaken: 'Taken', wardPop: 'Ward', wardMsg: 'A magic ward blocked that ball ({n} left)',
+      webPop: 'Stuck!', reelMsg: 'The spider reels in its web with {n} ball(s)!', bandagePop: 'Tangled!', stuckTaken: 'Taken', wardPop: 'Ward', wardMsg: 'A magic ward blocked that ball ({n} left)',
       wardRefillPop: 'Wards back!', wardRefill: 'The Lich restored all magic wards!',
       healPop: '+{n} HP', pumpkinMsg: 'Into the pumpkin lamp: the Pumpkin Head heals {n} HP', dodgePop: 'Miss', ghostMsg: 'The ghost phased through: that ball missed',
       boneScreen: 'BONE', bonePop: 'Blocked', boneMsg: 'The bone shield blocked {dmg} damage (it grows back next round)',
@@ -2539,7 +2539,7 @@
     state.power = 0;
     state.floorY = SHOOTER_FLOOR;
     // 這一局還沒結算就切換：投下去的珠和強化孔的珠都退回
-    if (round.phase === 'select' || round.phase === 'bet' || round.phase === 'flying') {
+    if (round.phase === 'select' || round.phase === 'bet' || round.phase === 'flying' || round.phase === 'reel') {
       state.credits += round.betPaid + round.multPaid;
       if (mode === 'adv') {
         adv.lost = Math.max(0, adv.lost - round.betPaid - round.multPaid);
@@ -2914,6 +2914,10 @@
     if (!round.hourglass && slot >= 0 && adv.status === 'playing') resolveBall(slot, !!b.fire);
     if (adv.status === 'won') { endEarly(); return; }
     if (round.launched < shots() || balls.some(x => !x.stuck)) return;    // 還有珠沒發射或還在檯面上
+    if (startReel()) return;      // 蜘蛛先把黏著珠的網收回去，收完再結算
+    afterLanding();
+  }
+  function afterLanding() {
     collectStuck();
     if (round.hourglass) {
       round.phase = 'choose';
@@ -2922,6 +2926,42 @@
       return;
     }
     finishRound();
+  }
+
+  // 蜘蛛收網：黏著珠的網連珠一起被拉回怪物螢幕（REEL_T 秒），收完才結算這回合
+  const REEL_T = 0.8;
+  const spiderMouth = () => ({ x: SCREEN.x + SCREEN.w / 2, y: SCREEN.y + 70 });
+  function startReel() {
+    const stuck = balls.filter(b => b.stuck && b.webPin);
+    if (skill() !== 'spider' || !stuck.length || round.phase === 'reel') return false;
+    round.phase = 'reel';
+    round.reelT = 0;
+    for (const b of stuck) {
+      b.reel = { x0: b.x, y0: b.y };
+      b.webPin.web = false;          // 網跟著珠一起走
+    }
+    say('reelMsg', { n: stuck.length });
+    Sound.tone(900, 0.5, 'triangle', 0.05, 0, 300);
+    return true;
+  }
+  function updateReel(dt) {
+    round.reelT += dt;
+    const k = Math.min(1, round.reelT / REEL_T), e = k * k * (3 - 2 * k), m = spiderMouth();
+    for (const b of balls) {
+      if (!b.reel) continue;
+      b.x = b.reel.x0 + (m.x - b.reel.x0) * e;
+      b.y = b.reel.y0 + (m.y - b.reel.y0) * e;
+    }
+    if (k < 1) return;
+    // 收進嘴裡：拿掉珠，接著照常結算
+    for (const b of balls.filter(x => x.reel)) {
+      balls.splice(balls.indexOf(b), 1);
+      round.landed.push(-2);
+    }
+    adv.hitT = 0.25;
+    Sound.tone(180, 0.12, 'square', 0.06);
+    round.phase = 'flying';
+    afterLanding();
   }
 
   // 蜘蛛網、繃帶黏住的珠：落珠都結束後被怪物收走（算沒中）
@@ -3291,7 +3331,7 @@
         continue;
       }
       const hit = collideCircle(b, p.x, p.y, p.kind ? SPECIAL_R : PIN_R, p.kind === 'spike' ? 0.95 : 0.5);
-      if (hit && p.web && !p.webUsed && multiBall() && b.fired) { p.webUsed = true; stickBall(b); return; }
+      if (hit && p.web && !p.webUsed && multiBall() && b.fired) { p.webUsed = true; b.webPin = p; stickBall(b); return; }
       if (hit && p.kind && multiBall() && b.fired) pinEffect(b, p);
       impact = Math.max(impact, hit);
     }
@@ -3472,6 +3512,7 @@
       adv.run.maxGain = Math.max(adv.run.maxGain, round.gain);
     }
     if (webShots.length) updateWebShots(dt);
+    if (round.phase === 'reel') updateReel(dt);
     if (round.phase === 'burn') updateBurn(dt);
     if (round.phase === 'win' || round.phase === 'lose' || round.phase === 'rewind') {
       round.resetT -= dt;
@@ -4744,7 +4785,7 @@
     // 檯面每一排的 LED
     const chest = chestStage();
     // 落到珠的那幾排：中了閃燈、沒中蓋一層淡白
-    const showLand = round.phase === 'win' || round.phase === 'lose' || round.phase === 'flying' || round.phase === 'burn';
+    const showLand = round.phase === 'win' || round.phase === 'lose' || round.phase === 'flying' || round.phase === 'burn' || round.phase === 'reel';
     const landed = new Set(showLand ? round.landed : []);
     for (const i of round.lit) {
       const on = landed.has(i) ? blink : true;
@@ -5305,6 +5346,28 @@
       ctx.arc(x, y, 5, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
+    }
+    if (round.phase === 'reel') {
+      const m = spiderMouth();
+      for (const b of balls) {
+        if (!b.reel) continue;
+        ctx.strokeStyle = 'rgba(241,245,249,0.8)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(m.x, m.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(241,245,249,0.9)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        for (let k = 0; k < 8; k++) {
+          const a = k * Math.PI / 4 + round.reelT * 6;
+          ctx.moveTo(b.x, b.y);
+          ctx.lineTo(b.x + Math.cos(a) * 11, b.y + Math.sin(a) * 11);
+        }
+        ctx.arc(b.x, b.y, 9, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     }
     for (const p of pins) {
       if (!p.web) continue;
