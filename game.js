@@ -194,6 +194,24 @@
     trauma: { name: { zh: '外傷滾珠', en: 'Grinding Marble' }, desc: { zh: '落進補珠燈時照常補珠，另外造成等於補珠數的無視防禦傷害', en: 'Refill lights still pay out, and also deal damage equal to the balls refilled (ignores DEF)' } },
   };
   const TALENT_IDS = Object.keys(TALENTS);
+  // 怪物技能：key 是 MONSTERS 的索引（第幾關 − 1）
+  const MONSTER_SKILLS = { 2: 'bat', 3: 'spider', 4: 'ghost', 5: 'pumpkin', 7: 'mummy', 8: 'skeleton', 10: 'dragon', 11: 'hound', 13: 'lich' };
+  const BAT_HEAL = 5;          // 蝙蝠：這回合沒有珠造成傷害，回幾血
+  const SPIDER_WEBS = 2;       // 蜘蛛：每回合結幾張網
+  const GHOST_DODGE = 0.15;    // 幽靈：攻擊燈的珠被閃避的機率
+  const PUMPKIN_HEAL = 0.05;   // 南瓜頭：每顆珠進南瓜燈回最大 HP 的幾成
+  const LICH_REFILL = 3;       // 巫妖：每幾回合補滿魔法護盾
+  const SKILLS = {
+    bat: { name: { zh: '吸血', en: 'Leech' }, desc: { zh: `這回合沒有任何一顆珠造成傷害，回合結束回 ${BAT_HEAL} 血`, en: `If no ball deals damage this round, it heals ${BAT_HEAL} HP at round end` } },
+    spider: { name: { zh: '結網', en: 'Web' }, desc: { zh: `每回合在 ${SPIDER_WEBS} 根普通釘子上結網，第一顆碰到的珠會被黏住（之後的珠會被它彈開），落珠結束後被蜘蛛收走`, en: `Each round it webs ${SPIDER_WEBS} normal pins. The first ball to touch a web sticks there (later balls bounce off it) and is taken when the round ends` } },
+    ghost: { name: { zh: '穿透', en: 'Phase' }, desc: { zh: `落進攻擊燈的珠有 ${GHOST_DODGE * 100}% 機率被閃避（燃燒、外傷照算）`, en: `Balls in attack lights have a ${GHOST_DODGE * 100}% chance to miss (burn and grind still hit)` } },
+    pumpkin: { name: { zh: '南瓜燈', en: 'Pumpkin Lamp' }, desc: { zh: `這一關固定有一排南瓜燈（不會亮成攻擊燈或補珠燈），每進一顆珠，南瓜頭回 ${PUMPKIN_HEAL * 100}% 血`, en: `One lane is a pumpkin lamp for the whole stage (never an attack or refill light). Each ball in it heals ${PUMPKIN_HEAL * 100}% HP` } },
+    mummy: { name: { zh: '繃帶', en: 'Bandage' }, desc: { zh: '每回合在兩根釘子之間拉一條繃帶，第一顆碰到的珠會被黏住（之後的珠會被它彈開），落珠結束後被木乃伊收走', en: 'Each round it ties a bandage between two pins. The first ball to touch it sticks there (later balls bounce off it) and is taken when the round ends' } },
+    skeleton: { name: { zh: '骨盾', en: 'Bone Shield' }, desc: { zh: '每回合有一面骨盾，擋下第一顆造成傷害的珠（燃燒、外傷不擋）', en: 'Each round a bone shield blocks the first ball that would deal damage (burn and grind are not blocked)' } },
+    dragon: { name: { zh: '噴火', en: 'Fire Breath' }, desc: { zh: '每回合定燈後燒掉一顆燈（攻擊燈或補珠燈），那一排這回合不能用', en: 'After you lock each round, it burns one light (attack or refill); that lane is dead this round' } },
+    hound: { name: { zh: '撲火', en: 'Fireproof' }, desc: { zh: '受到的燃燒傷害減半', en: 'Takes half damage from burn' } },
+    lich: { name: { zh: '魔法護盾', en: 'Magic Ward' }, desc: { zh: `落獎區每一排上方都有魔法護盾，擋下第一顆落進那一排的珠；每 ${LICH_REFILL} 回合補滿`, en: `Every lane has a magic ward that blocks the first ball landing in it; wards refill every ${LICH_REFILL} rounds` } },
+  };
   let talentPick = 'alloy';
   try { const s = localStorage.getItem('candy-pinball-talent'); if (TALENTS[s]) talentPick = s; } catch (e) { /* 無痕模式 */ }
   // 道具的 12×12 像素圖示（背包、寶箱結果、說明、怪物螢幕都用這個）
@@ -1003,6 +1021,14 @@
       rolledBack: '力道不夠，鋼珠滾回來了，再按一次發射',
       lockFirst: '先按藍色按鈕定燈，再投珠發射',
       holdToFire: '輕點檯面不會發射：按住檯面拉彈簧，放開才發射',
+      skillTag: '。技能「{s}」（點怪物螢幕看說明）', skillInfo: '技能「{s}」：{d}',
+      dragonRed: '攻擊燈', dragonGreen: '補珠燈', dragonTag: '。小惡龍噴火燒掉了一顆{kind}！', dragonPop: '燒掉了！',
+      webPop: '黏住了！', bandagePop: '被纏住了！', stuckTaken: '收走', wardPop: '護盾', wardMsg: '魔法護盾擋下了這顆珠（還剩 {n} 面）',
+      wardRefillPop: '護盾補滿！', wardRefill: '巫妖的魔法護盾全部補滿了！',
+      healPop: '回 {n} 血', pumpkinMsg: '珠掉進南瓜燈，南瓜頭回了 {n} 血', dodgePop: '閃避', ghostMsg: '幽靈穿過去了，這顆珠沒打到',
+      boneScreen: '骨盾', bonePop: '骨盾擋下', boneMsg: '骨盾擋下了這顆珠的 {dmg} 點傷害（下回合再長出來）',
+      batMsg: '這回合沒打到，蝙蝠吸血回了 {n} 血', burnMsgHound: '燃燒！地獄犬抗火，傷害減半只受到 {dmg} 點（剩 {left} 層）',
+      hgWard: '被魔法護盾擋下', hgPumpkin: '掉進南瓜燈（南瓜頭回 {n} 血）', hgBone: '被骨盾擋下', hgStuck: '被黏住收走',
       betFirst: '請先投珠再按發射鈕',
       fired: '發射！', firedN: '發射！{n} 顆鋼珠一起出發',
       moreBalls: '另有 {n} 顆',
@@ -1153,6 +1179,14 @@
       rolledBack: 'Too weak, ball rolled back. Shoot again',
       lockFirst: 'Press blue to lock first',
       holdToFire: 'A quick tap does not shoot: hold on the board to pull the spring, then let go',
+      skillTag: '. Skill: {s} (tap the monster screen for details)', skillInfo: 'Skill {s}: {d}',
+      dragonRed: 'attack light', dragonGreen: 'refill light', dragonTag: '. The Baby Dragon burned one {kind}!', dragonPop: 'Burned!',
+      webPop: 'Stuck!', bandagePop: 'Tangled!', stuckTaken: 'Taken', wardPop: 'Ward', wardMsg: 'A magic ward blocked that ball ({n} left)',
+      wardRefillPop: 'Wards back!', wardRefill: 'The Lich restored all magic wards!',
+      healPop: '+{n} HP', pumpkinMsg: 'Into the pumpkin lamp: the Pumpkin Head heals {n} HP', dodgePop: 'Miss', ghostMsg: 'The ghost phased through: that ball missed',
+      boneScreen: 'BONE', bonePop: 'Blocked', boneMsg: 'The bone shield blocked {dmg} damage (it grows back next round)',
+      batMsg: 'No hits this round: the bat heals {n} HP', burnMsgHound: 'Burn! The hellhound only takes half: {dmg} damage ({left} left)',
+      hgWard: 'Blocked by a ward', hgPumpkin: 'Pumpkin lamp (heals {n} HP)', hgBone: 'Blocked by the bone shield', hgStuck: 'Stuck and taken',
       betFirst: 'Bet first, then shoot',
       fired: 'Fire!', firedN: 'Fire! {n} balls are on their way',
       moreBalls: '+{n} more',
@@ -1798,6 +1832,7 @@
       credits: state.credits + state.payoutQueue + unpaid,
       items: adv.items, boons: adv.boons, talent: adv.talent, rerollCost: adv.rerollCost,
       rewards: adv.rewards, loot: adv.loot, lootChoices: adv.lootChoices,
+      pumpkin: adv.pumpkin, shields: adv.shields, lichT: adv.lichT,
     };
     try { localStorage.setItem(RUN_KEY, JSON.stringify(data)); } catch (e) { /* 無痕模式 */ }
   }
@@ -1889,6 +1924,9 @@
     adv.rewards = d.rewards;
     adv.loot = d.loot;
     adv.lootChoices = d.lootChoices || null;
+    adv.pumpkin = d.pumpkin ?? -1;
+    adv.shields = d.shields || null;
+    adv.lichT = d.lichT || 0;
     adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = 0;
     adv.pops.length = 0;
     adv.pinSet = stagePins(d.idx);
@@ -1970,6 +2008,10 @@
     adv.burn = 0;
     adv.stageLit = adv.stageRefill = adv.stageBoost = adv.stageRefillBoost = adv.stageSuper = 0;
     adv.pinMods = {};
+    // 怪物技能：南瓜燈固定一排；巫妖的護盾全滿
+    adv.pumpkin = skill() === 'pumpkin' ? Math.floor(Math.random() * SLOT_COUNT) : -1;
+    adv.shields = skill() === 'lich' ? Array(SLOT_COUNT).fill(true) : null;
+    adv.lichT = 0;
     // 寶箱沿用前一關的釘子；自由挑戰每場都重新擺
     if (!adv.chest) growPins(idx);
     else syncPins();             // 寶箱沿用前一關的釘陣，但沒有特殊釘子
@@ -1977,12 +2019,18 @@
     state.started = true;
     newRound();
     refreshOverlay();
-    const info = { name: monsterName(), hp: adv.hp, def: monsterDef(), stage: idx + 1 };
+    const info = { name: monsterName(), hp: adv.hp, def: monsterDef(), stage: idx + 1, skill: skillName() };
     say(adv.chest ? 'chestAppear' : adv.campaign ? 'campaignAppear' : 'advAppear', info);
   }
 
   // 鹽酸會把防禦往下降
   const monsterDef = () => adv.monster ? Math.max(0, adv.monster.def - adv.defDown) : 0;
+  // 目前這隻怪物的技能（寶箱、經典模式沒有）
+  const skill = () => mode === 'adv' && adv.monster && !adv.chest ? MONSTER_SKILLS[adv.monsterIdx] || null : null;
+  const skillName = () => skill() ? SKILLS[skill()].name[lang] : '';
+  // 不能亮燈的排：南瓜燈、這回合被小惡龍燒掉的燈
+  const slotBlocked = i => mode === 'adv' && !adv.chest && (i === adv.pumpkin && skill() === 'pumpkin' || i === round.burnt);
+  const pumpkinLanes = () => skill() === 'pumpkin' && adv.pumpkin >= 0 ? 1 : 0;
   // 經典模式得珠 = 倍率 × 投珠數 × 每顆的基本傷害（平常 1，沉重彈珠每用一次 +1）
   const attackRaw = () => mult() * round.bet * (1 + round.heavy);
   // 攻擊力扣掉防禦才是實際傷害
@@ -2015,11 +2063,11 @@
   // 燒紅彈珠：回合結束時燃燒，之後層數減半
   function burnTick() {
     if (mode !== 'adv' || !adv.burn || adv.chest || adv.status !== 'playing') return false;
-    const dmg = adv.burn;
+    const hound = skill() === 'hound', dmg = hound ? Math.ceil(adv.burn / 2) : adv.burn;   // 地獄犬：燃燒傷害減半
     // 悶燒 n 層：保留 (n+1)/(n+2)，0 層就是減半
     adv.burn = Math.floor(adv.burn * (boon('smolder') + 1) / (boon('smolder') + 2));
     extraDamage(dmg, '#fb923c');
-    say('burnMsg', { dmg, left: adv.burn });
+    say(hound ? 'burnMsgHound' : 'burnMsg', { dmg, left: adv.burn });
     Sound.burn();
     return true;
   }
@@ -2045,6 +2093,16 @@
       setTimeout(() => Sound.snicker(), 250);
       return;
     }
+    // 骷髏：骨盾擋下這回合第一顆造成傷害的珠
+    if (round.bone && skill() === 'skeleton') {
+      round.bone = false;
+      adv.pops.push({ text: t('boneScreen'), t: 0, color: '#e5e7eb' });
+      popups.push({ x: px, y: SLOT_TOP - 16, text: t('bonePop'), t: 0, color: '#e5e7eb', big: true });
+      say('boneMsg', { dmg });
+      Sound.thud();
+      return;
+    }
+    round.struck = true;
     if (fire && mode === 'adv' && !adv.chest) adv.burn++;
     adv.hp = Math.max(0, adv.hp - dmg);
     round.dmg += dmg;
@@ -2206,7 +2264,7 @@
       case 'acid': if (monsterDef() === 0) return 'itemNoDef'; break;
       case 'hourglass': if (round.hourglass) return 'itemActive'; break;
       case 'board': if (!round.lit.size) return 'itemNoLit'; break;
-      case 'drink': if (round.refills.size >= SLOT_COUNT) return 'itemAllRefill'; break;
+      case 'drink': if (round.refills.size >= SLOT_COUNT - pumpkinLanes() - (round.burnt >= 0 ? 1 : 0)) return 'itemAllRefill'; break;
       case 'lighter': case 'file': if (!normalPinIdx().length) return 'itemNoPin'; break;
       case 'tissue': if (!openHoleIdx().length) return 'itemNoHole'; break;
       case 'key': if (adv.lost <= 0) return 'itemKeyEmpty'; break;
@@ -2333,7 +2391,7 @@
     drink() {
       // 11 排全部變成補珠燈；火焰燈、火焰補珠燈的強化留著
       const f = [...round.lit].filter(i => round.boost[i]).length;
-      for (let i = 0; i < SLOT_COUNT; i++) round.refills.add(i);
+      for (let i = 0; i < SLOT_COUNT; i++) if (!slotBlocked(i)) round.refills.add(i);
       round.lit.clear();
       say(f ? 'useDrinkFlame' : 'useDrink', { f });
       Sound.coin();
@@ -2378,7 +2436,7 @@
       if (round.phase === 'bet') {
         if (add) {
           const free = [];
-          for (let i = 0; i < SLOT_COUNT; i++) if (!round.lit.has(i) && !round.refills.has(i)) free.push(i);
+          for (let i = 0; i < SLOT_COUNT; i++) if (!round.lit.has(i) && !round.refills.has(i) && !slotBlocked(i)) free.push(i);
           if (free.length) round.lit.add(free[Math.floor(Math.random() * free.length)]);
         }
         superLights([...round.lit], 1);
@@ -2552,10 +2610,10 @@
   // 定燈後會有幾顆補珠燈：基本 1 顆 + 雷射筆（綠）+ 過關獎勵「補珠燈數」
   const refillTotal = () => 1 + round.extraRefill + boon('refillLight');
   // 燈已經亮滿：紅燈 + 補珠燈已經佔滿 11 排，雷射筆再加燈就會蓋掉別的顏色
-  const lightsFull = () => litCount() + refillTotal() >= SLOT_COUNT;
+  const lightsFull = () => litCount() + refillTotal() >= SLOT_COUNT - pumpkinLanes();
 
   function rollLit(n) {
-    const slots = [...Array(SLOT_COUNT).keys()];
+    const slots = [...Array(SLOT_COUNT).keys()].filter(i => chestStage() || !slotBlocked(i));
     for (let i = slots.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [slots[i], slots[j]] = [slots[j], slots[i]];
@@ -2581,7 +2639,7 @@
   function litCount() {
     if (chestStage()) return SLOT_COUNT;
     const bonus = mode === 'adv' ? round.extraLit + boon('litUp') : round.extraLit;
-    return Math.min(litFor(round.level) + bonus, SLOT_COUNT - 1 - round.extraRefill);
+    return Math.min(litFor(round.level) + bonus, SLOT_COUNT - 1 - round.extraRefill - pumpkinLanes());
   }
 
   function newRound() {
@@ -2605,6 +2663,7 @@
     round.crits = 0;          // 連鎖暴擊：這回合暴擊了幾次
     round.shattered = false;  // 碎甲：這回合降過防禦了沒
     adv.rescueSaid = false;
+    rollSkills();
     rollLit(litCount());
     syncRestBalls();
     saveRun();
@@ -2615,6 +2674,32 @@
       } else if (adv.status === 'intro') say('advPressStart');
     } else {
       say(state.credits > 0 || state.payoutQueue > 0 ? 'selectHint' : 'insertCoin');
+    }
+  }
+
+  // 怪物技能每回合的準備：蜘蛛網、繃帶、骨盾；小惡龍燒掉的燈在定燈後才決定
+  function rollSkills() {
+    for (const p of ALL_PINS) p.web = p.webUsed = false;
+    round.bandage = null;
+    round.burnt = -1;
+    round.struck = false;      // 蝙蝠：這回合有沒有珠造成傷害
+    round.bone = skill() === 'skeleton';
+    round.skillMsg = null;
+    if (skill() !== 'spider' && skill() !== 'mummy') return;
+    const normal = normalPinIdx();
+    const pick = list => list.splice(Math.floor(Math.random() * list.length), 1)[0];
+    if (skill() === 'spider') {
+      for (let n = SPIDER_WEBS; n > 0 && normal.length; n--) ALL_PINS[pick(normal)].web = true;
+    } else {
+      // 繃帶：隨機一根釘子，連到旁邊的另一根
+      for (let tries = 0; tries < 20 && normal.length; tries++) {
+        const a = ALL_PINS[normal[Math.floor(Math.random() * normal.length)]];
+        const near = normal.map(i => ALL_PINS[i]).filter(q => q !== a && Math.hypot(q.x - a.x, q.y - a.y) < 64);
+        if (!near.length) continue;
+        const b = near[Math.floor(Math.random() * near.length)];
+        round.bandage = { ax: a.x, ay: a.y, bx: b.x, by: b.y, used: false };
+        break;
+      }
     }
   }
 
@@ -2636,14 +2721,29 @@
     } else if (mode === 'adv') {
       // 定燈後，在沒亮燈的排裡隨機挑一排當補珠燈（雷射筆（綠）、過關獎勵「補珠燈數」會多挑幾排；沒空排就不再加，不會擠掉紅燈）
       const free = [];
-      for (let i = 0; i < SLOT_COUNT; i++) if (!round.lit.has(i)) free.push(i);
+      for (let i = 0; i < SLOT_COUNT; i++) if (!round.lit.has(i) && !slotBlocked(i)) free.push(i);
       for (let n = 1 + round.extraRefill + boon('refillLight'); n > 0 && free.length; n--) {
         round.refills.add(free.splice(Math.floor(Math.random() * free.length), 1)[0]);
       }
       upgradeLights([...round.refills], adv.stageRefillBoost);
+      // 小惡龍：噴火燒掉一顆燈（攻擊燈或補珠燈）
+      let burnt = '';
+      if (skill() === 'dragon') {
+        const lights = [...round.lit, ...round.refills];
+        if (lights.length) {
+          const s = lights[Math.floor(Math.random() * lights.length)];
+          burnt = t(round.lit.has(s) ? 'dragonRed' : 'dragonGreen');
+          round.lit.delete(s);
+          round.refills.delete(s);
+          round.boost[s] = 0;
+          round.burnt = s;
+          popups.push({ x: B.left + (s + 0.5) * SLOT_W, y: SLOT_TOP - 16, text: t('dragonPop'), t: 0, color: '#fb923c', big: true });
+          Sound.burn();
+        }
+      }
       const f1 = [...round.lit].filter(i => round.boost[i] === 1).length, f2 = [...round.lit].filter(i => round.boost[i] === 2).length;
       const fr = [...round.refills].filter(i => round.boost[i]).length;
-      say(f2 ? 'lockedAdvFlame2' : f1 ? 'lockedAdvFlame' : 'lockedAdv', { lit: round.lit.size, f: f1 + f2, f2, fr });
+      say(f2 ? 'lockedAdvFlame2' : f1 ? 'lockedAdvFlame' : 'lockedAdv', { lit: round.lit.size, f: f1 + f2, f2, fr, burnt });
     } else {
       say('locked', { mult: mult(), lit: round.lit.size });
     }
@@ -2657,7 +2757,9 @@
       + (vars.boost > 1 ? t('boostTag', { x: vars.boost }) : '')
       + (vars.boostRefill > 1 ? t('boostRefillTag', { x: vars.boostRefill }) : '')
       + (vars.fr ? t('flameRefillTag', { n: vars.fr }) : '')
-      + (vars.flame ? t(vars.flame2 ? 'flameBetTag2' : 'flameBetTag', { w: vars.flame, w2: vars.flame2 }) : '');
+      + (vars.flame ? t(vars.flame2 ? 'flameBetTag2' : 'flameBetTag', { w: vars.flame, w2: vars.flame2 }) : '')
+      + (vars.burnt ? t('dragonTag', { kind: vars.burnt }) : '')
+      + (vars.skill ? t('skillTag', { s: vars.skill }) : '');
     for (const el of msgEls) el.textContent = text;
     if (text !== msgText) { msgText = text; msgT = performance.now(); }
   }
@@ -2792,7 +2894,8 @@
     // 大冒險：每顆落下就結算（用了沙漏就等全部落下再一起預告）
     if (!round.hourglass && slot >= 0 && adv.status === 'playing') resolveBall(slot, !!b.fire);
     if (adv.status === 'won') { endEarly(); return; }
-    if (round.launched < shots() || balls.length) return;    // 還有珠沒發射或還在檯面上
+    if (round.launched < shots() || balls.some(x => !x.stuck)) return;    // 還有珠沒發射或還在檯面上
+    collectStuck();
     if (round.hourglass) {
       round.phase = 'choose';
       Sound.lock();
@@ -2802,9 +2905,50 @@
     finishRound();
   }
 
+  // 蜘蛛網、繃帶黏住的珠：落珠都結束後被怪物收走（算沒中）
+  function collectStuck() {
+    for (const b of balls.filter(x => x.stuck)) {
+      balls.splice(balls.indexOf(b), 1);
+      round.landed.push(-2);
+      popups.push({ x: b.x, y: b.y - 10, text: t('stuckTaken'), t: 0, color: '#e5e7eb' });
+    }
+  }
+  function stickBall(b) {
+    b.stuck = true;
+    b.vx = b.vy = 0;
+    popups.push({ x: b.x, y: b.y - 10, text: t(skill() === 'spider' ? 'webPop' : 'bandagePop'), t: 0, color: '#e5e7eb' });
+    Sound.thud();
+  }
+
   // 大冒險一顆珠的結果：攻擊燈造成傷害、補珠燈補珠、其他沒中
   function resolveBall(slot, fire = false) {
     const px = B.left + (slot + 0.5) * SLOT_W;
+    // 巫妖：這一排的魔法護盾擋下這顆珠（不算疊珠）
+    if (skill() === 'lich' && adv.shields && adv.shields[slot]) {
+      adv.shields[slot] = false;
+      popups.push({ x: px, y: SLOT_TOP - 16, text: t('wardPop'), t: 0, color: '#c4b5fd', big: true });
+      say('wardMsg', { n: adv.shields.filter(Boolean).length });
+      Sound.thud();
+      return;
+    }
+    // 南瓜頭：南瓜燈回血
+    if (skill() === 'pumpkin' && slot === adv.pumpkin) {
+      const n = Math.max(1, Math.round(adv.maxHp * PUMPKIN_HEAL));
+      adv.hp = Math.min(adv.maxHp, adv.hp + n);
+      adv.pops.push({ text: '+' + n, t: 0, color: '#4ade80' });
+      popups.push({ x: px, y: SLOT_TOP - 16, text: t('healPop', { n }), t: 0, color: '#fb923c' });
+      say('pumpkinMsg', { n });
+      Sound.miss();
+      return;
+    }
+    // 幽靈：落進攻擊燈也可能被閃避
+    if (skill() === 'ghost' && round.lit.has(slot) && Math.random() < GHOST_DODGE) {
+      popups.push({ x: px, y: SLOT_TOP - 16, text: t('dodgePop'), t: 0, color: '#cbd5e1' });
+      say('ghostMsg');
+      adv.laughT = 1;
+      Sound.miss();
+      return;
+    }
     // 同一顆燈疊珠：這回合第 k 顆落進同一顆燈的珠，攻擊 +(k−1)／補珠 +(k−1)
     const combo = round.stack[slot] || 0;
     round.stack[slot] = combo + 1;
@@ -2829,6 +2973,7 @@
       if (hasTalent('burn')) adv.burn += boon('tinder');
       if (hasTalent('trauma')) {
         const dmg = Math.round(n * traumaRate());
+        if (dmg > 0) round.struck = true;
         extraDamage(dmg, '#f472b6');
         noteBall(dmg, 0);
         if (boon('shatter') && !round.shattered && adv.monster && monsterDef() > 0) {
@@ -2859,6 +3004,22 @@
     round.resetT = 1.6;
   }
 
+  // 回合結束的怪物技能：蝙蝠吸血、巫妖補護盾（訊息接在回合總結後面）
+  function roundSkills() {
+    if (skill() === 'bat' && !round.struck && adv.hp < adv.maxHp) {
+      const n = Math.min(BAT_HEAL, adv.maxHp - adv.hp);
+      adv.hp += n;
+      adv.pops.push({ text: '+' + n, t: 0, color: '#4ade80' });
+      round.skillMsg = ['batMsg', { n }];
+    }
+    if (skill() === 'lich' && adv.shields && ++adv.lichT >= LICH_REFILL) {
+      adv.lichT = 0;
+      adv.shields.fill(true);
+      popups.push({ x: W / 2 - 20, y: SLOT_TOP - 30, text: t('wardRefillPop'), t: 0, color: '#c4b5fd', big: true });
+      round.skillMsg = ['wardRefill', {}];
+    }
+  }
+
   // 燃燒階段的時間點（秒）：等總結看完 → 點火、數層數 → 爆開扣血 → 收尾
   const BURN_WAIT = 0.7, BURN_BLAST = 1.1, BURN_END = 1.9;
   const burnPending = () => mode === 'adv' && adv.burn > 0 && !adv.chest && adv.status === 'playing';
@@ -2867,6 +3028,7 @@
   function finishRound() {
     round.resetT = 1.6;
     if (adv.status === 'won') { round.phase = 'win'; return; }
+    roundSkills();
     const anyHit = round.landed.some(s => round.lit.has(s) || round.refills.has(s));
     const result = anyHit ? 'win' : 'lose';
     if (!anyHit) {
@@ -2879,6 +3041,7 @@
       const key = round.dmg && round.gain ? 'roundSumBoth' : round.gain ? 'roundSumGain' : 'roundSumDmg';
       say(key, { n: round.landed.length, hit: round.hits, dmg: round.dmg, gain: round.gain });
     }
+    if (round.skillMsg) { say(...round.skillMsg); round.skillMsg = null; }
     // 不再播勝利音效：每顆命中時已經各自有音效，勝利音效留給打倒怪物
     if (burnPending()) {
       round.phase = 'burn';
@@ -2958,21 +3121,29 @@
 
   // 沙漏：預告這回合每顆珠的落點結果
   function landingPreview() {
-    let refund = round.multPaid;
-    const stack = {};
+    let refund = round.multPaid, bone = round.bone && skill() === 'skeleton';
+    const stack = {}, ward = adv.shields && skill() === 'lich' ? adv.shields.slice() : null;
     const lines = round.landed.map((slot, i) => {
       let text;
+      if (ward && slot >= 0 && ward[slot]) {
+        ward[slot] = false;
+        text = t('hgWard');
+        return round.landed.length > 1 ? t('hgBall', { i: i + 1, text }) : text;
+      }
       const combo = stack[slot] || 0;
       if (slot >= 0) stack[slot] = combo + 1;
-      if (round.lit.has(slot)) {
+      if (skill() === 'pumpkin' && slot === adv.pumpkin) {
+        text = t('hgPumpkin', { n: Math.max(1, Math.round(adv.maxHp * PUMPKIN_HEAL)) });
+      } else if (round.lit.has(slot)) {
         const { raw, def, dmg } = computeHit(false, combo);
-        text = dmg > 0 ? t('hgHit', { dmg: Math.round(dmg * BOOST_MULT[round.boost[slot]]) }) : t('hgBlock', { raw, def });
+        text = dmg > 0 && bone ? t('hgBone') : dmg > 0 ? t('hgHit', { dmg: Math.round(dmg * BOOST_MULT[round.boost[slot]]) }) : t('hgBlock', { raw, def });
+        if (dmg > 0) bone = false;
       } else if (round.refills.has(slot)) {
         const n = Math.round((refund + refillBonus() + combo) * BOOST_MULT[round.boost[slot]]);
         text = hasTalent('trauma') ? t('hgRefillHurt', { n, dmg: Math.round(n * traumaRate()) }) : t('hgRefill', { n });
         refund = 0;
       } else {
-        text = t(slot < 0 ? 'hgOut' : 'hgMiss');
+        text = t(slot === -2 ? 'hgStuck' : slot < 0 ? 'hgOut' : 'hgMiss');
       }
       return round.landed.length > 1 ? t('hgBall', { i: i + 1, text }) : text;
     });
@@ -3037,14 +3208,17 @@
         const a = balls[i], b = balls[j], min = ballR(a) + ballR(b);
         const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
         if (d2 >= min * min || d2 === 0) continue;
-        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, push = (min - d) / 2;
-        a.x -= nx * push; a.y -= ny * push;
-        b.x += nx * push; b.y += ny * push;
+        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
+        // 被黏住的珠不會動：另一顆整個被推開、彈開
+        const wa = a.stuck ? 0 : b.stuck ? 1 : 0.5, wb = 1 - wa;
+        if (a.stuck && b.stuck) continue;
+        a.x -= nx * (min - d) * wa; a.y -= ny * (min - d) * wa;
+        b.x += nx * (min - d) * wb; b.y += ny * (min - d) * wb;
         const vn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
         if (vn >= 0) continue;
-        const k = -(1 + 0.8) * vn / 2;
-        a.vx -= k * nx; a.vy -= k * ny;
-        b.vx += k * nx; b.vy += k * ny;
+        const k = -(1 + 0.8) * vn;
+        a.vx -= k * wa * nx; a.vy -= k * wa * ny;
+        b.vx += k * wb * nx; b.vy += k * wb * ny;
         if (-vn > 60) Sound.clink(-vn * 0.5);
       }
     }
@@ -3098,6 +3272,7 @@
         continue;
       }
       const hit = collideCircle(b, p.x, p.y, p.kind ? SPECIAL_R : PIN_R, p.kind === 'spike' ? 0.95 : 0.5);
+      if (hit && p.web && !p.webUsed && multiBall() && b.fired) { p.webUsed = true; stickBall(b); return; }
       if (hit && p.kind && multiBall() && b.fired) pinEffect(b, p);
       impact = Math.max(impact, hit);
     }
@@ -3106,6 +3281,13 @@
       impact = Math.max(impact, collideCircle(b, c.x, c.y, CAP_R, 0.6));
     }
     for (const s of walls) impact = Math.max(impact, collideWall(b, s));
+    // 木乃伊的繃帶：第一顆碰到的珠黏住
+    const bd = round.bandage;
+    if (bd && !bd.used && multiBall() && b.fired) {
+      const dx = bd.bx - bd.ax, dy = bd.by - bd.ay;
+      const k = Math.max(0, Math.min(1, ((b.x - bd.ax) * dx + (b.y - bd.ay) * dy) / (dx * dx + dy * dy)));
+      if (Math.hypot(b.x - (bd.ax + dx * k), b.y - (bd.ay + dy * k)) < ballR(b) + 1.5) { bd.used = true; stickBall(b); return; }
+    }
     // 發射軌道底部（彈簧頭）
     if (b.x > LANE_X && b.y + BALL_R > state.floorY) {
       b.y = state.floorY - BALL_R;
@@ -3192,13 +3374,13 @@
 
     const h = dt / SUBSTEPS;
     for (let s = 0; s < SUBSTEPS && balls.length; s++) {
-      for (const b of [...balls]) if (balls.includes(b)) stepBall(b, h);
+      for (const b of [...balls]) if (balls.includes(b) && !b.stuck) stepBall(b, h);
       if (balls.length > 1) collideBalls();
     }
 
     // 卡住偵測：太久沒動就輕推一下
     for (const b of balls) {
-      if (atShooter(b)) continue;
+      if (atShooter(b) || b.stuck) continue;
       if (Math.hypot(b.vx, b.vy) < 10) b.still += dt; else b.still = 0;
       if (b.still > 1.2) {
         b.vx += (Math.random() - 0.5) * 160;
@@ -4464,6 +4646,15 @@
       ctx.textAlign = 'left';
       ctx.fillStyle = '#c8f7c5';
       ctx.fillText(monsterName(), S.x + 10, S.y + 14);
+      if (skill()) {
+        let label = '★' + skillName();
+        if (skill() === 'skeleton' && round.bone) label += ' ●';
+        if (skill() === 'lich' && adv.shields) label += ` ${adv.shields.filter(Boolean).length}/${SLOT_COUNT}`;
+        ctx.font = `bold 13px ${SANS}`;
+        textBacking(S.x + 4, S.y + 27, ctx.measureText(label).width + 12, 18);
+        ctx.fillStyle = '#fca5a5';
+        ctx.fillText(label, S.x + 10, S.y + 36);
+      }
       ctx.textAlign = 'right';
       ctx.font = `bold 16px ${PIXEL_FONT}`;
       if (adv.status === 'won' || adv.status === 'lost') {
@@ -4546,6 +4737,28 @@
       const x = B.left + (i + 0.5) * SLOT_W;
       if (!chest && round.boost[i]) drawBoostFlame(x, LED_Y, round.boost[i] + 2, t, i);
       led(ctx, x, LED_Y, 6, on, 'green');
+    }
+    // 南瓜燈、被小惡龍燒掉的燈
+    if (skill() === 'pumpkin' && adv.pumpkin >= 0) {
+      const x = B.left + (adv.pumpkin + 0.5) * SLOT_W;
+      const g = ctx.createLinearGradient(0, SLOT_FLOOR, 0, SLOT_TOP);
+      g.addColorStop(0, `rgba(251, 146, 60, ${0.4 + 0.1 * Math.sin(t * 5)})`);
+      g.addColorStop(1, 'rgba(251, 146, 60, 0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(x - SLOT_W / 2 + 3, SLOT_TOP, SLOT_W - 6, SLOT_FLOOR - SLOT_TOP);
+      ctx.font = '18px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🎃', x, LED_Y);
+    }
+    if (round.burnt >= 0) {
+      const x = B.left + (round.burnt + 0.5) * SLOT_W;
+      ctx.fillStyle = 'rgba(20, 10, 5, 0.6)';
+      ctx.fillRect(x - SLOT_W / 2 + 3, SLOT_TOP, SLOT_W - 6, SLOT_FLOOR - SLOT_TOP);
+      ctx.font = `${20 + 2 * Math.sin(t * 9)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🔥', x, LED_Y);
     }
     ctx.fillStyle = 'rgba(255,255,255,0.08)';
     for (const i of landed) {
@@ -5002,6 +5215,7 @@
     if (mode === 'adv') drawAdvScreen(t);
     drawShooter();
     drawSpecialPins(t);
+    drawSkillFx(t);
     for (const b of balls) {
       const k = ballR(b) / BALL_R;
       drawShadow(b.x + 2.5 * k, b.y + 3.5 * k, 0.9, k);
@@ -5043,6 +5257,67 @@
     }
   }
   let canvasShaken = false;
+
+  // 怪物技能的畫面：蜘蛛網、繃帶、巫妖護盾
+  function drawSkillFx(time) {
+    if (mode !== 'adv' || !skill()) return;
+    ctx.save();
+    for (const p of pins) {
+      if (!p.web) continue;
+      // 蜘蛛網：放射線 + 兩圈網
+      ctx.strokeStyle = p.webUsed ? 'rgba(229,231,235,0.45)' : 'rgba(241,245,249,0.85)';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const a = k * Math.PI / 4;
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + Math.cos(a) * 11, p.y + Math.sin(a) * 11);
+      }
+      for (const r of [5, 9]) {
+        for (let k = 0; k <= 8; k++) {
+          const a = k * Math.PI / 4, x = p.x + Math.cos(a) * r, y = p.y + Math.sin(a) * r;
+          if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+    }
+    const bd = round.bandage;
+    if (bd) {
+      // 繃帶：米色的布條，一段一段的紋路
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = bd.used ? 'rgba(214,201,170,0.55)' : '#e7dcc0';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(bd.ax, bd.ay);
+      ctx.lineTo(bd.bx, bd.by);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(120,100,70,0.6)';
+      ctx.lineWidth = 1;
+      const n = 6;
+      ctx.beginPath();
+      for (let k = 1; k < n; k++) {
+        const x = bd.ax + (bd.bx - bd.ax) * k / n, y = bd.ay + (bd.by - bd.ay) * k / n;
+        ctx.moveTo(x - 1.5, y - 1.5);
+        ctx.lineTo(x + 1.5, y + 1.5);
+      }
+      ctx.stroke();
+    }
+    if (skill() === 'lich' && adv.shields) {
+      // 魔法護盾：每一排上方一道紫色光弧
+      for (let i = 0; i < SLOT_COUNT; i++) {
+        if (!adv.shields[i]) continue;
+        const x = B.left + (i + 0.5) * SLOT_W, a = 0.55 + 0.2 * Math.sin(time * 4 + i);
+        ctx.strokeStyle = `rgba(196, 181, 253, ${a})`;
+        ctx.shadowColor = '#a78bfa';
+        ctx.shadowBlur = 8;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(x, SLOT_TOP + 14, SLOT_W / 2 - 4, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
 
   function drawSpecialPins(time) {
     for (const p of pins) {
@@ -5195,6 +5470,11 @@
     const target = hitTarget(p);
     e.preventDefault();
     const sp = !target && !round.placing && specialAt(p);
+    const onScreen = mode === 'adv' && p.x > SCREEN.x && p.x < SCREEN.x + SCREEN.w && p.y > SCREEN.y && p.y < SCREEN.y + SCREEN.h;
+    if (onScreen && !target && !round.placing) {
+      if (skill()) { say('skillInfo', { s: skillName(), d: SKILLS[skill()].desc[lang] }); Sound.clunk(); }
+      return;
+    }
     if (target === 'bag') openBag();
     else if (target === 'stats') openStats();
     else if (round.placing) placeBall(p);
