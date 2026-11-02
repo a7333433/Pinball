@@ -1023,7 +1023,7 @@
       holdToFire: '輕點檯面不會發射：按住檯面拉彈簧，放開才發射',
       skillTag: '。技能「{s}」（點怪物螢幕看說明）', skillInfo: '技能「{s}」：{d}',
       dragonRed: '攻擊燈', dragonGreen: '補珠燈', dragonTag: '。小惡龍噴火燒掉了一顆{kind}！', dragonPop: '燒掉了！',
-      webPop: '黏住了！', reelMsg: '蜘蛛把黏著 {n} 顆珠的網收回去了！', bandagePop: '被纏住了！', stuckTaken: '收走', wardPop: '護盾', wardMsg: '魔法護盾擋下了這顆珠（還剩 {n} 面）',
+      webPop: '黏住了！', reelMsg: '蜘蛛把黏著 {n} 顆珠的網收回去了！', reelMsgMummy: '木乃伊把纏著珠的繃帶收回去了！', bandagePop: '被纏住了！', stuckTaken: '收走', wardPop: '護盾', wardMsg: '魔法護盾擋下了這顆珠（還剩 {n} 面）',
       wardRefillPop: '護盾補滿！', wardRefill: '巫妖的魔法護盾全部補滿了！',
       healPop: '回 {n} 血', pumpkinMsg: '珠掉進南瓜燈，南瓜頭回了 {n} 血', dodgePop: '閃避', ghostMsg: '幽靈穿過去了，這顆珠沒打到',
       boneScreen: '骨盾', bonePop: '骨盾擋下', boneMsg: '骨盾擋下了這顆珠的 {dmg} 點傷害（下回合再長出來）',
@@ -1181,7 +1181,7 @@
       holdToFire: 'A quick tap does not shoot: hold on the board to pull the spring, then let go',
       skillTag: '. Skill: {s} (tap the monster screen for details)', skillInfo: 'Skill {s}: {d}',
       dragonRed: 'attack light', dragonGreen: 'refill light', dragonTag: '. The Baby Dragon burned one {kind}!', dragonPop: 'Burned!',
-      webPop: 'Stuck!', reelMsg: 'The spider reels in its web with {n} ball(s)!', bandagePop: 'Tangled!', stuckTaken: 'Taken', wardPop: 'Ward', wardMsg: 'A magic ward blocked that ball ({n} left)',
+      webPop: 'Stuck!', reelMsg: 'The spider reels in its web with {n} ball(s)!', reelMsgMummy: 'The mummy pulls its bandage back with the ball!', bandagePop: 'Tangled!', stuckTaken: 'Taken', wardPop: 'Ward', wardMsg: 'A magic ward blocked that ball ({n} left)',
       wardRefillPop: 'Wards back!', wardRefill: 'The Lich restored all magic wards!',
       healPop: '+{n} HP', pumpkinMsg: 'Into the pumpkin lamp: the Pumpkin Head heals {n} HP', dodgePop: 'Miss', ghostMsg: 'The ghost phased through: that ball missed',
       boneScreen: 'BONE', bonePop: 'Blocked', boneMsg: 'The bone shield blocked {dmg} damage (it grows back next round)',
@@ -2695,6 +2695,14 @@
     for (let i = webShots.length - 1; i >= 0; i--) if (webShots[i].done) webShots.splice(i, 1);
   }
 
+  // 木乃伊甩繃帶：兩端從怪物螢幕飛出去，各自綁到一根釘子上
+  function updateBandage(dt) {
+    const bd = round.bandage, was = bd.t;
+    bd.t += dt;
+    if (was < 0 && bd.t >= 0) Sound.tone(500, 0.2, 'sawtooth', 0.03, 0, 900);   // 咻
+    if (was < WEB_FLY && bd.t >= WEB_FLY) Sound.tone(220, 0.1, 'square', 0.04);
+  }
+
   // 怪物技能每回合的準備：蜘蛛網、繃帶、骨盾；小惡龍燒掉的燈在定燈後才決定
   function rollSkills() {
     for (const p of ALL_PINS) p.web = p.webUsed = false;
@@ -2716,7 +2724,7 @@
         const near = normal.map(i => ALL_PINS[i]).filter(q => q !== a && Math.hypot(q.x - a.x, q.y - a.y) < 64);
         if (!near.length) continue;
         const b = near[Math.floor(Math.random() * near.length)];
-        round.bandage = { ax: a.x, ay: a.y, bx: b.x, by: b.y, used: false };
+        round.bandage = { ax: a.x, ay: a.y, bx: b.x, by: b.y, used: false, t: -0.3 };   // t：甩出去的動畫時間，到 WEB_FLY 才有效
         break;
       }
     }
@@ -2928,25 +2936,27 @@
     finishRound();
   }
 
-  // 蜘蛛收網：黏著珠的網連珠一起被拉回怪物螢幕（REEL_T 秒），收完才結算這回合
+  // 蜘蛛收網、木乃伊收繃帶：黏著的珠一起被拉回怪物螢幕（REEL_T 秒），收完才結算這回合
   const REEL_T = 0.8;
-  const spiderMouth = () => ({ x: SCREEN.x + SCREEN.w / 2, y: SCREEN.y + 70 });
+  const monsterMouth = () => ({ x: SCREEN.x + SCREEN.w / 2, y: SCREEN.y + 70 });
   function startReel() {
-    const stuck = balls.filter(b => b.stuck && b.webPin);
-    if (skill() !== 'spider' || !stuck.length || round.phase === 'reel') return false;
+    const spider = skill() === 'spider';
+    const stuck = balls.filter(b => b.stuck && (spider ? b.webPin : b.band));
+    if (!(spider || skill() === 'mummy') || !stuck.length || round.phase === 'reel') return false;
     round.phase = 'reel';
     round.reelT = 0;
     for (const b of stuck) {
       b.reel = { x0: b.x, y0: b.y };
-      b.webPin.web = false;          // 網跟著珠一起走
+      if (spider) b.webPin.web = false;          // 網跟著珠一起走
     }
-    say('reelMsg', { n: stuck.length });
+    if (!spider) round.bandage.reeled = true;    // 繃帶從釘子上解下來，捲著珠收回去
+    say(spider ? 'reelMsg' : 'reelMsgMummy', { n: stuck.length });
     Sound.tone(900, 0.5, 'triangle', 0.05, 0, 300);
     return true;
   }
   function updateReel(dt) {
     round.reelT += dt;
-    const k = Math.min(1, round.reelT / REEL_T), e = k * k * (3 - 2 * k), m = spiderMouth();
+    const k = Math.min(1, round.reelT / REEL_T), e = k * k * (3 - 2 * k), m = monsterMouth();
     for (const b of balls) {
       if (!b.reel) continue;
       b.x = b.reel.x0 + (m.x - b.reel.x0) * e;
@@ -3342,10 +3352,10 @@
     for (const s of walls) impact = Math.max(impact, collideWall(b, s));
     // 木乃伊的繃帶：第一顆碰到的珠黏住
     const bd = round.bandage;
-    if (bd && !bd.used && multiBall() && b.fired) {
+    if (bd && !bd.used && bd.t >= WEB_FLY && multiBall() && b.fired) {
       const dx = bd.bx - bd.ax, dy = bd.by - bd.ay;
       const k = Math.max(0, Math.min(1, ((b.x - bd.ax) * dx + (b.y - bd.ay) * dy) / (dx * dx + dy * dy)));
-      if (Math.hypot(b.x - (bd.ax + dx * k), b.y - (bd.ay + dy * k)) < ballR(b) + 1.5) { bd.used = true; stickBall(b); return; }
+      if (Math.hypot(b.x - (bd.ax + dx * k), b.y - (bd.ay + dy * k)) < ballR(b) + 1.5) { bd.used = true; b.band = true; stickBall(b); return; }
     }
     // 發射軌道底部（彈簧頭）
     if (b.x > LANE_X && b.y + BALL_R > state.floorY) {
@@ -3512,6 +3522,7 @@
       adv.run.maxGain = Math.max(adv.run.maxGain, round.gain);
     }
     if (webShots.length) updateWebShots(dt);
+    if (round.bandage && round.bandage.t < WEB_FLY) updateBandage(dt);
     if (round.phase === 'reel') updateReel(dt);
     if (round.phase === 'burn') updateBurn(dt);
     if (round.phase === 'win' || round.phase === 'lose' || round.phase === 'rewind') {
@@ -5348,9 +5359,23 @@
       ctx.shadowBlur = 0;
     }
     if (round.phase === 'reel') {
-      const m = spiderMouth();
+      const m = monsterMouth();
       for (const b of balls) {
         if (!b.reel) continue;
+        if (b.band) {
+          // 繃帶捲著珠：一條布條拉回木乃伊，珠外面纏兩圈
+          drawBandage(m.x, m.y, b.x, b.y, false);
+          ctx.strokeStyle = '#e7dcc0';
+          ctx.lineWidth = 2.5;
+          const r = ballR(b) + 4, a = round.reelT * 8;   // 比珠大一點，才不會被珠蓋住
+          ctx.beginPath();
+          ctx.moveTo(b.x + Math.cos(a) * r, b.y + Math.sin(a) * r);
+          ctx.lineTo(b.x - Math.cos(a) * r, b.y - Math.sin(a) * r);
+          ctx.moveTo(b.x + Math.cos(a + 1.2) * r, b.y + Math.sin(a + 1.2) * r);
+          ctx.lineTo(b.x - Math.cos(a + 1.2) * r, b.y - Math.sin(a + 1.2) * r);
+          ctx.stroke();
+          continue;
+        }
         ctx.strokeStyle = 'rgba(241,245,249,0.8)';
         ctx.lineWidth = 1.2;
         ctx.beginPath();
@@ -5391,25 +5416,15 @@
       ctx.stroke();
     }
     const bd = round.bandage;
-    if (bd) {
-      // 繃帶：米色的布條，一段一段的紋路
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = bd.used ? 'rgba(214,201,170,0.55)' : '#e7dcc0';
-      ctx.lineWidth = 3.5;
-      ctx.beginPath();
-      ctx.moveTo(bd.ax, bd.ay);
-      ctx.lineTo(bd.bx, bd.by);
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(120,100,70,0.6)';
-      ctx.lineWidth = 1;
-      const n = 6;
-      ctx.beginPath();
-      for (let k = 1; k < n; k++) {
-        const x = bd.ax + (bd.bx - bd.ax) * k / n, y = bd.ay + (bd.by - bd.ay) * k / n;
-        ctx.moveTo(x - 1.5, y - 1.5);
-        ctx.lineTo(x + 1.5, y + 1.5);
+    if (bd && !bd.reeled && bd.t > 0) {
+      if (bd.t < WEB_FLY) {
+        // 甩出去：兩條布條從木乃伊身上拉出去，各自飛向一根釘子；綁好後才變成釘子之間的一條繃帶
+        const k = bd.t / WEB_FLY, e = 1 - (1 - k) * (1 - k), m = monsterMouth();
+        drawBandage(m.x, m.y, m.x + (bd.ax - m.x) * e, m.y + (bd.ay - m.y) * e, false);
+        drawBandage(m.x, m.y, m.x + (bd.bx - m.x) * e, m.y + (bd.by - m.y) * e, false);
+      } else {
+        drawBandage(bd.ax, bd.ay, bd.bx, bd.by, bd.used);
       }
-      ctx.stroke();
     }
     if (skill() === 'lich' && adv.shields) {
       // 魔法護盾：每一排上方一道紫色光弧
@@ -5426,6 +5441,27 @@
       }
     }
     ctx.restore();
+  }
+
+  // 繃帶：米色的布條，一段一段的紋路
+  function drawBandage(ax, ay, bx, by, faded) {
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = faded ? 'rgba(214,201,170,0.55)' : '#e7dcc0';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(bx, by);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(120,100,70,0.6)';
+    ctx.lineWidth = 1;
+    const n = Math.max(2, Math.round(Math.hypot(bx - ax, by - ay) / 10));
+    ctx.beginPath();
+    for (let k = 1; k < n; k++) {
+      const x = ax + (bx - ax) * k / n, y = ay + (by - ay) * k / n;
+      ctx.moveTo(x - 1.5, y - 1.5);
+      ctx.lineTo(x + 1.5, y + 1.5);
+    }
+    ctx.stroke();
   }
 
   function drawSpecialPins(time) {
