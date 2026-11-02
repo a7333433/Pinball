@@ -1002,6 +1002,7 @@
       loseMsg: '沒落在亮燈的那一排，銘謝惠顧',
       rolledBack: '力道不夠，鋼珠滾回來了，再按一次發射',
       lockFirst: '先按藍色按鈕定燈，再投珠發射',
+      holdToFire: '輕點檯面不會發射：按住檯面拉彈簧，放開才發射',
       betFirst: '請先投珠再按發射鈕',
       fired: '發射！', firedN: '發射！{n} 顆鋼珠一起出發',
       moreBalls: '另有 {n} 顆',
@@ -1151,6 +1152,7 @@
       loseMsg: 'Missed the lit lanes. No luck',
       rolledBack: 'Too weak, ball rolled back. Shoot again',
       lockFirst: 'Press blue to lock first',
+      holdToFire: 'A quick tap does not shoot: hold on the board to pull the spring, then let go',
       betFirst: 'Bet first, then shoot',
       fired: 'Fire!', firedN: 'Fire! {n} balls are on their way',
       moreBalls: '+{n} more',
@@ -1309,7 +1311,7 @@
   const SUBSTEPS = 8;
 
   const HOLES = {
-    bet: { x: 462, y: 980, r: 19 },     // 拉桿下方，白邊黑心的圓孔（按住可連續投）
+    bet: { x: 462, y: 980, r: 19, pad: 30 },   // 拉桿下方，白邊黑心的圓孔（按住可連續投）；點的範圍放大，手指點偏也投得到
     mult: { x: 222, y: 876, r: 17 },    // 定燈按鈕旁，白邊黑心的圓孔
   };
   const COIN_SLOT = { x: 448, y: 108 };   // 上方金屬板的投幣口（點了也能投幣）
@@ -3281,8 +3283,12 @@
   }
 
   // ===== 操作 =====
-  function startCharge() {
+  // 在檯面上點一下（沒按住）不發射：投珠時點偏投珠孔才不會不小心射出去
+  const TAP_HOLD_MS = 200;
+  function startCharge(tap = false) {
     Sound.init();
+    state.chargeTap = tap;
+    state.chargeAt = performance.now();
     if (advLocked()) return;
     if (round.placing) { say('shakeWhere'); return; }
     if (!ballAtShooter()) return;
@@ -3302,6 +3308,11 @@
 
   function release() {
     if (!state.charging) return;
+    if (state.chargeTap && performance.now() - state.chargeAt < TAP_HOLD_MS) {
+      cancelCharge();
+      if (round.phase === 'bet') say('holdToFire');
+      return;
+    }
     state.charging = false;
     const p = state.power;
     state.power = 0;
@@ -5155,14 +5166,15 @@
     return { x: (e.clientX - rect.left) / rect.width * W, y: (e.clientY - rect.top) / rect.height * H };
   }
   function hitTarget(p) {
+    // 背包、狀態按鈕先判斷：投珠孔的範圍放大後會碰到背包按鈕的邊
+    if (mode === 'adv' && Math.hypot(p.x - BAG.x, p.y - BAG.y) < BAG.r + 8) return 'bag';
+    if (mode === 'adv' && Math.hypot(p.x - STATS.x, p.y - STATS.y) < STATS.r + 8) return 'stats';
     for (const [key, hole] of Object.entries(HOLES)) {
-      const hit = hole.r ? Math.hypot(p.x - hole.x, p.y - hole.y) < hole.r + 14
+      const hit = hole.r ? Math.hypot(p.x - hole.x, p.y - hole.y) < hole.r + (hole.pad || 14)
         : Math.abs(p.x - hole.x) < 34 && Math.abs(p.y - hole.y) < 28;
       if (hit) return key;
     }
     if (Math.hypot(p.x - BUTTON.x, p.y - BUTTON.y) < 32) return 'button';
-    if (mode === 'adv' && Math.hypot(p.x - BAG.x, p.y - BAG.y) < BAG.r + 8) return 'bag';
-    if (mode === 'adv' && Math.hypot(p.x - STATS.x, p.y - STATS.y) < STATS.r + 8) return 'stats';
     if (mode === 'classic' && Math.abs(p.x - COIN_SLOT.x) < 34 && Math.abs(p.y - COIN_SLOT.y) < 50) return 'coin';
     return null;
   }
@@ -5201,7 +5213,7 @@
     else if (target === 'coin') insertCoin();
     else {
       try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 指標已失效時不影響蓄力 */ }
-      startCharge();
+      startCharge(true);
     }
   });
   canvas.addEventListener('pointerup', () => { stopBetHold(); release(); });
