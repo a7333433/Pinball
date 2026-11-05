@@ -27,7 +27,10 @@
         <canvas id="board" aria-label="糖果彈珠台 / Candy pinball"></canvas>
         <div id="overlay" class="overlay">
           <div class="overlay-card">
-            <h2 id="ov-title">柑仔店彈珠台</h2>
+            <div class="ov-head">
+              <canvas id="ov-mascot" class="ov-mascot" width="48" height="48" aria-hidden="true" hidden></canvas>
+              <h2 id="ov-title">柑仔店彈珠台</h2>
+            </div>
             <div id="ov-item" class="ov-item" hidden></div>
             <div id="adv-plan" class="adv-plan" hidden>
               <button type="button" data-plan="campaign" data-i18n="planCampaign">冒險模式</button>
@@ -104,7 +107,8 @@
         <li>定燈後，沒亮燈的排裡會隨機多亮一顆<strong>綠色的補珠燈</strong>。鋼珠落進補珠燈不會造成傷害，改成每顆補 2 顆彈珠；這回合第一顆落進補珠燈時，還會退回投進強化孔的珠。</li>
         <li><strong>釘子隨關卡增加</strong>：第 1 關檯面上沒有釘子，之後每過一關都會長出新釘子，到最後一關巫妖時釘陣才完整。每一關的釘陣都是固定的，而且左右對稱。自由挑戰依怪物的關卡決定釘子。</li>
         <li><strong>特殊釘子</strong>（打怪時才有，每關位置固定、左右成對，越後面越多）：<span style="color:#fb923c">燒紅釘</span>——碰過的彈珠落進攻擊燈、造成傷害時，怪物燃燒 +1 層（任何天賦都會燃燒，跟燒紅彈珠疊在一起）；<span style="color:#67e8f9">螺旋尖刺</span>——彈珠會被彈開並分裂成 2 顆小珠，分裂後的彈珠不會再分裂；<strong>破洞</strong>——彈珠掉進洞口就直接消失。點一下特殊釘子，訊息螢幕會顯示它的效果。</li>
-        <li><strong>怪物技能</strong>（怪物螢幕名字下方顯示，點怪物螢幕看說明）：蝙蝠「吸血」這回合沒有珠造成傷害就回 5 血；蜘蛛「結網」每回合在 2 根釘子上結網；木乃伊「繃帶」每回合在兩根釘子間拉一條繃帶，最多纏住 3 顆珠（網、繃帶的第一顆碰到的珠被黏住，之後的珠會被它彈開，落珠結束後收走）；幽靈「穿透」攻擊燈的珠有 15% 被閃避；南瓜頭「南瓜燈」每回合隨機一排，進珠回 5% 血；骷髏「骨盾」每回合擋下第一顆造成傷害的珠；小惡龍「噴火」定燈後燒掉一顆燈；地獄犬「撲火」燃燒傷害減半；巫妖「魔法護盾」每一排擋下第一顆珠，每 3 回合補滿；殭屍「再生」每回合結束回 3% 血；吸血鬼「吸珠」每顆沒落進燈的珠讓牠回 2 血；石像怪「石化」血量越少越硬，剩 80%／50%／20% 以下時所有傷害減 20%／40%／60%。</li>
+        <li><strong>怪物技能</strong>（怪物螢幕名字下方顯示，點怪物螢幕看說明）：蝙蝠「吸血」這回合沒有珠造成傷害就回 5 血；蜘蛛「結網」每回合在 2 根釘子上結網；木乃伊「繃帶」每回合在兩根釘子間拉一條繃帶，最多纏住 3 顆珠（網、繃帶的第一顆碰到的珠被黏住，之後的珠會被它彈開，落珠結束後收走）；幽靈「穿透」攻擊燈的珠有 15% 被閃避；南瓜頭「南瓜燈」每回合隨機一排，進珠回 5% 血；骷髏「骨盾」每回合擋下第一顆造成傷害的珠；小惡龍「噴火」定燈後燒掉一顆燈；地獄犬「撲火」燃燒傷害減半；巫妖「魔法護盾」每一排擋下第一顆珠，每 3 回合補滿；殭屍「再生」每回合結束回 2% 血；吸血鬼「吸珠」每顆沒落進燈的珠讓牠回 2 血；石像怪「石化」血量越少越硬，剩 80%／50%／20% 以下時所有傷害減 20%／40%／60%。</li>
+        <li><strong>半血狂暴</strong>：有技能的怪物 HP 掉到一半以下會狂暴（怪物發出紅光），技能變強，直到打倒為止：蜘蛛每回合 3 張網；幽靈閃避 25%；南瓜燈回 8% 血；殭屍每回合回 4%；木乃伊每回合 2 條繃帶；骷髏另外閃避 15% 攻擊燈的珠；吸血鬼每顆回 4 血；小惡龍紅燈、綠燈各燒掉 1 顆；地獄犬也會噴火燒掉 1 顆燈；巫妖每 2 回合補滿護盾。蝙蝠不會狂暴；石像怪本來就會隨血量減傷，也不會狂暴。</li>
         <li><strong>疊珠加成</strong>：同一回合有好幾顆鋼珠落進同一顆燈時，第 2 顆起每多一顆就多加 1：攻擊燈是攻擊 +1、+2、+3…（扣防禦前），補珠燈是多補 1、2、3… 顆。</li>
         <li>把怪物 HP 打到 0 就勝利；彈珠用完怪物還活著就落敗。</li>
         <li>卡片上方可以切換「<strong>冒險模式</strong>」（預設）和「自由挑戰」。冒險模式要從第 1 關史萊姆一路打到第 14 關巫妖：一開始 50 顆彈珠，打倒怪物後剩下的彈珠會帶到下一關，每過一關再補珠（15 顆起，隨等級增加），失敗就要從第 1 關重來。螢幕右上角會顯示目前第幾關。</li>
@@ -112,9 +116,9 @@
           <ul>
             <li>合金鋼珠：每顆珠攻擊 +1（扣防禦前）、暴擊率 +15%。</li>
             <li>燒紅彈珠：每次落進攻擊燈讓怪物燃燒 +1 層（打不破防禦也算）；每回合結束受到「層數」點無視防禦的傷害，之後層數減半，換怪物時歸零。</li>
-            <li>外傷滾珠：落進補珠燈時照常補珠，另外造成等於補珠數的無視防禦傷害。</li>
+            <li>外傷滾珠：每回合紅燈少 1 顆、補珠燈多 1 顆，強化孔的強化先給補珠燈（補珠 ×1.5，強化兩次 ×2）；落進補珠燈時照常補珠，另外造成等於補珠數的無視防禦傷害。</li>
           </ul>
-          每個天賦另有 3 個專屬過關獎勵（卡片有橘框），只有選了該天賦才抽得到：合金鋼珠有破甲合金（無視 1 點防禦）、鎢鋼彈芯（暴擊完全無視防禦，只能拿一次）、連鎖暴擊（同一回合內每暴擊一次，這回合後面的珠攻擊 +1，下回合歸零）；燒紅彈珠有助燃（每次命中多疊 1 層）、悶燒（燃燒後保留 2/3、3/4…）、火種（補珠燈也疊 1 層）；外傷滾珠有撕裂（外傷比例 +25%）、碎甲（外傷觸發時怪物防禦 −1，每回合一次）、滾動補給（沒中燈的珠退回 1 顆，只能拿一次）。
+          每個天賦另有 4 個專屬過關獎勵（卡片有橘框），只有選了該天賦才抽得到：合金鋼珠有破甲合金（無視 1 點防禦）、衝撞（每顆珠攻擊 +1，疊珠再 +1）、鎢鋼彈芯（暴擊完全無視防禦，只能拿一次）、連鎖暴擊（同一回合內每暴擊一次，這回合後面的珠攻擊 +1）；燒紅彈珠有助燃（每次命中多疊 1 層）、悶燒（燃燒後保留 2/3、3/4…）、爆燃（暴擊率 +10%，暴擊多疊 1 層）、灼熱（暴擊率 +10%，回合結束的燃燒也會暴擊，只能拿一次）；外傷滾珠有撕裂（外傷比例 +25%）、碎甲（外傷觸發時怪物防禦 −1，每回合一次）、重創（暴擊率 +10%，外傷也會暴擊，外傷暴擊 ×2，只能拿一次）、放血（暴擊率 +10%，外傷暴擊多補 1 顆珠，要先有重創）。
         </li>
         <li><strong>闖關紀錄</strong>：選天賦的畫面下面有「闖關紀錄」按鈕，可以看每個天賦的挑戰次數、最遠打到第幾隻、最少回合通關、通關最多剩珠、單回合最大傷害與補珠、單顆彈珠最大傷害與補珠，以及最近 10 次冒險的回合數、最後持有彈珠、總共花費彈珠、單回合最大傷害、單回合最大補珠、單顆彈珠最大傷害、單顆彈珠最大補珠。</li>
         <li><strong>等級</strong>：從 Lv1 開始，每打倒一隻怪物升 1 級。每升一級，之後的過關補珠多 2 顆（第 1 關後補 15、第 2 關後 17…）；每 2 級每顆珠攻擊 +1（扣防禦前）。自由挑戰會當作前面的怪物都打過，等級照算。目前等級顯示在螢幕右上角和狀態面板。</li>
@@ -127,8 +131,8 @@
       </ol>
       <h3>過關獎勵與暴擊</h3>
       <ol>
-        <li>冒險模式每打倒一隻怪物（最後一隻除外），會從獎勵池隨機抽 3 樣讓你選 1 樣，效果持續整個冒險、可以疊加。不滿意可以花彈珠重骰：第 1 次 1 顆，之後每次多 1 顆。每張卡片會顯示「目前 → 拿了之後」的數值，也可以按「查看數值」看全部數值。</li>
-        <li>獎勵包含：投珠上限 +2、彈珠 +10、每珠增傷、基礎倍率 +1、攻擊燈數 +1（只能拿一次）、穿透傷害、加重彈珠、拔 5 根釘子（特殊釘子不受影響）、補珠加量、補珠燈數（只能拿一次）、寶箱升級、暴擊率、暴擊傷害。</li>
+        <li>冒險模式每打倒一隻怪物（最後一隻除外），會從獎勵池隨機抽 3 樣讓你選 1 樣，效果持續整個冒險、可以疊加。不滿意可以重骰：每次先送 1 次免費重骰（稀有道具「好運骰子」每顆再多 1 次），用完才花彈珠，第 1 次 1 顆，之後每次多 1 顆。每張卡片會顯示「目前 → 拿了之後」的數值，也可以按「查看數值」看全部數值。</li>
+        <li>獎勵包含：投珠上限 +2、彈珠 +10、每珠增傷、基礎倍率 +1、攻擊燈數 +1（只能拿一次）、穿透傷害、加重彈珠、拔 5 根釘子（特殊釘子不受影響）、補珠加量（最多拿兩次）、補珠燈數（只能拿一次）、寶箱升級、暴擊率、暴擊傷害。</li>
         <li>命中紅燈時有機會<strong>暴擊</strong>：基礎暴擊機率 5%、暴擊傷害 150%，可以靠過關獎勵提升。</li>
         <li>新的冒險開始時，過關獎勵會全部清空。</li>
         <li>冒險模式的進度會自動存在瀏覽器：玩到一半關掉頁面，下次打開可以選「繼續冒險」接著玩，或「重新開始」。回合打到一半關掉時，還沒發射的珠會退回，已經在檯面上的珠算用掉。</li>
@@ -160,7 +164,8 @@
         <li>After locking, one unlit lane also gets a <strong>green refill light</strong>. Landing there deals no damage; each ball gets 2 balls back, and the first one this round also refunds the balls you put into the multiplier.</li>
         <li><strong>Pins grow each stage</strong>: stage 1 has no pins at all, and every stage after that adds new pins until the full field returns at the last stage (the Lich). Each stage's layout is fixed and mirrored left to right. Free fight uses the pins for that monster's stage.</li>
         <li><strong>Special pins</strong> (monster stages only, fixed mirrored spots, more in later stages): <span style="color:#fb923c">Red-hot pin</span> — a ball that touched it adds 1 burn when it deals damage on a red light (any talent can burn; stacks with Red-hot Marble); <span style="color:#67e8f9">Spiral spike</span> — knocks the ball away and splits it into two smaller balls (split balls can't split again); <strong>Hole</strong> — a ball that drops into it simply vanishes. Tap a special pin to see what it does on the message screen.</li>
-        <li><strong>Monster skills</strong> (shown under the name on the monster screen; tap the screen for details): Bat heals 5 HP if no ball deals damage in a round; Spider webs 2 pins and Mummy ties a bandage between two pins each round that holds up to 3 balls (for a web, the first ball to touch it sticks, later balls bounce off it, and it is taken when the round ends); Ghost dodges 15% of attack-light balls; Pumpkin Head turns a random lane into a pumpkin lamp each round that heals 5% HP per ball; Skeleton blocks the first damaging ball each round; Baby Dragon burns one light after you lock; Hellhound takes half burn damage; Lich wards every lane against the first ball, refilled every 3 rounds; Zombie heals 3% HP every round; Vampire heals 2 HP per ball that lands on no light; Gargoyle gets harder as it loses HP: below 80%/50%/20% HP all damage is cut by 20%/40%/60%.</li>
+        <li><strong>Monster skills</strong> (shown under the name on the monster screen; tap the screen for details): Bat heals 5 HP if no ball deals damage in a round; Spider webs 2 pins and Mummy ties a bandage between two pins each round that holds up to 3 balls (for a web, the first ball to touch it sticks, later balls bounce off it, and it is taken when the round ends); Ghost dodges 15% of attack-light balls; Pumpkin Head turns a random lane into a pumpkin lamp each round that heals 5% HP per ball; Skeleton blocks the first damaging ball each round; Baby Dragon burns one light after you lock; Hellhound takes half burn damage; Lich wards every lane against the first ball, refilled every 3 rounds; Zombie heals 2% HP every round; Vampire heals 2 HP per ball that lands on no light; Gargoyle gets harder as it loses HP: below 80%/50%/20% HP all damage is cut by 20%/40%/60%.</li>
+        <li><strong>Rage at half HP</strong>: a monster with a skill that drops to half HP or less becomes enraged (it glows red) and its skill gets stronger until it is beaten: Spider webs 3 pins; Ghost dodges 25%; the pumpkin lamp heals 8%; Zombie heals 4% per round; Mummy ties 2 bandages; Skeleton also dodges 15% of attack-light balls; Vampire heals 4 HP per ball; Baby Dragon burns 1 red and 1 green light; Hellhound also burns 1 light; Lich refills its wards every 2 rounds. The Bat never rages, and neither does the Gargoyle, which already hardens as it loses HP.</li>
         <li><strong>Stacking bonus</strong>: when several balls land on the same light in one round, each one after the first adds 1 more: +1, +2, +3… attack on a red light (before DEF), or +1, +2, +3… extra balls on a refill light.</li>
         <li>Bring the monster's HP to 0 to win. Run out of balls while it's still alive and you lose.</li>
         <li>Switch between <strong>Adventure</strong> (the default) and <strong>Free fight</strong> at the top of the card. Adventure runs from stage 1 (Slime) to stage 14 (Lich): you start with 50 balls, keep whatever is left after each win plus bonus balls per stage (15 and up, growing with your level), and losing sends you back to stage 1. The current stage shows at the top right of the screen.</li>
@@ -168,9 +173,9 @@
           <ul>
             <li>Alloy Marble: +1 attack per ball (before DEF), +15% crit chance.</li>
             <li>Red-hot Marble: each red-light hit adds 1 burn (even if DEF blocks it); at the end of every round the monster takes damage equal to its burn, ignoring DEF, then burn halves. Burn resets for each monster.</li>
-            <li>Grinding Marble: refill lights still pay out, and also deal damage equal to the balls refilled (ignores DEF).</li>
+            <li>Grinding Marble: 1 fewer red light and 1 more refill light every round, and boost-hole upgrades go to refill lights first (×1.5 balls, ×2 when upgraded twice). Refill lights still pay out, and also deal damage equal to the balls refilled (ignores DEF).</li>
           </ul>
-          Each talent also has 3 exclusive rewards (orange cards) that only show up with that talent. Alloy: Armor Breaker (ignore 1 DEF), Tungsten Core (crits ignore DEF completely; once only), Chain Crit (each crit gives the later balls this round +1 attack; resets next round). Red-hot: Kindling (+1 burn per hit), Smolder (burn keeps ⅔, ¾… instead of half), Tinder (refill lights add 1 burn). Grinding: Rend (+25% grind damage), Shatter (grind lowers DEF by 1, once per round), Rolling Supply (balls that miss every light come back; once only).
+          Each talent also has 4 exclusive rewards (orange cards) that only show up with that talent. Alloy: Armor Breaker (ignore 1 DEF), Ram (+1 attack per ball, +1 more for stacked balls), Tungsten Core (crits ignore DEF completely; once only), Chain Crit (each crit gives the later balls this round +1 attack). Red-hot: Kindling (+1 burn per hit), Smolder (burn keeps ⅔, ¾… instead of half), Flare (+10% crit, crits add 1 more burn), Searing (+10% crit, round-end burn can crit; once only). Grinding: Rend (+25% grind damage), Shatter (grind lowers DEF by 1, once per round), Deep Wound (+10% crit, grind can crit for ×2; once only), Bloodletting (+10% crit, grind crits refill 1 more ball; needs Deep Wound).
         </li>
         <li><strong>Run records</strong>: tap "Run records" under the talents to see, for each talent, your number of runs, furthest stage, fewest rounds for a clear, most balls left after a clear, best single-round damage and refill, best single-ball damage and refill, plus your last 10 runs (rounds used, balls left, balls spent, best round damage and refill, best single-ball damage and refill).</li>
         <li><strong>Levels</strong>: you start at Lv1 and gain a level for every monster you defeat. Each level adds 2 balls to later stage bonuses (15 after stage 1, 17 after stage 2…), and every 2 levels give +1 attack per ball (before DEF). Free fight counts the earlier monsters as defeated. Your level is shown top-right on the screen and in the stats panel.</li>
@@ -183,8 +188,8 @@
       </ol>
       <h3>Stage rewards and crits</h3>
       <ol>
-        <li>In Adventure, every monster you beat (except the last) offers 3 random rewards; pick 1. Rewards last for the whole adventure and stack. You can reroll for balls: 1 the first time, then 1 more each time. Each card shows your current value and the value after picking it, and "View stats" opens the full stats panel.</li>
-        <li>Rewards: +2 bet limit, +10 balls, per-ball damage, +1 base multiplier, +1 red light (once only), piercing damage, heavier marble, 5 fewer pins (special pins stay), bigger refills, more refill lights (once only), better chests, crit rate, crit damage.</li>
+        <li>In Adventure, every monster you beat (except the last) offers 3 random rewards; pick 1. Rewards last for the whole adventure and stack. You get 1 free reroll each time (each Lucky Dice, a rare item, adds 1 more); after that, rerolls cost balls: 1 the first time, then 1 more each time. Each card shows your current value and the value after picking it, and "View stats" opens the full stats panel.</li>
+        <li>Rewards: +2 bet limit, +10 balls, per-ball damage, +1 base multiplier, +1 red light (once only), piercing damage, heavier marble, 5 fewer pins (special pins stay), bigger refills (twice at most), more refill lights (once only), better chests, crit rate, crit damage.</li>
         <li>Hits on red lights can <strong>crit</strong>: base crit chance 5% and crit damage 150%, raised by rewards.</li>
         <li>Rewards reset when a new adventure starts.</li>
         <li>Adventure progress is saved in your browser automatically. Close the page mid-run and next time you can pick Continue or Start over. Closing mid-round refunds balls not yet fired; balls already on the board are spent.</li>

@@ -44,8 +44,15 @@
   ];
   // 寶箱投 1 / 2 / 3 顆強化珠時，累加幾排藍 / 紫 / 橘燈（其餘都是白燈）
   const CHEST_LANES = [0, 3, 2, 1];
-  // when：pre = 定燈前、post = 定燈後（發射前）、both = 兩者都可
+  const FREE_REROLLS = 1;     // 每次選過關獎勵送幾次免費重骰
+  // when：pre = 定燈前、post = 定燈後（發射前）、both = 兩者都可、passive = 被動（放在背包就有效，不能使用）
   const ITEMS = {
+    dice: {
+      tier: 1, when: 'passive',
+      name: { zh: '好運骰子', en: 'Lucky Dice' },
+      quote: { zh: '6 點的另一面……還是 6 點？', en: 'The other side of the 6... is also a 6?' },
+      effect: { zh: '被動：持有時每次選過關獎勵可以免費重骰 1 次，可疊加（目前每次 {n} 次）', en: 'Passive: 1 free reward reroll after every stage while you hold it; stacks (now {n} per stage)' },
+    },
     coin: {
       tier: 0, when: 'both',
       name: { zh: '銀幣', en: 'Silver Coin' },
@@ -160,6 +167,8 @@
   // ===== 暴擊、過關獎勵（冒險模式） =====
   const CRIT_BASE_RATE = 0.05;    // 基礎暴擊機率 5%
   const CRIT_BASE_MULT = 1.5;     // 基礎暴擊傷害倍率 150%
+  const REFILL_BOON_MAX = 2;
+  const GASH_BONUS = 0.5;         // 重創：外傷暴擊倍率比一般暴擊多多少      // 過關獎勵「補珠加量」最多拿幾次
   // 每打倒一隻怪物（最後一隻除外）從這裡隨機抽 3 樣選 1 樣，效果持續整個冒險、可以疊加
   const BOONS = {
     balls: { name: { zh: '彈珠補給', en: 'Ball Supply' }, desc: { zh: '持有彈珠數增加 10', en: '+10 balls' } },
@@ -169,29 +178,32 @@
     pierce: { name: { zh: '穿透傷害', en: 'Piercing' }, desc: { zh: '攻擊打破防禦時，追加 1 點忽視防禦的傷害', en: '+1 damage that ignores DEF on hits that break DEF' } },
     weight: { name: { zh: '加重彈珠', en: 'Heavier Marble' }, desc: { zh: '彈珠重量增加 0.5（撞釘子彈得比較低、比較不會亂跳）', en: 'Marble weight +0.5 (bounces lower and jitters less)' } },
     pin: { name: { zh: '拔釘子', en: 'Fewer Pins' }, desc: { zh: '落珠區的釘子減少 5 根，之後每關也少長 5 根（特殊釘子不受影響）', en: 'Removes 5 pins now, and 5 fewer grow in every later stage (special pins stay)' } },
-    refill: { name: { zh: '補珠加量', en: 'Bigger Refills' }, desc: { zh: '補珠燈補珠時多得 1 顆', en: '+1 ball on every refill light' } },
+    refill: { name: { zh: '補珠加量', en: 'Bigger Refills' }, desc: { zh: '補珠燈補珠時多得 1 顆（最多拿兩次）', en: '+1 ball on every refill light (twice at most)' } },
     refillLight: { name: { zh: '補珠燈數', en: 'More Refill Lights' }, desc: { zh: '每回合補珠燈多 1 顆（只能拿一次）', en: '+1 refill light every round (once only)' } },
     chestRare: { name: { zh: '寶箱升級', en: 'Better Chests' }, desc: { zh: '寶箱關卡的稀有（藍）燈 +1、一般（白）燈 −1', en: 'Chests get +1 rare (blue) lane, −1 common (white) lane' } },
     critRate: { name: { zh: '暴擊率', en: 'Crit Rate' }, desc: { zh: '暴擊機率增加 20%', en: 'Crit chance +20%' } },
     critDmg: { name: { zh: '暴擊傷害', en: 'Crit Damage' }, desc: { zh: '暴擊傷害倍率增加 50%', en: 'Crit damage +50%' } },
     betCap: { name: { zh: '投珠上限', en: 'Bet Limit' }, desc: { zh: '每回合投珠上限 +2', en: '+2 max bet per round' } },
-    // 天賦專屬：只有選了該天賦才抽得到
-    armor: { talent: 'alloy', name: { zh: '破甲合金', en: 'Armor Breaker' }, desc: { zh: '攻擊時無視 1 點防禦', en: 'Attacks ignore 1 DEF' } },
-    light: { talent: 'alloy', name: { zh: '鎢鋼彈芯', en: 'Tungsten Core' }, desc: { zh: '暴擊的珠完全無視防禦（只能拿一次）', en: 'Critical hits ignore DEF completely (once only)' } },
-    chainCrit: { talent: 'alloy', name: { zh: '連鎖暴擊', en: 'Chain Crit' }, desc: { zh: '同一回合內每暴擊一次，這回合後面的珠攻擊 +1（下回合歸零）', en: 'Each crit gives the later balls this round +1 attack (resets next round)' } },
-    kindle: { talent: 'burn', name: { zh: '助燃', en: 'Kindling' }, desc: { zh: '每次命中多疊 1 層燃燒', en: '+1 extra burn per hit' } },
-    smolder: { talent: 'burn', name: { zh: '悶燒', en: 'Smolder' }, desc: { zh: '回合結束燃燒後保留更多層（減半 → 保留 2/3 → 3/4…）', en: 'Burn decays slower after each round (½ → ⅔ → ¾ kept…)' } },
-    tinder: { talent: 'burn', name: { zh: '火種', en: 'Tinder' }, desc: { zh: '落進補珠燈也疊 1 層燃燒', en: 'Refill lights also add 1 burn' } },
-    rend: { talent: 'trauma', name: { zh: '撕裂', en: 'Rend' }, desc: { zh: '外傷傷害比例 +25%', en: 'Grind damage +25% of balls refilled' } },
-    shatter: { talent: 'trauma', name: { zh: '碎甲', en: 'Shatter' }, desc: { zh: '外傷觸發時這隻怪物防禦 −1（每回合最多一次）', en: 'Grind lowers this monster\u2019s DEF by 1 (once per round)' } },
-    roll: { talent: 'trauma', name: { zh: '滾動補給', en: 'Rolling Supply' }, desc: { zh: '沒落進任何燈的珠退回 1 顆', en: 'Balls that land on no light come back' } },
+    // 天賦專屬：只有選了該天賦才抽得到；每個天賦分成一般流（route: 'base'）和暴擊流（route: 'crit'），畫面上不標示
+    armor: { talent: 'alloy', route: 'base', name: { zh: '破甲合金', en: 'Armor Breaker' }, desc: { zh: '攻擊時無視 1 點防禦', en: 'Attacks ignore 1 DEF' } },
+    light: { talent: 'alloy', route: 'crit', name: { zh: '鎢鋼彈芯', en: 'Tungsten Core' }, desc: { zh: '暴擊的珠完全無視防禦（只能拿一次）', en: 'Critical hits ignore DEF completely (once only)' } },
+    chainCrit: { talent: 'alloy', route: 'crit', name: { zh: '連鎖暴擊', en: 'Chain Crit' }, desc: { zh: '同一回合內每暴擊一次，這回合後面的珠攻擊 +1（下回合歸零）', en: 'Each crit gives the later balls this round +1 attack (resets next round)' } },
+    ram: { talent: 'alloy', route: 'base', name: { zh: '衝撞', en: 'Ram' }, desc: { zh: '每顆珠攻擊 +1，疊珠的珠（同一顆燈第 2 顆起）再 +1（扣防禦前，可疊）', en: '+1 attack per ball, and +1 more for stacked balls (2nd ball on the same light onward; before DEF; stacks)' } },
+    kindle: { talent: 'burn', route: 'base', name: { zh: '助燃', en: 'Kindling' }, desc: { zh: '每次命中多疊 1 層燃燒', en: '+1 extra burn per hit' } },
+    smolder: { talent: 'burn', route: 'base', name: { zh: '悶燒', en: 'Smolder' }, desc: { zh: '回合結束燃燒後保留更多層（減半 → 保留 2/3 → 3/4…）', en: 'Burn decays slower after each round (½ → ⅔ → ¾ kept…)' } },
+    blaze: { talent: 'burn', route: 'crit', name: { zh: '爆燃', en: 'Flare' }, desc: { zh: '暴擊率 +10%；暴擊時多疊 1 層燃燒（可疊）', en: '+10% crit chance; crits add 1 more burn (stacks)' } },
+    scorch: { talent: 'burn', route: 'crit', name: { zh: '灼熱', en: 'Searing' }, desc: { zh: '暴擊率 +10%；回合結束的燃燒傷害也會暴擊（只能拿一次）', en: '+10% crit chance; round-end burn damage can crit (once only)' } },
+    rend: { talent: 'trauma', route: 'base', name: { zh: '撕裂', en: 'Rend' }, desc: { zh: '外傷傷害比例 +25%', en: 'Grind damage +25% of balls refilled' } },
+    shatter: { talent: 'trauma', route: 'base', name: { zh: '碎甲', en: 'Shatter' }, desc: { zh: '外傷觸發時這隻怪物防禦 −1（每回合最多一次）', en: 'Grind lowers this monster\u2019s DEF by 1 (once per round)' } },
+    gash: { talent: 'trauma', route: 'crit', name: { zh: '重創', en: 'Deep Wound' }, desc: { zh: '暴擊率 +10%；外傷傷害也會暴擊，外傷暴擊 ×2（暴擊傷害獎勵照樣往上加；只能拿一次）', en: '+10% crit chance; grind damage can crit for ×2 (Crit Damage still adds on; once only)' } },
+    bleed: { talent: 'trauma', route: 'crit', name: { zh: '放血', en: 'Bloodletting' }, desc: { zh: '暴擊率 +10%；外傷暴擊時多補 1 顆珠（可疊；要先有重創）', en: '+10% crit chance; grind crits refill 1 more ball (stacks; needs Deep Wound)' } },
   };
   const BOON_IDS = Object.keys(BOONS);
   // 天賦：冒險模式開始前選 1 個，效果持續整趟冒險
   const TALENTS = {
     alloy: { name: { zh: '合金鋼珠', en: 'Alloy Marble' }, desc: { zh: '每顆珠攻擊 +1（扣防禦前）、暴擊率 +15%', en: '+1 attack per ball (before DEF), +15% crit chance' } },
     burn: { name: { zh: '燒紅彈珠', en: 'Red-hot Marble' }, desc: { zh: '每次落進攻擊燈讓怪物燃燒 +1 層；每回合結束受到「層數」點無視防禦的傷害，之後層數減半', en: 'Each red-light hit adds 1 burn; at round end the monster takes burn damage (ignores DEF), then burn halves' } },
-    trauma: { name: { zh: '外傷滾珠', en: 'Grinding Marble' }, desc: { zh: '落進補珠燈時照常補珠，另外造成等於補珠數的無視防禦傷害', en: 'Refill lights still pay out, and also deal damage equal to the balls refilled (ignores DEF)' } },
+    trauma: { name: { zh: '外傷滾珠', en: 'Grinding Marble' }, desc: { zh: '每回合紅燈少 1 顆、補珠燈多 1 顆，強化孔的強化先給補珠燈（補珠 ×1.5，強化兩次 ×2）；落進補珠燈時照常補珠，另外造成等於補珠數的無視防禦傷害', en: '1 fewer red light and 1 more refill light every round, and boost-hole upgrades go to refill lights first (×1.5 balls, ×2 when upgraded twice). Refill lights still pay out, and also deal damage equal to the balls refilled (ignores DEF)' } },
   };
   const TALENT_IDS = Object.keys(TALENTS);
   // 怪物技能：key 是 MONSTERS 的索引（第幾關 − 1）
@@ -202,8 +214,27 @@
   const PUMPKIN_HEAL = 0.05;   // 南瓜頭：每顆珠進南瓜燈回最大 HP 的幾成
   const BANDAGE_CAP = 3;       // 木乃伊：一條繃帶最多纏住幾顆珠（纏滿才失效）
   const LICH_REFILL = 3;       // 巫妖：每幾回合補滿魔法護盾
-  const ZOMBIE_REGEN = 0.03;   // 殭屍：每回合結束回最大 HP 的幾成
+  const ZOMBIE_REGEN = 0.02;   // 殭屍：每回合結束回最大 HP 的幾成
   const VAMPIRE_HEAL = 2;      // 吸血鬼：每顆沒落進任何燈的珠回幾血
+  // 半血狂暴：HP 掉到 RAGE_AT 以下時技能強化，只有 RAGE_DESC 列出的怪物會狂暴
+  // （史萊姆、蘑菇怪沒有技能；蝙蝠在前期，狂暴太難打；石像怪本來就會隨血量減傷）
+  const RAGE_AT = 0.5;
+  const SPIDER_WEBS_RAGE = 3, GHOST_DODGE_RAGE = 0.25, PUMPKIN_HEAL_RAGE = 0.08;
+  const ZOMBIE_REGEN_RAGE = 0.04, MUMMY_BANDS_RAGE = 2, SKELETON_DODGE_RAGE = 0.15, VAMPIRE_HEAL_RAGE = 4;
+  const HOUND_BURN_RAGE = 1, LICH_REFILL_RAGE = 2;   // 小惡龍狂暴：紅燈、綠燈各燒一顆（寫在 lockLights）
+  const RAGE_DESC = {
+    spider: { zh: `每回合結 ${SPIDER_WEBS_RAGE} 張網`, en: `${SPIDER_WEBS_RAGE} webs per round` },
+    ghost: { zh: `閃避率變成 ${GHOST_DODGE_RAGE * 100}%`, en: `${GHOST_DODGE_RAGE * 100}% miss chance` },
+    pumpkin: { zh: `南瓜燈每顆珠回 ${PUMPKIN_HEAL_RAGE * 100}% 血`, en: `the lamp heals ${PUMPKIN_HEAL_RAGE * 100}% HP per ball` },
+    zombie: { zh: `每回合回 ${ZOMBIE_REGEN_RAGE * 100}% 血`, en: `heals ${ZOMBIE_REGEN_RAGE * 100}% HP per round` },
+    mummy: { zh: `每回合拉 ${MUMMY_BANDS_RAGE} 條繃帶`, en: `${MUMMY_BANDS_RAGE} bandages per round` },
+    skeleton: { zh: `攻擊燈的珠另外有 ${SKELETON_DODGE_RAGE * 100}% 機率被閃開`, en: `also dodges ${SKELETON_DODGE_RAGE * 100}% of attack-light balls` },
+    vampire: { zh: `每顆沒落進燈的珠回 ${VAMPIRE_HEAL_RAGE} 血`, en: `heals ${VAMPIRE_HEAL_RAGE} HP per ball on no light` },
+    dragon: { zh: '每回合燒掉 1 顆紅燈和 1 顆綠燈', en: 'burns 1 red light and 1 green light per round' },
+    hound: { zh: `每回合也噴火燒掉 ${HOUND_BURN_RAGE} 顆燈`, en: `also burns ${HOUND_BURN_RAGE} light per round` },
+    lich: { zh: `每 ${LICH_REFILL_RAGE} 回合就補滿護盾`, en: `wards refill every ${LICH_REFILL_RAGE} rounds` },
+  };
+  const rageVal = (base, rage) => adv.enraged ? rage : base;
   // 石像怪：血量剩多少以下（比例）時，受到的所有傷害減幾成
   const STONE_TIERS = [[0.2, 0.6], [0.5, 0.4], [0.8, 0.2]];
   const SKILLS = {
@@ -252,6 +283,23 @@
       '............',
     ];
   const ITEM_ICONS = {
+    dice: {
+      pal: { K: '#1f2937', W: '#ffffff', G: '#cbd5e1', P: '#dc2626' },
+      map: [
+        '.KKKKKKKKKK.',
+        'KWWWWWWWWWGK',
+        'KWPPWWWPPWGK',
+        'KWPPWWWPPWGK',
+        'KWWWWWWWWWGK',
+        'KWPPWWWPPWGK',
+        'KWPPWWWPPWGK',
+        'KWWWWWWWWWGK',
+        'KWPPWWWPPWGK',
+        'KWPPWWWPPWGK',
+        'KGGGGGGGGGGK',
+        '.KKKKKKKKKK.',
+      ],
+    },
     lighter: {
       pal: { K: '#1f2937', S: '#d1d5db', R: '#dc2626', W: '#fca5a5', Y: '#fde047', O: '#fb923c' },
       map: [
@@ -1021,6 +1069,7 @@
       multKeepOne: '加倍後至少要留 1 顆投珠，彈珠不足 {need} 顆時不能提升倍率',
       multUp: '{mult} 倍！定燈後亮 {lit} 顆，按藍色按鈕定燈',
       multUpBoost: '{mult} 倍（倍率已到頂）！紅燈 {lit} 顆，強化 {b} 次成火焰燈（傷害 ×1.5，強化兩次 ×2）',
+      multUpBoostGreen: '{mult} 倍（倍率已到頂）！紅燈 {lit} 顆，定燈後先強化補珠燈 {b} 次（補珠 ×1.5，強化兩次 ×2）',
       multMaxAdv: '強化孔已經投滿了：{max} 倍，強化 {b} 次', boostPop: '🔥×{x}', boostTag: '（火焰燈 ×{x}）',
       winPop: '+{win} 顆',
       winMsg: '中了！{mult} 倍 × {bet} 顆 = {win} 顆',
@@ -1030,7 +1079,9 @@
       lockFirst: '先按藍色按鈕定燈，再投珠發射',
       holdToFire: '輕點檯面不會發射：按住檯面拉彈簧，放開才發射',
       skillTag: '。技能「{s}」（點怪物螢幕看說明）', skillInfo: '技能「{s}」：{d}',
-      dragonRed: '攻擊燈', dragonGreen: '補珠燈', dragonTag: '。小惡龍噴火燒掉了一顆{kind}！', dragonPop: '燒掉了！',
+      dragonRed: '攻擊燈', dragonGreen: '補珠燈', dragonTag: '。{who}噴火燒掉了{kind}！', dragonPop: '燒掉了！', listSep: '和', dragonRedN: '{n} 顆攻擊燈', dragonGreenN: '{n} 顆補珠燈',
+      rageScreen: '狂暴！', rageMsg: '{name}狂暴了！技能強化：{d}', rageTag: '・狂暴', rageInfo: '（半血以下狂暴：{d}）',
+      boneDodgeMsg: '骷髏閃開了，這顆珠沒打到',
       webPop: '黏住了！', reelMsg: '蜘蛛把黏著 {n} 顆珠的網收回去了！', reelMsgMummy: '木乃伊把纏著珠的繃帶收回去了！', bandagePop: '被纏住了！', stuckTaken: '收走', wardPop: '護盾', wardMsg: '魔法護盾擋下了這顆珠（還剩 {n} 面）',
       wardRefillPop: '護盾補滿！', wardRefill: '巫妖的魔法護盾全部補滿了！',
       healPop: '回 {n} 血', pumpkinMsg: '珠掉進南瓜燈，南瓜頭回了 {n} 血', dodgePop: '閃避', ghostMsg: '幽靈穿過去了，這顆珠沒打到',
@@ -1077,7 +1128,7 @@
       roundSumGain: '這回合 {n} 顆珠打中 {hit} 顆，補回 {gain} 顆彈珠',
       roundSumBoth: '這回合 {n} 顆珠打中 {hit} 顆，共造成 {dmg} 點傷害、補回 {gain} 顆彈珠',
       refillMsg: '命中補珠燈！補回 {n} 顆彈珠', refillPop: '+{n} 顆',
-      refillMsgCombo: '第 {k} 顆落進同一顆補珠燈！多補 {c} 顆，共補回 {n} 顆彈珠', comboPop: '疊{k} {text}',
+      refillMsgCombo: '第 {k} 顆落進同一顆補珠燈！多補 {c} 顆，共補回 {n} 顆彈珠', comboPop: '疊{k} {text}', newRecord: '★ 單顆傷害新紀錄！',
       hitMsgCombo: '第 {k} 顆落進同一顆攻擊燈！攻擊 +{c} 共 {raw}，扣掉防禦 {def} 造成 {dmg} 點傷害',
       blockMsgCombo: '第 {k} 顆落進同一顆攻擊燈，但攻擊 {raw} 還是打不破防禦 {def}',
       refillMsgMult: '命中補珠燈！退回強化孔 {refund} 顆，再補 {bonus} 顆，共 {n} 顆',
@@ -1092,11 +1143,11 @@
       pinInfoFire: '燒紅釘：碰到的珠造成傷害時，怪物燃燒 +1 層（可以跟燒紅彈珠疊加）',
       pinInfoSpike: '螺旋尖刺：碰到的珠會彈開並分裂成兩顆小珠（分裂出來的珠不會再分裂）',
       pinInfoHole: '破洞：珠心掉進洞口，這顆珠就直接消失',
-      burnMsg: '燃燒！怪物受到 {dmg} 點傷害，燃燒剩 {left} 層',
-      traumaMsg: '外傷！補回 {n} 顆彈珠，同時造成 {dmg} 點傷害',
+      burnMsg: '燃燒！怪物受到 {dmg} 點傷害，燃燒剩 {left} 層', burnMsgCrit: '燃燒暴擊！怪物受到 {dmg} 點傷害，燃燒剩 {left} 層',
+      traumaMsg: '外傷！補回 {n} 顆彈珠，同時造成 {dmg} 點傷害', traumaMsgCrit: '外傷暴擊！補回 {n} 顆彈珠，同時造成 {dmg} 點傷害',
       hgRefillHurt: '鋼珠落進補珠燈，將補回 {n} 顆彈珠並造成 {dmg} 點傷害。',
       rewardTalent: '{name}專屬', stArmor: '破甲', stTrauma: '外傷比例',
-      rewardTitle: '選擇過關獎勵', rewardReroll: '重骰（{n} 顆彈珠）', rewardHave: '已有 ×{n}',
+      rewardTitle: '選擇過關獎勵', rewardReroll: '重骰（{n} 顆彈珠）', rewardRerollFree: '免費重骰（剩 {n} 次）', rewardHave: '已有 ×{n}',
       rewardStats: '查看數值', rwStat: '目前 {now} → {next}', rwOn: '有', rwOff: '沒有', rwPins: '每關少 {n} 根', rwBurnN: '{n} 層',
       statusBoons: '過關獎勵',
       chestName: '寶箱',
@@ -1127,7 +1178,8 @@
       btnCodex: '寶藏', codexTitle: '寶藏', codexCount: '已取得 {n} / {total} 種', codexBack: '返回',
       bagEmpty: '背包是空的。冒險模式中打開寶箱就能拿到道具。',
       bagNowSelect: '現在：定燈前', bagNowBet: '現在：定燈後、發射前',
-      whenPre: '定燈前使用', whenPost: '定燈後、發射前使用', whenBoth: '定燈前或發射前使用',
+      whenPre: '定燈前使用', whenPost: '定燈後、發射前使用', whenBoth: '定燈前或發射前使用', whenPassive: '被動道具：放在背包就有效',
+      itemPassive: '被動道具，不用使用',
       itemCampaignOnly: '道具只能在冒險模式的怪物關卡使用', itemNoChest: '寶箱關卡不能使用道具',
       itemNotNow: '鋼珠發射後不能使用道具', itemPreOnly: '只能在定燈前使用', itemPostOnly: '只能在定燈後、發射前使用',
       itemMaxLights: '燈已經亮滿了', itemNoDef: '怪物已經沒有防禦了', itemActive: '這回合已經用過了',
@@ -1180,6 +1232,7 @@
       multKeepOne: 'Keep at least 1 ball to bet: you need {need} balls to raise the multiplier',
       multUp: '×{mult}! {lit} lit after locking',
       multUpBoost: '×{mult} (max multiplier)! {lit} red lights, {b} flame upgrades (×1.5 damage, ×2 when upgraded twice)',
+      multUpBoostGreen: '×{mult} (max multiplier)! {lit} red lights. After you lock, {b} upgrades go to refill lights first (×1.5 balls, ×2 when upgraded twice)',
       multMaxAdv: 'Boost hole is full: ×{max}, {b} flame upgrades', boostPop: '🔥×{x}', boostTag: ' (flame light ×{x})',
       winPop: '+{win}',
       winMsg: 'Win! ×{mult} × {bet} = {win} balls',
@@ -1189,7 +1242,9 @@
       lockFirst: 'Press blue to lock first',
       holdToFire: 'A quick tap does not shoot: hold on the board to pull the spring, then let go',
       skillTag: '. Skill: {s} (tap the monster screen for details)', skillInfo: 'Skill {s}: {d}',
-      dragonRed: 'attack light', dragonGreen: 'refill light', dragonTag: '. The Baby Dragon burned one {kind}!', dragonPop: 'Burned!',
+      dragonRed: 'an attack light', dragonGreen: 'a refill light', dragonTag: '. The {who} burned {kind}!', dragonPop: 'Burned!', listSep: ' and ', dragonRedN: '{n} attack lights', dragonGreenN: '{n} refill lights',
+      rageScreen: 'RAGE!', rageMsg: 'The {name} is enraged! Skill powered up: {d}', rageTag: ' (RAGE)', rageInfo: ' (Below half HP it rages: {d})',
+      boneDodgeMsg: 'The skeleton dodged: that ball missed',
       webPop: 'Stuck!', reelMsg: 'The spider reels in its web with {n} ball(s)!', reelMsgMummy: 'The mummy pulls its bandage back with the ball!', bandagePop: 'Tangled!', stuckTaken: 'Taken', wardPop: 'Ward', wardMsg: 'A magic ward blocked that ball ({n} left)',
       wardRefillPop: 'Wards back!', wardRefill: 'The Lich restored all magic wards!',
       healPop: '+{n} HP', pumpkinMsg: 'Into the pumpkin lamp: the Pumpkin Head heals {n} HP', dodgePop: 'Miss', ghostMsg: 'The ghost phased through: that ball missed',
@@ -1236,7 +1291,7 @@
       roundSumGain: '{hit} of {n} balls hit: {gain} balls back',
       roundSumBoth: '{hit} of {n} balls hit: {dmg} damage and {gain} balls back',
       refillMsg: 'Refill light! +{n} balls', refillPop: '+{n} balls',
-      refillMsgCombo: 'Ball #{k} on the same refill light! +{c} extra, {n} balls back', comboPop: 'x{k} {text}',
+      refillMsgCombo: 'Ball #{k} on the same refill light! +{c} extra, {n} balls back', comboPop: 'x{k} {text}', newRecord: '★ NEW BEST HIT!',
       hitMsgCombo: 'Ball #{k} on the same red light! +{c} attack = {raw} − DEF {def}: {dmg} damage',
       blockMsgCombo: 'Ball #{k} on the same red light, but {raw} attack is still blocked by DEF {def}',
       refillMsgMult: 'Refill light! {refund} boost balls back + {bonus} = {n} balls',
@@ -1251,11 +1306,11 @@
       pinInfoFire: 'Red-hot pin: a ball that touches it adds +1 burn when it deals damage (stacks with Red-hot Marble)',
       pinInfoSpike: 'Spiral spike: a ball that touches it bounces off and splits into two smaller balls (split balls cannot split again)',
       pinInfoHole: 'Hole: if a ball center drops into it, the ball is gone',
-      burnMsg: 'Burn! {dmg} damage, {left} burn left',
-      traumaMsg: 'Grind! {n} balls back and {dmg} damage',
+      burnMsg: 'Burn! {dmg} damage, {left} burn left', burnMsgCrit: 'Critical burn! {dmg} damage, {left} burn left',
+      traumaMsg: 'Grind! {n} balls back and {dmg} damage', traumaMsgCrit: 'Critical grind! {n} balls back and {dmg} damage',
       hgRefillHurt: 'The ball landed on a refill light: {n} balls back and {dmg} damage.',
       rewardTalent: '{name} only', stArmor: 'Armor break', stTrauma: 'Grind rate',
-      rewardTitle: 'Choose a reward', rewardReroll: 'Reroll ({n} balls)', rewardHave: 'Have ×{n}',
+      rewardTitle: 'Choose a reward', rewardReroll: 'Reroll ({n} balls)', rewardRerollFree: 'Free reroll ({n} left)', rewardHave: 'Have ×{n}',
       rewardStats: 'View stats', rwStat: 'Now {now} → {next}', rwOn: 'yes', rwOff: 'no', rwPins: '{n} fewer per stage', rwBurnN: '{n} burn',
       statusBoons: 'Rewards',
       chestName: 'Treasure Chest',
@@ -1286,7 +1341,8 @@
       btnCodex: 'Treasures', codexTitle: 'Treasures', codexCount: 'Found {n} / {total}', codexBack: 'Back',
       bagEmpty: 'Your backpack is empty. Open treasure chests in Adventure to get items.',
       bagNowSelect: 'Now: before locking', bagNowBet: 'Now: after locking, before shooting',
-      whenPre: 'Use before locking', whenPost: 'Use after locking, before shooting', whenBoth: 'Use before locking or before shooting',
+      whenPre: 'Use before locking', whenPost: 'Use after locking, before shooting', whenBoth: 'Use before locking or before shooting', whenPassive: 'Passive: works while it is in your bag',
+      itemPassive: 'Passive item: no need to use it',
       itemCampaignOnly: 'Items only work in Adventure monster stages', itemNoChest: 'No items at the treasure chest',
       itemNotNow: 'Can\'t use items while the ball is in play', itemPreOnly: 'Only before locking', itemPostOnly: 'Only after locking, before shooting',
       itemMaxLights: 'No room for more lights', itemNoDef: 'The monster has no DEF left', itemActive: 'Already used this round',
@@ -1629,17 +1685,30 @@
       // 嘻嘻嘻：三聲短促的高音
       [1180, 1320, 1120].forEach((f, i) => this.tone(f, 0.07, 'square', 0.045, i * 0.09, f * 0.8));
     },
-    hit() {
+    // n：這回合第幾下（0 起算），每多一下高半音，最多高八度
+    hit(n = 0) {
+      const k = 2 ** (Math.min(n, 12) / 12);
       this.noise(0.15, 0.3);
-      this.tone(420, 0.25, 'square', 0.08, 0, 70);
+      this.tone(420 * k, 0.25, 'square', 0.08, 0, 70 * k);
     },
-    crit() {
+    crit(n = 0) {
       // 暴擊：更重的一擊，接著往上竄的「鏘──」
+      const k = 2 ** (Math.min(n, 12) / 12);
       this.noise(0.25, 0.5);
       this.tone(160, 0.35, 'sawtooth', 0.12, 0, 45);
-      this.tone(1200, 0.14, 'square', 0.07, 0.03, 3200);
-      this.tone(2400, 0.4, 'triangle', 0.09, 0.15);
-      this.tone(3600, 0.3, 'triangle', 0.05, 0.15);
+      this.tone(1200 * k, 0.14, 'square', 0.07, 0.03, 3200 * k);
+      this.tone(2400 * k, 0.4, 'triangle', 0.09, 0.15);
+      this.tone(3600 * k, 0.3, 'triangle', 0.05, 0.15);
+    },
+    kill() {
+      // 最後一擊：低沉的爆裂聲，接著碎片散開的叮叮聲
+      this.noise(0.6, 0.6);
+      this.tone(110, 0.7, 'sawtooth', 0.14, 0, 30);
+      this.tone(700, 0.2, 'square', 0.07, 0.04, 1800);
+      [1320, 1760, 2640, 3520].forEach((f, i) => this.tone(f, 0.25, 'triangle', 0.06, 0.25 + i * 0.07));
+    },
+    record() {
+      [988, 1319, 1568, 1976].forEach((f, i) => this.tone(f, 0.16, 'square', 0.06, i * 0.07));
     },
     floor() {
       // 掉到地上：一聲悶響加一點金屬聲
@@ -1671,6 +1740,7 @@
     started: false,
     buttonT: 0,           // 藍色按鈕按下的動畫
     shakeT: 0,            // 搖晃機台時畫面晃動
+    slowT: 0,             // 擊殺後慢動作還剩多久（實際秒）
   };
   const round = {
     phase: 'select',      // select（燈在閃，可投強化孔）| bet（燈已定，可投珠）| flying | win | lose
@@ -1681,6 +1751,9 @@
     resetT: 0,
     flashT: 0,
     refills: new Set(),   // 大冒險：補珠燈在哪幾排
+    bandages: [],         // 木乃伊的繃帶（狂暴時兩條）
+    burnt: new Set(),     // 被噴火燒掉的燈
+    burnFx: [],           // 噴火動畫
     tiers: new Array(SLOT_COUNT).fill(0),   // 寶箱：每一排的道具等級（0 白、1 藍、2 紫、3 橘）
     boost: new Array(SLOT_COUNT).fill(0),   // 火焰燈：每一排紅燈的強化階段（0 沒有、1 ×1.5、2 ×2）
     betPaid: 0,           // 這局真的從持珠拿出來的投珠、強化珠（退還時用；假彈珠送的不算）
@@ -1731,7 +1804,10 @@
     hitT: 0,              // 被打中時閃白、晃動
     laughT: 0,            // 沒打中時怪物竊笑一下（落敗時一直笑）
     laughSoundT: 0,       // 落敗後多久竊笑一聲
-    dieT: 0,              // 被打倒時閃爍消失
+    dieT: 0,              // 被打倒到跳出結果之前
+    killT: 0,             // 擊殺特效：先定格閃白，再碎成像素往外飛
+    shards: null,         // 碎片：{ x, y, vx, vy, c }，相對怪物左上角
+    recT: 0,              // 單顆傷害破紀錄的提示
     endT: 0,              // 結束後多久跳出結果
     pops: [],             // 螢幕上的傷害數字
     wins: loadRecord('candy-pinball-adv-wins'),
@@ -1746,6 +1822,7 @@
     boons: {},            // 過關獎勵：id → 疊了幾層（新的冒險開始時清空）
     rewards: null,        // 正在選的 3 個過關獎勵
     rerollCost: 1,        // 下一次重骰要花幾顆
+    freeRerolls: 0,       // 這次過關獎勵還剩幾次免費重骰
     talent: null,         // 這趟冒險的天賦（TALENTS 的 id）；自由挑戰沒有天賦
     burn: 0,              // 燒紅彈珠：這隻怪物身上的燃燒層數
     stageLit: 0,          // 雷射筆（紅）：這一關多亮幾顆攻擊燈
@@ -1761,7 +1838,9 @@
   const hasTalent = id => mode === 'adv' && adv.talent === id;
   const talentAtk = () => hasTalent('alloy') ? 1 : 0;
   const traumaRate = () => 1 + 0.25 * boon('rend');
-  const critRate = () => Math.min(1, CRIT_BASE_RATE + 0.2 * boon('critRate') + (hasTalent('alloy') ? 0.15 : 0));
+  // 燒紅、外傷的暴擊卡（爆燃、灼熱、重創、放血）每張附送暴擊率 +10%
+  const critCards = () => boon('blaze') + boon('scorch') + boon('gash') + boon('bleed');
+  const critRate = () => Math.min(1, CRIT_BASE_RATE + 0.2 * boon('critRate') + 0.1 * critCards() + (hasTalent('alloy') ? 0.15 : 0));
   const critMult = () => CRIT_BASE_MULT + 0.5 * boon('critDmg');
   // 每回合投珠上限：寶箱只能投 1 顆
   const betCap = () => chestStage() ? 1 : BET_CAP + 2 * boon('betCap');
@@ -1840,9 +1919,9 @@
       stageBoost: adv.stageBoost, stageRefillBoost: adv.stageRefillBoost, stageSuper: adv.stageSuper, pinMods: adv.pinMods,
       run: adv.run && { ...adv.run, spent: adv.run.spent - unpaid },
       credits: state.credits + state.payoutQueue + unpaid,
-      items: adv.items, boons: adv.boons, talent: adv.talent, rerollCost: adv.rerollCost,
+      items: adv.items, boons: adv.boons, talent: adv.talent, rerollCost: adv.rerollCost, freeRerolls: adv.freeRerolls,
       rewards: adv.rewards, loot: adv.loot, lootChoices: adv.lootChoices,
-      pumpkin: adv.pumpkin, shields: adv.shields, lichT: adv.lichT,
+      pumpkin: adv.pumpkin, shields: adv.shields, lichT: adv.lichT, enraged: adv.enraged,
     };
     try { localStorage.setItem(RUN_KEY, JSON.stringify(data)); } catch (e) { /* 無痕模式 */ }
   }
@@ -1854,6 +1933,12 @@
   function noteBall(dmg, gain) {
     const r = mode === 'adv' && adv.run;
     if (!r) return;
+    // 超過這個天賦以前的單顆最大傷害：跳「新紀錄！」（第一次玩沒有紀錄可比，不跳）
+    const prev = adv.talent ? talentRecord(adv.talent).best.ballDmg ?? 0 : 0;
+    if (prev > 0 && dmg > prev && dmg > (r.ballDmg ?? 0)) {
+      adv.recT = RECORD_FX;
+      setTimeout(() => Sound.record(), 200);
+    }
     r.ballDmg = Math.max(r.ballDmg ?? 0, dmg);
     r.ballGain = Math.max(r.ballGain ?? 0, gain);
   }
@@ -1928,16 +2013,19 @@
     adv.stageRefillBoost = d.stageRefillBoost || 0;
     adv.lost = d.lost;
     adv.items = d.items || {};
-    adv.boons = d.boons || {};
+    adv.boons = Object.fromEntries(Object.entries(d.boons || {}).filter(([id]) => BOONS[id]));   // 已移除的獎勵（火種、滾動補給）不要了
     adv.talent = d.talent;
     adv.rerollCost = d.rerollCost || 1;
+    adv.freeRerolls = d.freeRerolls || 0;
     adv.rewards = d.rewards;
     adv.loot = d.loot;
     adv.lootChoices = d.lootChoices || null;
     adv.pumpkin = d.pumpkin ?? -1;
     adv.shields = d.shields || null;
     adv.lichT = d.lichT || 0;
-    adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = adv.healT = 0;
+    adv.enraged = !!d.enraged;
+    adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = adv.healT = adv.killT = adv.recT = 0;
+    adv.shards = null;
     adv.pops.length = 0;
     adv.pinSet = stagePins(d.idx);
     syncPins();
@@ -1996,7 +2084,8 @@
     adv.monsterIdx = idx;
     adv.maxHp = adv.hp = adv.chest ? 1 : Math.max(1, Math.round(m.hp * (0.9 + Math.random() * 0.2)));
     adv.status = 'playing';
-    adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = adv.healT = 0;
+    adv.hitT = adv.laughT = adv.laughSoundT = adv.dieT = adv.endT = adv.healT = adv.killT = adv.recT = 0;
+    adv.shards = null;
     adv.pops.length = 0;
     adv.defDown = 0;
     adv.loot = adv.lootChoices = null;
@@ -2022,6 +2111,8 @@
     adv.pumpkin = skill() === 'pumpkin' ? Math.floor(Math.random() * SLOT_COUNT) : -1;
     adv.shields = skill() === 'lich' ? Array(SLOT_COUNT).fill(true) : null;
     adv.lichT = 0;
+    adv.enraged = false;          // 半血狂暴：觸發後這一關技能都是強化版
+    adv.rageT = 0;
     adv.stoneTier = 0;            // 石像怪：已經宣告過的石化階段
     // 寶箱沿用前一關的釘子；自由挑戰每場都重新擺
     if (!adv.chest) growPins(idx);
@@ -2047,7 +2138,7 @@
   const skill = () => mode === 'adv' && adv.monster && !adv.chest ? MONSTER_SKILLS[adv.monsterIdx] || null : null;
   const skillName = () => skill() ? SKILLS[skill()].name[lang] : '';
   // 不能亮燈的排：南瓜燈、這回合被小惡龍燒掉的燈
-  const slotBlocked = i => mode === 'adv' && !adv.chest && (i === adv.pumpkin && skill() === 'pumpkin' || i === round.burnt);
+  const slotBlocked = i => mode === 'adv' && !adv.chest && (i === adv.pumpkin && skill() === 'pumpkin' || round.burnt.has(i));
   const pumpkinLanes = () => skill() === 'pumpkin' && adv.pumpkin >= 0 ? 1 : 0;
   // 經典模式得珠 = 倍率 × 投珠數 × 每顆的基本傷害（平常 1，沉重彈珠每用一次 +1）
   const attackRaw = () => mult() * round.bet * (1 + round.heavy);
@@ -2060,7 +2151,7 @@
   function computeHit(crit, combo = 0) {
     // 鎢鋼彈芯：暴擊完全無視防禦
     const def = crit && boon('light') ? 0 : Math.max(0, monsterDef() - boon('armor'));
-    const raw = mult() * (1 + round.heavy) + boon('perBall') + talentAtk() + levelAtk() + combo + round.crits * boon('chainCrit');
+    const raw = mult() * (1 + round.heavy) + boon('perBall') + talentAtk() + levelAtk() + combo + boon('ram') * (combo > 0 ? 2 : 1) + round.crits * boon('chainCrit');   // 衝撞：+1，疊珠再 +1
     let dmg = Math.max(0, raw - def);
     if (crit) dmg = Math.round(dmg * critMult());
     if (dmg > 0) dmg += boon('pierce');
@@ -2083,12 +2174,16 @@
   // 燒紅彈珠：回合結束時燃燒，之後層數減半
   function burnTick() {
     if (mode !== 'adv' || !adv.burn || adv.chest || adv.status !== 'playing') return false;
-    const hound = skill() === 'hound', dmg = hound ? Math.ceil(adv.burn / 2) : adv.burn;   // 地獄犬：燃燒傷害減半
+    const hound = skill() === 'hound';
+    let dmg = hound ? Math.ceil(adv.burn / 2) : adv.burn;   // 地獄犬：燃燒傷害減半
+    const crit = boon('scorch') && Math.random() < critRate();   // 灼熱：燃燒也會暴擊
+    if (crit) dmg = Math.round(dmg * critMult());
     // 悶燒 n 層：保留 (n+1)/(n+2)，0 層就是減半
     adv.burn = Math.floor(adv.burn * (boon('smolder') + 1) / (boon('smolder') + 2));
-    const done = extraDamage(dmg, '#fb923c');
-    say(hound ? 'burnMsgHound' : 'burnMsg', { dmg: done, left: adv.burn });
+    const done = extraDamage(dmg, crit ? '#ffd166' : '#fb923c');
+    say(crit ? 'burnMsgCrit' : hound ? 'burnMsgHound' : 'burnMsg', { dmg: done, left: adv.burn });
     Sound.burn();
+    if (crit) Sound.crit();
     return true;
   }
 
@@ -2098,6 +2193,7 @@
   function damageMonster(px, combo = 0, times = 1, fire = false, boost = 0) {
     if (hasTalent('burn')) adv.burn += 1 + boon('kindle');   // 落進攻擊燈就疊燃燒（打不破防禦也算）
     const crit = Math.random() < critRate();
+    if (crit && hasTalent('burn')) adv.burn += boon('blaze');   // 爆燃：暴擊多疊燃燒
     const hitRes = computeHit(crit, combo);
     const { raw, def } = hitRes, dmg = stoneCut(Math.round(hitRes.dmg * times * BOOST_MULT[boost]));
     const chain = round.crits * boon('chainCrit');   // 這顆吃到的連鎖暴擊加成
@@ -2123,12 +2219,13 @@
       return;
     }
     round.struck = true;
+    round.strikes = (round.strikes || 0) + 1;
     if (fire && mode === 'adv' && !adv.chest) adv.burn++;
     adv.hp = Math.max(0, adv.hp - dmg);
     round.dmg += dmg;
     if (!adv.chest) noteBall(dmg, 0);
     adv.hitT = 0.5;
-    adv.pops.push({ text: '-' + dmg, t: 0, color: crit ? '#ffd166' : undefined, big: crit });
+    adv.pops.push({ text: '-' + dmg, t: 0, color: crit ? '#ffd166' : undefined, big: crit, n: round.strikes });
     const pop = t(crit ? 'critPop' : 'dmgPop', { d: dmg }) + (chain ? ' ' + t('chainPop', { c: chain }) : '')
       + (boost ? ' ' + t('boostPop', { x: BOOST_MULT[boost] }) : '');
     popups.push({ x: px, y: SLOT_TOP - 16, text: combo ? t('comboPop', { k: combo + 1, text: pop }) : pop, t: 0, color: crit ? '#ffd166' : '#ff6b6b', big: crit || combo > 0 });
@@ -2136,19 +2233,49 @@
     say(key, { mult: mult(), bet: round.bet, raw, def, dmg, k: combo + 1, c: combo, chain, boost: BOOST_MULT[boost] });
     if (crit) {
       state.shakeT = Math.max(state.shakeT, 0.25);   // 暴擊時機台晃一下
-      Sound.crit();
+      Sound.crit(round.strikes - 1);
     } else {
-      Sound.hit();
+      Sound.hit(round.strikes - 1);
     }
     if (adv.hp === 0) defeatMonster();
+  }
+
+  // 怪物的每個像素變成一塊碎片，從中心往外、往上噴
+  function monsterShards(m) {
+    const out = [], h = m.map.length, w = m.map[0].length;
+    m.map.forEach((row, r) => [...row].forEach((ch, col) => {
+      if (ch === '.') return;
+      const dx = col + 0.5 - w / 2, dy = r + 0.5 - h / 2;
+      out.push({ x: col * PX, y: r * PX, c: m.pal[ch],
+        vx: dx * 22 + (Math.random() - 0.5) * 90, vy: dy * 14 - 140 - Math.random() * 120 });
+    }));
+    return out;
+  }
+
+  function enrage() {
+    adv.enraged = true;
+    adv.rageT = 1.2;
+    state.shakeT = Math.max(state.shakeT, 0.5);
+    adv.pops.push({ text: t('rageScreen'), t: 0, color: '#ef4444', big: true });
+    say('rageMsg', { name: monsterName(), d: RAGE_DESC[skill()][lang] });
+    // 低吼
+    Sound.noise(0.5, 0.25);
+    Sound.tone(90, 0.7, 'sawtooth', 0.12, 0, 55);
+    Sound.tone(140, 0.5, 'square', 0.05, 0.1, 70);
+    setTimeout(saveRun, 0);
   }
 
   function defeatMonster() {
     adv.status = 'won';
     webShots.length = 0;          // 還在飛的蜘蛛網、繃帶也不要了
-    if (round.bandage && round.bandage.t < WEB_FLY) round.bandage = null;
+    round.bandages = round.bandages.filter(bd => bd.t >= WEB_FLY);
     adv.dieT = 1.4;
     adv.endT = 1.8;
+    adv.killT = KILL_FX;
+    adv.shards = monsterShards(adv.monster);
+    state.slowT = KILL_SLOW;
+    state.shakeT = Math.max(state.shakeT, 0.5);
+    Sound.kill();
     adv.wins++;
     saveRecord('candy-pinball-adv-wins', adv.wins);
     cleared.add(adv.monsterIdx);
@@ -2157,6 +2284,7 @@
     // 冒險模式：打倒怪物（最後一隻除外）後先選過關獎勵
     if (adv.campaign && adv.monsterIdx < LAST_STAGE) {
       adv.rerollCost = 1;
+      adv.freeRerolls = freeRerollsPerStage();
       rollRewards();
     }
     if (adv.campaign) {
@@ -2183,7 +2311,9 @@
     if (BOONS[id].talent && BOONS[id].talent !== adv.talent) return false;
     if (id === 'light') return !boon('light');    // 只能拿一次
     // 只能拿一次（攻擊燈、補珠燈疊太多會變成穩贏）
-    if (id === 'roll' || id === 'litUp' || id === 'refillLight') return !boon(id);
+    if (id === 'litUp' || id === 'refillLight' || id === 'scorch' || id === 'gash') return !boon(id);
+    if (id === 'bleed') return !!boon('gash');      // 放血要先有重創
+    if (id === 'refill') return boon(id) < REFILL_BOON_MAX;
     return true;
   }
   function rollRewards() {
@@ -2196,9 +2326,20 @@
   }
   // 重骰的費用也算還在出珠口排隊的彈珠（讀檔後彈珠是從出珠口重新掉出來的）
   const rerollBalls = () => state.credits + state.payoutQueue;
+  // 每次過關送 FREE_REROLLS 次免費重骰，好運骰子每顆再多 1 次；用完才花彈珠
+  const freeRerollsPerStage = () => FREE_REROLLS + (adv.items.dice || 0);
   function rerollRewards() {
     Sound.init();
-    if (!adv.rewards || rerollBalls() < adv.rerollCost) { Sound.error(); return; }
+    if (!adv.rewards) { Sound.error(); return; }
+    if (adv.freeRerolls > 0) {
+      adv.freeRerolls--;
+      rollRewards();
+      Sound.clunk();
+      refreshOverlay();
+      saveRun();          // 重新整理不能把免費次數拿回來
+      return;
+    }
+    if (rerollBalls() < adv.rerollCost) { Sound.error(); return; }
     const fromQueue = Math.min(state.payoutQueue, adv.rerollCost);
     state.payoutQueue -= fromQueue;
     state.credits -= adv.rerollCost - fromQueue;
@@ -2265,7 +2406,7 @@
   const coinBalls = () => 10 + adv.monsterIdx + 1;
   // 石頭：隨關卡成長，再加上養出來的攻擊（每珠攻擊、天賦攻擊）
   const stoneDmg = () => 3 + 2 * (adv.monsterIdx + 1) + boon('perBall') + talentAtk();
-  const ITEM_N = { coin: coinBalls, stone: stoneDmg, key: () => adv.lost };
+  const ITEM_N = { coin: coinBalls, stone: stoneDmg, key: () => adv.lost, dice: () => freeRerollsPerStage() };
   const itemEffect = id => ITEMS[id].effect[lang].replace('{n}', ITEM_N[id] ? ITEM_N[id]() : '');
 
   // 不能用的原因（i18n key），可以用就回傳 null
@@ -2277,6 +2418,7 @@
     return null;
   }
   function itemBlock(id) {
+    if (ITEMS[id].when === 'passive') return 'itemPassive';
     const general = itemBlockGeneral();
     if (general) return general;
     const it = ITEMS[id];
@@ -2286,7 +2428,7 @@
       case 'acid': if (monsterDef() === 0) return 'itemNoDef'; break;
       case 'hourglass': if (round.hourglass) return 'itemActive'; break;
       case 'board': if (!round.lit.size) return 'itemNoLit'; break;
-      case 'drink': if (round.refills.size >= SLOT_COUNT - pumpkinLanes() - (round.burnt >= 0 ? 1 : 0)) return 'itemAllRefill'; break;
+      case 'drink': if (round.refills.size >= SLOT_COUNT - pumpkinLanes() - round.burnt.size) return 'itemAllRefill'; break;
       case 'lighter': case 'file': if (!normalPinIdx().length) return 'itemNoPin'; break;
       case 'tissue': if (!openHoleIdx().length) return 'itemNoHole'; break;
       case 'key': if (adv.lost <= 0) return 'itemKeyEmpty'; break;
@@ -2620,6 +2762,13 @@
       round.boost[up[Math.floor(Math.random() * up.length)]] = 2;
     }
   }
+  // 外傷滾珠：強化孔的 u 次強化先給補珠燈（每顆最多兩階），補珠燈都強化滿了才輪到紅燈
+  function boostGreenFirst(u) {
+    const greens = [...round.refills];
+    const g = Math.min(u, greens.reduce((n, i) => n + 2 - round.boost[i], 0));
+    upgradeLights(greens, g);
+    upgradeLights([...round.lit], u - g);
+  }
   // 高功率雷射筆（紫）：直接把 u 顆燈升到第二階（先挑還沒強化的）
   function superLights(list, u) {
     for (; u > 0; u--) {
@@ -2630,7 +2779,11 @@
     }
   }
   // 定燈後會有幾顆補珠燈：基本 1 顆 + 雷射筆（綠）+ 過關獎勵「補珠燈數」
-  const refillTotal = () => 1 + round.extraRefill + boon('refillLight');
+  // 外傷滾珠：每回合紅燈 −1、補珠燈 +1，強化孔的強化先給補珠燈
+  const talentRefill = () => hasTalent('trauma') ? 1 : 0;
+  const talentRed = () => hasTalent('trauma') ? 1 : 0;
+  const greenFirst = () => hasTalent('trauma');
+  const refillTotal = () => 1 + round.extraRefill + boon('refillLight') + talentRefill();
   // 燈已經亮滿：紅燈 + 補珠燈已經佔滿 11 排，雷射筆再加燈就會蓋掉別的顏色
   const lightsFull = () => litCount() + refillTotal() >= SLOT_COUNT - pumpkinLanes();
 
@@ -2644,7 +2797,7 @@
     // 火焰燈：強化孔第 3 顆起每顆強化 1 次，燈亮滿時用的雷射筆（紅）每支再多 1 次
     round.boost.fill(0);
     if (advMultRule()) superLights(slots.slice(0, n), adv.stageSuper);
-    upgradeLights(slots.slice(0, n), boostCount() + (advMultRule() ? adv.stageBoost : 0));
+    upgradeLights(slots.slice(0, n), (greenFirst() ? 0 : boostCount()) + (advMultRule() ? adv.stageBoost : 0));
     // 寶箱：燈全亮；投 1 顆強化珠出 3 排藍燈、2 顆再加 2 排紫燈、3 顆再加 1 排橘燈
     round.tiers.fill(0);
     if (chestStage()) {
@@ -2660,7 +2813,7 @@
   // 這局亮幾顆攻擊燈：寶箱全亮；雷射筆（紅）、過關獎勵「攻擊燈數」多亮，但要留位置給補珠燈
   function litCount() {
     if (chestStage()) return SLOT_COUNT;
-    const bonus = mode === 'adv' ? round.extraLit + boon('litUp') : round.extraLit;
+    const bonus = mode === 'adv' ? round.extraLit + boon('litUp') - talentRed() : round.extraLit;
     return Math.min(litFor(round.level) + bonus, SLOT_COUNT - 1 - round.extraRefill - pumpkinLanes());
   }
 
@@ -2719,33 +2872,39 @@
 
   // 木乃伊甩繃帶：兩端從怪物螢幕飛出去，各自綁到一根釘子上
   function updateBandage(dt) {
-    const bd = round.bandage, was = bd.t;
-    bd.t += dt;
-    if (was < 0 && bd.t >= 0) Sound.tone(500, 0.2, 'sawtooth', 0.03, 0, 900);   // 咻
-    if (was < WEB_FLY && bd.t >= WEB_FLY) Sound.tone(220, 0.1, 'square', 0.04);
+    for (const bd of round.bandages) {
+      if (bd.t >= WEB_FLY) continue;
+      const was = bd.t;
+      bd.t += dt;
+      if (was < 0 && bd.t >= 0) Sound.tone(500, 0.2, 'sawtooth', 0.03, 0, 900);   // 咻
+      if (was < WEB_FLY && bd.t >= WEB_FLY) Sound.tone(220, 0.1, 'square', 0.04);
+    }
   }
 
   // 小惡龍噴火：火焰從怪物螢幕噴到那顆燈（DRAGON_FLY 秒），燒到時爆開
   const DRAGON_FLY = 0.55, DRAGON_BURST = 0.8;
   function updateDragonFire(dt) {
-    const fx = round.burnFx, was = fx.t;
-    fx.t += dt;
-    if (was < DRAGON_FLY && fx.t >= DRAGON_FLY) {
-      popups.push({ x: B.left + (fx.slot + 0.5) * SLOT_W, y: SLOT_TOP - 16, text: t('dragonPop'), t: 0, color: '#fb923c', big: true });
-      state.shakeT = Math.max(state.shakeT, 0.2);
-      Sound.burn();
+    for (const fx of round.burnFx) {
+      const was = fx.t;
+      fx.t += dt;
+      if (was < DRAGON_FLY && fx.t >= DRAGON_FLY) {
+        popups.push({ x: B.left + (fx.slot + 0.5) * SLOT_W, y: SLOT_TOP - 16, text: t('dragonPop'), t: 0, color: '#fb923c', big: true });
+        state.shakeT = Math.max(state.shakeT, 0.2);
+        Sound.burn();
+      }
     }
-    if (fx.t >= DRAGON_FLY + DRAGON_BURST) round.burnFx = null;
+    round.burnFx = round.burnFx.filter(fx => fx.t < DRAGON_FLY + DRAGON_BURST);
   }
 
   // 怪物技能每回合的準備：蜘蛛網、繃帶、骨盾；小惡龍燒掉的燈在定燈後才決定
   function rollSkills() {
     for (const p of ALL_PINS) p.web = p.webUsed = false;
     webShots.length = 0;
-    round.bandage = null;
-    round.burnt = -1;
-    round.burnFx = null;
+    round.bandages = [];
+    round.burnt = new Set();   // 這回合被噴火燒掉的燈
+    round.burnFx = [];
     round.struck = false;      // 蝙蝠：這回合有沒有珠造成傷害
+    round.strikes = 0;         // 這回合造成傷害幾下（音高、傷害數字跟著變大）
     round.bone = skill() === 'skeleton';
     round.skillMsg = null;
     // 南瓜頭：每回合換一排當南瓜燈（要在決定亮燈之前）
@@ -2755,16 +2914,20 @@
     const normal = normalPinIdx();
     const pick = list => list.splice(Math.floor(Math.random() * list.length), 1)[0];
     if (skill() === 'spider') {
-      for (let n = SPIDER_WEBS, k = 0; n > 0 && normal.length; n--, k++) webShots.push({ p: ALL_PINS[pick(normal)], t: -0.3 - k * WEB_GAP, done: false });
+      for (let n = rageVal(SPIDER_WEBS, SPIDER_WEBS_RAGE), k = 0; n > 0 && normal.length; n--, k++) webShots.push({ p: ALL_PINS[pick(normal)], t: -0.3 - k * WEB_GAP, done: false });
     } else {
-      // 繃帶：隨機一根釘子，連到旁邊的另一根
-      for (let tries = 0; tries < 20 && normal.length; tries++) {
-        const a = ALL_PINS[normal[Math.floor(Math.random() * normal.length)]];
-        const near = normal.map(i => ALL_PINS[i]).filter(q => q !== a && Math.hypot(q.x - a.x, q.y - a.y) < 64);
-        if (!near.length) continue;
-        const b = near[Math.floor(Math.random() * near.length)];
-        round.bandage = { ax: a.x, ay: a.y, bx: b.x, by: b.y, n: 0, t: -0.3 };   // n：纏住幾顆了   // t：甩出去的動畫時間，到 WEB_FLY 才有效
-        break;
+      // 繃帶：隨機一根釘子，連到旁邊的另一根（狂暴時兩條，不重複用同一根釘子）
+      const used = new Set();
+      for (let k = 0; k < rageVal(1, MUMMY_BANDS_RAGE); k++) {
+        for (let tries = 0; tries < 20 && normal.length; tries++) {
+          const a = ALL_PINS[normal[Math.floor(Math.random() * normal.length)]];
+          const near = normal.map(i => ALL_PINS[i]).filter(q => q !== a && !used.has(q) && Math.hypot(q.x - a.x, q.y - a.y) < 64);
+          if (used.has(a) || !near.length) continue;
+          const b = near[Math.floor(Math.random() * near.length)];
+          used.add(a).add(b);
+          round.bandages.push({ ax: a.x, ay: a.y, bx: b.x, by: b.y, n: 0, t: -0.3 - k * WEB_GAP });   // n：纏住幾顆了   // t：甩出去的動畫時間，到 WEB_FLY 才有效
+          break;
+        }
       }
     }
   }
@@ -2788,28 +2951,36 @@
       // 定燈後，在沒亮燈的排裡隨機挑一排當補珠燈（雷射筆（綠）、過關獎勵「補珠燈數」會多挑幾排；沒空排就不再加，不會擠掉紅燈）
       const free = [];
       for (let i = 0; i < SLOT_COUNT; i++) if (!round.lit.has(i) && !slotBlocked(i)) free.push(i);
-      for (let n = 1 + round.extraRefill + boon('refillLight'); n > 0 && free.length; n--) {
+      for (let n = refillTotal(); n > 0 && free.length; n--) {
         round.refills.add(free.splice(Math.floor(Math.random() * free.length), 1)[0]);
       }
       upgradeLights([...round.refills], adv.stageRefillBoost);
-      // 小惡龍：噴火燒掉一顆燈（攻擊燈或補珠燈）
-      let burnt = '';
-      if (skill() === 'dragon') {
-        const lights = [...round.lit, ...round.refills];
-        if (lights.length) {
-          const s = lights[Math.floor(Math.random() * lights.length)];
-          burnt = t(round.lit.has(s) ? 'dragonRed' : 'dragonGreen');
-          round.burnFx = { slot: s, t: 0, green: round.refills.has(s), boost: round.boost[s] };   // 噴火動畫：火焰到之前那顆燈還亮著
-          round.lit.delete(s);
-          round.refills.delete(s);
-          round.boost[s] = 0;
-          round.burnt = s;
-          Sound.tone(160, 0.5, 'sawtooth', 0.07, 0, 60);    // 呼——
-        }
+      if (greenFirst()) boostGreenFirst(boostCount());
+      // 小惡龍：噴火燒掉一顆燈（攻擊燈或補珠燈；狂暴時紅燈、綠燈各一顆）；地獄犬狂暴後也會噴火燒掉一顆
+      // 每一道火從哪些燈裡挑：null = 紅綠都可以
+      const pools = skill() === 'dragon' ? (adv.enraged ? ['lit', 'refills'] : [null])
+        : skill() === 'hound' ? Array(rageVal(0, HOUND_BURN_RAGE)).fill(null) : [];
+      const kinds = { red: 0, green: 0 };
+      for (const pool of pools) {
+        const k = round.burnt.size;
+        const lights = pool ? [...round[pool]] : [...round.lit, ...round.refills];
+        if (!lights.length) continue;
+        const s = lights[Math.floor(Math.random() * lights.length)];
+        kinds[round.lit.has(s) ? 'red' : 'green']++;
+        // 噴火動畫：火焰到之前那顆燈還亮著；第二顆晚一點噴
+        round.burnFx.push({ slot: s, t: -k * 0.35, green: round.refills.has(s), boost: round.boost[s] });
+        round.lit.delete(s);
+        round.refills.delete(s);
+        round.boost[s] = 0;
+        round.burnt.add(s);
       }
+      if (round.burnt.size) Sound.tone(160, 0.5, 'sawtooth', 0.07, 0, 60);    // 呼——
+      // 「攻擊燈」「2 顆攻擊燈」「攻擊燈和補珠燈」
+      const burnt = [['red', 'dragonRed'], ['green', 'dragonGreen']].filter(([k]) => kinds[k])
+        .map(([k, key]) => kinds[k] > 1 ? t(key + 'N', { n: kinds[k] }) : t(key)).join(t('listSep'));
       const f1 = [...round.lit].filter(i => round.boost[i] === 1).length, f2 = [...round.lit].filter(i => round.boost[i] === 2).length;
       const fr = [...round.refills].filter(i => round.boost[i]).length;
-      say(f2 ? 'lockedAdvFlame2' : f1 ? 'lockedAdvFlame' : 'lockedAdv', { lit: round.lit.size, f: f1 + f2, f2, fr, burnt });
+      say(f2 ? 'lockedAdvFlame2' : f1 ? 'lockedAdvFlame' : 'lockedAdv', { lit: round.lit.size, f: f1 + f2, f2, fr, burnt, who: monsterName() });
     } else {
       say('locked', { mult: mult(), lit: round.lit.size });
     }
@@ -2824,7 +2995,7 @@
       + (vars.boostRefill > 1 ? t('boostRefillTag', { x: vars.boostRefill }) : '')
       + (vars.fr ? t('flameRefillTag', { n: vars.fr }) : '')
       + (vars.flame ? t(vars.flame2 ? 'flameBetTag2' : 'flameBetTag', { w: vars.flame, w2: vars.flame2 }) : '')
-      + (vars.burnt ? t('dragonTag', { kind: vars.burnt }) : '')
+      + (vars.burnt ? t('dragonTag', { kind: vars.burnt, who: vars.who }) : '')
       + (vars.skill ? t('skillTag', { s: vars.skill }) : '');
     for (const el of msgEls) el.textContent = text;
     if (text !== msgText) { msgText = text; msgT = performance.now(); }
@@ -2932,7 +3103,7 @@
     round.level++;
     round.multPaid += cost;
     if (chestStage()) say('chestTierUp', { desc: t('chestDesc' + round.level) });
-    else if (boostCount()) say('multUpBoost', { mult: mult(), lit: litCount(), b: boostCount() });
+    else if (boostCount()) say(greenFirst() ? 'multUpBoostGreen' : 'multUpBoost', { mult: mult(), lit: litCount(), b: boostCount() });
     else say('multUp', { mult: mult(), lit: litCount() });
   }
 
@@ -2960,6 +3131,11 @@
     // 大冒險：每顆落下就結算（用了沙漏就等全部落下再一起預告）
     if (!round.hourglass && slot >= 0 && adv.status === 'playing') resolveBall(slot, !!b.fire);
     if (adv.status === 'won') { endEarly(); return; }
+    finishIfAllDone();
+  }
+  // 這回合的珠都發射了、檯面上只剩黏住的珠：先收網／收繃帶，再結算
+  // （珠落下、珠被黏住時都要檢查：最後一顆珠是被黏住的話，就不會再有珠落下來觸發結算）
+  function finishIfAllDone() {
     if (round.launched < shots() || balls.some(x => !x.stuck)) return;    // 還有珠沒發射或還在檯面上
     if (startReel()) return;      // 蜘蛛先把黏著珠的網收回去，收完再結算
     afterLanding();
@@ -2988,7 +3164,7 @@
       b.reel = { x0: b.x, y0: b.y };
       if (spider) b.webPin.web = false;          // 網跟著珠一起走
     }
-    if (!spider) round.bandage.reeled = true;    // 繃帶從釘子上解下來，捲著珠收回去
+    if (!spider) for (const bd of round.bandages) bd.reeled = true;    // 繃帶從釘子上解下來，捲著珠收回去
     say(spider ? 'reelMsg' : 'reelMsgMummy', { n: stuck.length });
     Sound.tone(900, 0.5, 'triangle', 0.05, 0, 300);
     return true;
@@ -3026,6 +3202,7 @@
     b.vx = b.vy = 0;
     popups.push({ x: b.x, y: b.y - 10, text: t(skill() === 'spider' ? 'webPop' : 'bandagePop'), t: 0, color: '#e5e7eb' });
     Sound.thud();
+    finishIfAllDone();
   }
 
   // 大冒險一顆珠的結果：攻擊燈造成傷害、補珠燈補珠、其他沒中
@@ -3041,7 +3218,7 @@
     }
     // 南瓜頭：南瓜燈回血
     if (skill() === 'pumpkin' && slot === adv.pumpkin) {
-      const n = Math.max(1, Math.round(adv.maxHp * PUMPKIN_HEAL));
+      const n = Math.max(1, Math.round(adv.maxHp * rageVal(PUMPKIN_HEAL, PUMPKIN_HEAL_RAGE)));
       adv.hp = Math.min(adv.maxHp, adv.hp + n);
       adv.pops.push({ text: '+' + n, t: 0, color: '#4ade80' });
       healFx(HEAL_FX * 0.6);
@@ -3052,7 +3229,7 @@
     }
     // 吸血鬼：沒落進任何燈的珠讓牠回血（之後照常算滾動補給）
     if (skill() === 'vampire' && !round.lit.has(slot) && !round.refills.has(slot)) {
-      const n = Math.min(VAMPIRE_HEAL, adv.maxHp - adv.hp);
+      const n = Math.min(rageVal(VAMPIRE_HEAL, VAMPIRE_HEAL_RAGE), adv.maxHp - adv.hp);
       if (n > 0) {
         adv.hp += n;
         adv.pops.push({ text: '+' + n, t: 0, color: '#4ade80' });
@@ -3060,10 +3237,11 @@
         popups.push({ x: px, y: SLOT_TOP - 34, text: t('drainPop', { n }), t: 0, color: '#f87171' });
       }
     }
-    // 幽靈：落進攻擊燈也可能被閃避
-    if (skill() === 'ghost' && round.lit.has(slot) && Math.random() < GHOST_DODGE) {
+    // 幽靈：落進攻擊燈也可能被閃避；骷髏狂暴後也會閃
+    const dodge = skill() === 'ghost' ? rageVal(GHOST_DODGE, GHOST_DODGE_RAGE) : skill() === 'skeleton' ? rageVal(0, SKELETON_DODGE_RAGE) : 0;
+    if (dodge && round.lit.has(slot) && Math.random() < dodge) {
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('dodgePop'), t: 0, color: '#cbd5e1' });
-      say('ghostMsg');
+      say(skill() === 'ghost' ? 'ghostMsg' : 'boneDodgeMsg');
       adv.laughT = 1;
       Sound.miss();
       return;
@@ -3076,9 +3254,9 @@
       damageMonster(px, combo, 1, fire, round.boost[slot]);
     } else if (round.refills.has(slot)) {
       // 補珠燈：每顆補 2 顆；這回合第一次中還會退回投進強化孔的珠
-      // 火焰補珠燈（鋁箔包飲料把火焰燈變成的補珠燈）：最終補珠數 ×1.5 / ×2
+      // 火焰補珠燈：補珠 ×1.5 / ×2（退回強化孔的珠不加倍）
       const boost = round.boost[slot];
-      const refund = round.refunded ? 0 : round.multPaid, bonus = refillBonus() + combo, n = Math.round((refund + bonus) * BOOST_MULT[boost]);
+      const refund = round.refunded ? 0 : round.multPaid, bonus = Math.round((refillBonus() + combo) * BOOST_MULT[boost]), n = refund + bonus;
       round.refunded = true;
       round.hits++;
       round.gain += n;
@@ -3089,24 +3267,27 @@
       popups.push({ x: px, y: SLOT_TOP - 16, text: combo ? t('comboPop', { k: combo + 1, text: pop }) : pop, t: 0, color: '#4ade80', big: combo > 0 || boost > 0 });
       say(combo ? 'refillMsgCombo' : refund ? 'refillMsgMult' : 'refillMsg', { n, refund, bonus, k: combo + 1, c: combo, boostRefill: BOOST_MULT[boost] });
       Sound.coin();
-      if (hasTalent('burn')) adv.burn += boon('tinder');
       if (hasTalent('trauma')) {
-        const dmg = Math.round(n * traumaRate());
+        let dmg = Math.round(n * traumaRate());
+        const crit = boon('gash') && Math.random() < critRate();   // 重創：外傷也會暴擊
+        if (crit) dmg = Math.round(dmg * (critMult() + GASH_BONUS));   // 外傷暴擊比一般暴擊多 ×0.5（基礎 ×2）
         if (dmg > 0) round.struck = true;
-        const done = extraDamage(dmg, '#f472b6');
+        const done = extraDamage(dmg, crit ? '#ffd166' : '#f472b6');
         noteBall(done, 0);
+        // 放血：外傷暴擊多補珠
+        const extra = crit ? boon('bleed') : 0;
+        if (extra) {
+          state.payoutQueue += extra;
+          adv.lost = Math.max(0, adv.lost - extra);
+          round.gain += extra;
+        }
+        if (crit) Sound.crit();
         if (boon('shatter') && !round.shattered && adv.monster && monsterDef() > 0) {
           round.shattered = true;
           adv.defDown = Math.min(adv.monster.def, adv.defDown + boon('shatter'));
         }
-        say('traumaMsg', { n, dmg: done });
+        say(crit ? 'traumaMsgCrit' : 'traumaMsg', { n: n + extra, dmg: done });
       }
-    } else if (boon('roll')) {
-      // 滾動補給：沒中的珠退回 1 顆
-      state.payoutQueue += 1;
-      adv.lost = Math.max(0, adv.lost - 1);
-      popups.push({ x: px, y: SLOT_TOP - 16, text: t('refillPop', { n: 1 }), t: 0, color: '#cbd5e1' });
-      Sound.tone(1320, 0.1, 'square', 0.05);
     } else {
       popups.push({ x: px, y: SLOT_TOP - 16, text: t('losePop'), t: 0, color: '#cbd5e1' });
       if (shots() === 1) say('advMissMsg', { name: monsterName() });
@@ -3125,6 +3306,10 @@
 
   // 怪物回血的特效：怪物身上一圈綠光，綠色十字往上飄（t 秒；殭屍再生最久）
   const HEAL_FX = 1.4;
+  const KILL_FX = 1.4, KILL_FREEZE = 0.25;   // 擊殺特效多久（遊戲秒）、一開始定格閃白多久
+  const KILL_SLOW = 0.9, SLOW_RATE = 0.3;    // 擊殺後慢動作多久（實際秒）、放慢成幾倍
+  const KILL_ZOOM = 0.3;                     // 擊殺時鏡頭最多拉近多少
+  const RECORD_FX = 1.6;
   function healFx(dur) {
     if (dur >= (adv.healT || 0)) adv.healT = adv.healDur = dur;
     Sound.tone(523, 0.14, 'triangle', 0.07);
@@ -3142,13 +3327,13 @@
       round.skillMsg = ['batMsg', { n }];
     }
     if (skill() === 'zombie' && adv.hp < adv.maxHp) {
-      const n = Math.min(adv.maxHp - adv.hp, Math.max(1, Math.round(adv.maxHp * ZOMBIE_REGEN)));
+      const n = Math.min(adv.maxHp - adv.hp, Math.max(1, Math.round(adv.maxHp * rageVal(ZOMBIE_REGEN, ZOMBIE_REGEN_RAGE))));
       adv.hp += n;
       adv.pops.push({ text: '+' + n, t: 0, color: '#4ade80', big: true });
       healFx(HEAL_FX);
       round.skillMsg = ['zombieMsg', { n }];
     }
-    if (skill() === 'lich' && adv.shields && ++adv.lichT >= LICH_REFILL) {
+    if (skill() === 'lich' && adv.shields && ++adv.lichT >= rageVal(LICH_REFILL, LICH_REFILL_RAGE)) {
       adv.lichT = 0;
       adv.shields.fill(true);
       popups.push({ x: W / 2 - 20, y: SLOT_TOP - 30, text: t('wardRefillPop'), t: 0, color: '#c4b5fd', big: true });
@@ -3269,13 +3454,13 @@
       const combo = stack[slot] || 0;
       if (slot >= 0) stack[slot] = combo + 1;
       if (skill() === 'pumpkin' && slot === adv.pumpkin) {
-        text = t('hgPumpkin', { n: Math.max(1, Math.round(adv.maxHp * PUMPKIN_HEAL)) });
+        text = t('hgPumpkin', { n: Math.max(1, Math.round(adv.maxHp * rageVal(PUMPKIN_HEAL, PUMPKIN_HEAL_RAGE))) });
       } else if (round.lit.has(slot)) {
         const { raw, def, dmg } = computeHit(false, combo);
         text = dmg > 0 && bone ? t('hgBone') : dmg > 0 ? t('hgHit', { dmg: stoneCut(Math.round(dmg * BOOST_MULT[round.boost[slot]])) }) : t('hgBlock', { raw, def });
         if (dmg > 0) bone = false;
       } else if (round.refills.has(slot)) {
-        const n = Math.round((refund + refillBonus() + combo) * BOOST_MULT[round.boost[slot]]);
+        const n = refund + Math.round((refillBonus() + combo) * BOOST_MULT[round.boost[slot]]);
         text = hasTalent('trauma') ? t('hgRefillHurt', { n, dmg: Math.round(n * traumaRate()) }) : t('hgRefill', { n });
         refund = 0;
       } else {
@@ -3417,9 +3602,9 @@
       impact = Math.max(impact, collideCircle(b, c.x, c.y, CAP_R, 0.6));
     }
     for (const s of walls) impact = Math.max(impact, collideWall(b, s));
-    // 木乃伊的繃帶：第一顆碰到的珠黏住
-    const bd = round.bandage;
-    if (bd && bd.n < BANDAGE_CAP && bd.t >= WEB_FLY && multiBall() && b.fired) {
+    // 木乃伊的繃帶：碰到的珠黏住（每條最多 BANDAGE_CAP 顆）
+    for (const bd of round.bandages) {
+      if (bd.n >= BANDAGE_CAP || bd.t < WEB_FLY || !multiBall() || !b.fired) continue;
       const dx = bd.bx - bd.ax, dy = bd.by - bd.ay;
       const k = Math.max(0, Math.min(1, ((b.x - bd.ax) * dx + (b.y - bd.ay) * dy) / (dx * dx + dy * dy)));
       if (Math.hypot(b.x - (bd.ax + dx * k), b.y - (bd.ay + dy * k)) < ballR(b) + 1.5) { bd.n++; b.band = true; stickBall(b); return; }
@@ -3566,6 +3751,15 @@
         if (adv.laughSoundT <= 0) Sound.snicker();
       }
       adv.dieT = Math.max(0, adv.dieT - dt);
+      adv.recT = Math.max(0, adv.recT - dt);
+      if (adv.killT > 0) {
+        adv.killT = Math.max(0, adv.killT - dt);
+        if (adv.shards && adv.killT < KILL_FX - KILL_FREEZE) for (const s of adv.shards) {
+          s.vy += 520 * dt;
+          s.x += s.vx * dt;
+          s.y += s.vy * dt;
+        }
+      }
       for (let i = adv.pops.length - 1; i >= 0; i--) {
         adv.pops[i].t += dt;
         if (adv.pops[i].t > 1.2) adv.pops.splice(i, 1);
@@ -3590,9 +3784,9 @@
       adv.run.maxGain = Math.max(adv.run.maxGain, round.gain);
     }
     if (webShots.length) updateWebShots(dt);
-    if (round.bandage && round.bandage.t < WEB_FLY) updateBandage(dt);
+    if (round.bandages.some(bd => bd.t < WEB_FLY)) updateBandage(dt);
     if (round.phase === 'reel') updateReel(dt);
-    if (round.burnFx) updateDragonFire(dt);
+    if (round.burnFx.length) updateDragonFire(dt);
     // 石像怪血量掉過門檻：宣告石化
     if (skill() === 'gargoyle' && adv.status === 'playing') {
       const tier = STONE_TIERS.length - STONE_TIERS.findIndex(([h]) => adv.hp / adv.maxHp <= h);
@@ -3604,6 +3798,9 @@
         Sound.thud();
       }
     }
+    // 半血狂暴（蝙蝠、石像怪不會）
+    if (mode === 'adv' && adv.status === 'playing' && !adv.enraged && RAGE_DESC[skill()] && adv.hp <= adv.maxHp * RAGE_AT) enrage();
+    if (adv.rageT > 0) adv.rageT = Math.max(0, adv.rageT - dt);
     if (round.phase === 'burn') updateBurn(dt);
     if (round.phase === 'win' || round.phase === 'lose' || round.phase === 'rewind') {
       round.resetT -= dt;
@@ -4689,6 +4886,48 @@
     }
   }
 
+  // 擊殺：鏡頭往怪物拉近再拉回；一開始怪物定格閃白，之後碎成像素往外飛，最後淡出
+  function drawKill(m, x0, y0, size) {
+    const S = SCREEN;
+    const p = 1 - adv.killT / KILL_FX;
+    const cx = x0 + size / 2, cy = y0 + size / 2;
+    const z = 1 + KILL_ZOOM * Math.sin(Math.PI * Math.min(1, p * 1.6));
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(S.x, S.y, S.w, S.h);
+    ctx.clip();
+    ctx.translate(cx, cy);
+    ctx.scale(z, z);
+    ctx.translate(-cx, -cy);
+    if (adv.killT > KILL_FX - KILL_FREEZE) {
+      drawMonster(m, x0, y0, Math.floor(adv.killT * 30) % 2 === 0);
+    } else {
+      ctx.globalAlpha = Math.min(1, adv.killT / 0.5);
+      for (const s of adv.shards) {
+        ctx.fillStyle = s.c;
+        ctx.fillRect(x0 + s.x, y0 + s.y, PX, PX);
+      }
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+    // 擊中瞬間整個螢幕閃白
+    const flash = (adv.killT - (KILL_FX - 0.15)) / 0.15;
+    if (flash > 0) {
+      ctx.fillStyle = `rgba(255,255,255,${0.7 * flash})`;
+      ctx.fillRect(S.x, S.y, S.w, S.h);
+    }
+  }
+
+  // 狂暴：怪物後面一團一明一暗的紅光，剛觸發時特別亮
+  function drawRageGlow(cx, y0, size, time) {
+    const k = Math.min(0.85, 0.35 + 0.15 * Math.sin(time * 6) + adv.rageT * 0.4), cy = y0 + size / 2;
+    const g = ctx.createRadialGradient(cx, cy, 4, cx, cy, size * 0.8);
+    g.addColorStop(0, `rgba(239, 68, 68, ${k})`);
+    g.addColorStop(1, 'rgba(239, 68, 68, 0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(cx - size, y0 - 10, size * 2, size + 20);
+  }
+
   function drawMonster(m, x0, y0, flash, laughing = false, open = false) {
     const map = open ? m.open : laughing ? m.laugh : m.map;
     for (let r = 0; r < map.length; r++) {
@@ -4727,6 +4966,275 @@
     ctx.restore();
   }
 
+  // 像素圖：map 是字串陣列（或字元陣列），'.' 透明；flash 時全部畫白色；g 預設畫在機台上
+  function drawPixels(map, pal, x, y, P, flash = false, g = ctx) {
+    for (let r = 0; r < map.length; r++) {
+      const row = map[r];
+      for (let c = 0; c < row.length; c++) {
+        const ch = row[c];
+        if (ch === '.') continue;
+        g.fillStyle = flash ? '#ffffff' : pal[ch];
+        g.fillRect(x + c * P, y + r * P, P, P);
+      }
+    }
+  }
+
+  // ===== 擬人化的彈珠：三種天賦各一隻，16×16 的圓球，細眉往中間壓、眼珠頂著眉毛的熱血眼神，不畫嘴巴 =====
+  const HEROES = {
+    // 合金鋼珠：銀灰色金屬
+    alloy: {
+      pal: {
+        K: '#1e293b', L: '#e2e8f0', W: '#ffffff', S: '#b8c4d3', D: '#64748b', E: '#0f172a',
+        T: '#7dd3fc',
+      },
+      map: [
+        '.....KKKKKK.....',
+        '...KKLLLSSSKK...',
+        '..KLLWWSSSSSSK..',
+        '.KLLWSSSSSSSSDK.',
+        '.KEESSSSSSSSEEK.',
+        'KSSSEEESSEEESSDK',
+        'KKWWWEESSEEWWWKK',
+        'KKWWWEWSSWEWWWKK',
+        'KKWWWEWSSWEWWWKK',
+        'KKWWWWWSSWWWWWKK',
+        'KSKKKKKSSKKKKKDK',
+        '.KSSSSSSSSSSSDK.',
+        '.KDSSSSSSSSSDDK.',
+        '..KDDSSSSSSDDK..',
+        '...KKDDDDDDKK...',
+        '.....KKKKKK.....',
+      ],
+    },
+    // 燒紅彈珠：橘紅發燙、身上有熱紋，頭頂冒火（flame 畫在身體後面，下兩列跟頭頂重疊）
+    burn: {
+      pal: {
+        K: '#431407', L: '#fed7aa', W: '#fff7ed', S: '#f97316', D: '#c2410c', E: '#2a0a02',
+        Y: '#fde047', O: '#fb923c', R: '#ef4444', T: '#7dd3fc',
+      },
+      map: [
+        '.....KKKKKK.....',
+        '...KKLLLSSSKK...',
+        '..KLLWWSSSSSSK..',
+        '.KLLWSSSSSSSSDK.',
+        '.KEESSSSSSSYEEK.',
+        'KSSSEEESSEEESSDK',
+        'KKWWWEESSEEWWWKK',
+        'KKWWWEWSSWEWWWKK',
+        'KKWWWEWSSWEWWWKK',
+        'KKWWWWWSSWWWWWKK',
+        'KSKKKKKSSKKKKKDK',
+        '.KSYSSSSSSSSSDK.',
+        '.KDSSYSSSSYSDDK.',
+        '..KDDSSYSSSDDK..',
+        '...KKDDDDDDKK...',
+        '.....KKKKKK.....',
+      ],
+      flame: [
+        '........Y.......',
+        '.......YY...Y...',
+        '....Y..YOY..Y...',
+        '...YO.YOOY.YO...',
+        '...YOYOOROYOO...',
+        '...ORORRRROROY..',
+        '....RRRRRRRRR...',
+      ],
+    },
+    // 外傷滾珠：光滑的淡綠色
+    trauma: {
+      pal: {
+        K: '#065f46', L: '#ecfdf5', W: '#ffffff', S: '#a7f3d0', D: '#34d399', E: '#022c22',
+        T: '#7dd3fc',
+      },
+      map: [
+        '.....KKKKKK.....',
+        '...KKLLLSSSKK...',
+        '..KLLWWSSSSSSK..',
+        '.KLLWSSSSSSSSDK.',
+        '.KEESSSSSSSSEEK.',
+        'KSSSEEESSEEESSDK',
+        'KKWWWEESSEEWWWKK',
+        'KKWWWEWSSWEWWWKK',
+        'KKWWWEWSSWEWWWKK',
+        'KKWWWWWSSWWWWWKK',
+        'KSKKKKKSSKKKKKDK',
+        '.KSSSSSSSSSSSDK.',
+        '.KDSSSSSSSSSDDK.',
+        '..KDDSSSSSSDDK..',
+        '...KKDDDDDDKK...',
+        '.....KKKKKK.....',
+      ],
+    },
+  };
+  const HERO_SIZE = 16, FLAME_ROWS = 7, FLAME_OVERLAP = 2;
+  // 眼睛的格子（[列, 欄]）：閉眼時清掉，改畫一條線
+  // 眼睛的格子（[列, 欄]）：閉眼時清掉，改畫一條線
+  // 眼睛的範圍（第 6～10 列、左眼第 1～6 欄和右眼對稱的位置）：閉眼時清掉眼白、眼珠、眼框，改畫一條線
+  const HERO_EYES = [6, 7, 8, 9, 10].flatMap(r => [1, 2, 3, 4, 5, 6].flatMap(c => [[r, c], [r, 15 - c]]));
+  // mood：idle（平常，blink 時閉眼）、cheer（笑瞇成 ∩ ∩）、cry（緊閉雙眼、一滴眼淚）；沒有嘴巴
+  function heroMap(id, mood = 'idle', blink = false) {
+    const m = HEROES[id].map.map(r => [...r]);
+    const set = (r, cols, ch) => { for (const c of cols) m[r][c] = ch; };
+    const closeEyes = () => {
+      for (const [r, c] of HERO_EYES) if ('WEK'.includes(m[r][c])) m[r][c] = 'S';   // OK 繃不清掉
+      set(8, [2, 3, 4, 5, 6, 9, 10, 11, 12, 13], 'E');
+    };
+    if (mood === 'cheer') {
+      // 笑瞇成 ∩ ∩
+      closeEyes();
+      set(8, [2, 3, 4, 5, 6, 9, 10, 11, 12, 13], 'S');
+      set(7, [3, 4, 5, 10, 11, 12], 'E'); set(8, [2, 6, 9, 13], 'E');
+    } else if (mood === 'cry') {
+      closeEyes();
+      set(9, [3], 'T'); set(10, [3], 'T'); set(11, [3], 'T');
+    } else if (blink) {
+      closeEyes();
+    }
+    return m;
+  }
+  // 火焰兩格輪流（第二格左右翻過來）看起來在跳動
+  function heroFlame(id, frame) {
+    const f = HEROES[id].flame;
+    if (!f) return null;
+    return frame % 2 ? f.map(r => [...r].reverse().join('')) : f;
+  }
+  // 畫成一張小圖（首頁吉祥物用）
+  function paintHero(cv, id, P, mood, blink = false, frame = 0) {
+    const flame = heroFlame(id, frame);
+    const top = flame ? flame.length - FLAME_OVERLAP : 0;
+    cv.width = HERO_SIZE * P;
+    cv.height = (HERO_SIZE + top) * P;
+    const g = cv.getContext('2d');
+    g.clearRect(0, 0, cv.width, cv.height);
+    if (flame) drawPixels(flame, HEROES[id].pal, 0, 0, P, false, g);
+    drawPixels(heroMap(id, mood, blink), HEROES[id].pal, 0, top * P, P, false, g);
+    return cv;
+  }
+
+  // 首頁開場動畫（像素螢幕）：三隻彈珠輪流出場，從左邊滾進來撞怪物，
+  // 怪物被撞飛（照關卡順序輪流出場），彈珠反彈回來、停一下，再往右滾出畫面
+  const INTRO_CYCLE = 4.5;                     // 每一段幾秒
+  const INTRO_HIT = 1.3, INTRO_BOUNCE = 2.1, INTRO_HOP = 2.4, INTRO_GO = 3.4;
+  function drawIntro(S, time, PIXEL_FONT) {
+    // 背景慢慢往左捲：原圖和左右翻轉的圖交替接起來，接縫才不會跳一格
+    const bg = advBg('forest'), off = Math.round(time * 15) % (S.w * 2);
+    for (let k = 0; k < 3; k++) {
+      const x = S.x - off + k * S.w;
+      if (x >= S.x + S.w || x + S.w <= S.x) continue;
+      if (k % 2) {
+        ctx.save();
+        ctx.translate(x + S.w, S.y);
+        ctx.scale(-1, 1);
+        ctx.drawImage(bg, -1, 0, S.w + 2, S.h);     // 左右各多畫 1px 蓋住接縫
+        ctx.restore();
+      } else ctx.drawImage(bg, x - 1, S.y, S.w + 2, S.h);
+    }
+    const ground = S.y + 90;
+    const n = Math.floor(time / INTRO_CYCLE), p = time % INTRO_CYCLE;
+    const id = TALENT_IDS[n % TALENT_IDS.length], hero = HEROES[id];
+    const m = MONSTERS[n % MONSTERS.length];
+    const HP = 3, R = HERO_SIZE * HP / 2;
+    const MP = 4, msize = m.map.length * MP;
+    const mx = S.x + S.w * 0.68;                 // 怪物站的位置（中心）
+    const hitX = mx - msize / 2 - R + 4;          // 彈珠撞到怪物時的中心
+    const startX = S.x - R - 10, restX = hitX - 70;
+
+    // 怪物：一開始從上面掉下來，被撞到時閃白，接著轉著圈往右上飛出去
+    if (p < INTRO_HIT) {
+      const drop = Math.min(1, p / 0.3);
+      const y = ground - msize - (1 - drop) * (1 - drop) * 60 + Math.abs(Math.sin(p * 7)) * -2;
+      drawPixels(m.map, m.pal, Math.round(mx - msize / 2), Math.round(y), MP);
+    } else if (p < INTRO_HIT + 1.2) {
+      const q = (p - INTRO_HIT) / 1.2;
+      ctx.save();
+      ctx.translate(mx + 260 * q, ground - msize / 2 - 150 * q + 90 * q * q);
+      ctx.rotate(q * 9);
+      drawPixels(m.map, m.pal, -msize / 2, -msize / 2, MP, p - INTRO_HIT < 0.12);
+      ctx.restore();
+    }
+    // 撞擊：一圈星星
+    if (p >= INTRO_HIT && p < INTRO_HIT + 0.9) {
+      const q = (p - INTRO_HIT) / 0.9, cx = hitX + R, cy = ground - R;
+      ctx.globalAlpha = 1 - q;
+      ctx.fillStyle = '#fde047';
+      for (let i = 0; i < 8; i++) {
+        const a = i / 8 * Math.PI * 2, d = 10 + 40 * q;
+        ctx.fillRect(Math.round(cx + Math.cos(a) * d) - 2, Math.round(cy + Math.sin(a) * d) - 2, 4, 4);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // 彈珠：x 是中心，滾動角度 = 走過的距離 ÷ 半徑（往回彈時倒著轉）
+    let x, y = ground - R, angle;
+    const ease = q => q * q;
+    const aHit = (hitX - startX) / R;
+    if (p < INTRO_HIT) {
+      x = startX + (hitX - startX) * (0.35 * (p / INTRO_HIT) + 0.65 * ease(p / INTRO_HIT));
+      angle = (x - startX) / R;
+    } else if (p < INTRO_BOUNCE) {
+      const q = (p - INTRO_HIT) / (INTRO_BOUNCE - INTRO_HIT);
+      x = hitX + (restX + 12 - hitX) * q;
+      y -= 28 * 4 * q * (1 - q);
+      angle = aHit + (x - hitX) / R * 1.5;
+    } else if (p < INTRO_HOP) {
+      const q = (p - INTRO_BOUNCE) / (INTRO_HOP - INTRO_BOUNCE);
+      x = restX + 12 - 12 * q;
+      y -= 10 * 4 * q * (1 - q);
+      angle = aHit + (restX + 12 - hitX) / R * 1.5 - 12 * q / R;
+    } else if (p < INTRO_GO) {
+      // 停下來亮相：轉回正面
+      x = restX;
+      const a0 = aHit + (restX - hitX) / R * 1.5, up = Math.round(a0 / (Math.PI * 2)) * Math.PI * 2;
+      const q = Math.min(1, (p - INTRO_HOP) / 0.25);
+      angle = a0 + (up - a0) * (1 - (1 - q) * (1 - q));
+      y -= Math.abs(Math.sin((p - INTRO_HOP) * 5)) * 2;
+    } else {
+      const q = (p - INTRO_GO) / (INTRO_CYCLE - INTRO_GO);
+      x = restX + (S.x + S.w + R + 20 - restX) * ease(q);
+      angle = (x - restX) / R;
+    }
+    // 影子
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(x, ground + 2, R * Math.max(0.5, 1 - (ground - R - y) / 90), 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // 燒紅彈珠的火焰不跟著轉，一直往上燒，滾動時往後飄
+    const moving = p < INTRO_HOP || p >= INTRO_GO;
+    const flame = heroFlame(id, Math.floor(time * 8));
+    if (flame) {
+      const fx = x - R - (moving ? 6 : 0), fy = y - R - (FLAME_ROWS - FLAME_OVERLAP) * HP;
+      drawPixels(flame, hero.pal, Math.round(fx), Math.round(fy), HP);
+    }
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.rotate(angle);
+    drawPixels(heroMap(id, 'idle', !moving && time % 3.2 < 0.15), hero.pal, -R, -R, HP);
+    ctx.restore();
+    // 標題：一個字一個字上下波動
+    const title = t('advTitle');
+    ctx.font = `bold 24px ${SANS}`;
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = '#1b1b2f';
+    const tw = ctx.measureText(title).width;
+    let tx = S.x + S.w / 2 - tw / 2;
+    for (let i = 0; i < title.length; i++) {
+      const w = ctx.measureText(title[i]).width;
+      const ty = S.y + 20 + Math.sin(time * 4 - i * 0.7) * 2.5;
+      ctx.strokeText(title[i], tx + w / 2, ty);
+      ctx.fillStyle = '#facc15';
+      ctx.fillText(title[i], tx + w / 2, ty);
+      tx += w;
+    }
+    if (Math.floor(time * 2) % 2 === 0) {
+      ctx.font = `bold 15px ${PIXEL_FONT}`;
+      ctx.lineWidth = 4;
+      ctx.strokeText('PRESS START', S.x + S.w / 2, S.y + 106);
+      ctx.fillStyle = '#9cf5a6';
+      ctx.fillText('PRESS START', S.x + S.w / 2, S.y + 106);
+    }
+  }
+
   function drawAdvScreen(time) {
     const S = SCREEN;
     const PIXEL_FONT = '"Courier New", Consolas, monospace';
@@ -4735,12 +5243,7 @@
     ctx.clip();
     ctx.textBaseline = 'middle';
     if (!adv.monster) {
-      if (Math.floor(time * 2) % 2 === 0) {
-        ctx.fillStyle = '#9cf5a6';
-        ctx.font = `bold 22px ${PIXEL_FONT}`;
-        ctx.textAlign = 'center';
-        ctx.fillText('PRESS START', S.x + S.w / 2, S.y + S.h / 2);
-      }
+      drawIntro(S, time, PIXEL_FONT);
     } else {
       const m = adv.monster;
       ctx.drawImage(advBg(m.bg), S.x, S.y, S.w, S.h);
@@ -4749,6 +5252,7 @@
       const cx = S.x + S.w / 2;                 // 怪物放在螢幕中間
       let ox = 0, oy = Math.round(Math.sin(time * 3) * 3);
       if (adv.hitT > 0) ox = Math.round((Math.random() - 0.5) * 10 * (adv.hitT / 0.5));
+      if (adv.rageT > 0) ox += Math.round((Math.random() - 0.5) * 12 * adv.rageT);
       const opened = adv.chest && adv.status === 'won';
       const laughing = !adv.chest && (adv.laughT > 0 || adv.status === 'lost');
       if (laughing) {
@@ -4756,7 +5260,7 @@
         ox += Math.floor(time * 11) % 2 ? 1 : -1;
       }
       const x0 = cx - size / 2 + ox, y0 = S.y + 8 + oy;
-      const visible = adv.status !== 'won' || adv.chest || (adv.dieT > 0 && Math.floor(adv.dieT * 12) % 2 === 0);
+      const visible = adv.status !== 'won' || adv.chest;
       if (opened) {
         // 打開的寶箱往外發光
         const g = ctx.createRadialGradient(cx, y0 + 30, 4, cx, y0 + 30, 70);
@@ -4778,9 +5282,11 @@
         ctx.ellipse(sx, sy, size * 0.36 * k, 6 * k, 0, 0, Math.PI * 2);
         ctx.fill();
       }
+      if (adv.enraged && visible && !adv.chest) drawRageGlow(cx, y0, size, time);
       const burning = round.phase === 'burn' && round.burnT >= 0 && visible;
       if (burning) drawBurnGlow(cx, y0, size, time);
       if (visible) drawMonster(m, x0, y0, adv.hitT > 0 && Math.floor(adv.hitT * 20) % 2 === 0, laughing, opened);
+      if (adv.killT > 0 && adv.shards) drawKill(m, cx - size / 2, S.y + 8, size);
       if (burning) drawBurnFx(m, x0, y0, size, time);
       if (adv.healT > 0 && visible) drawHealFx(cx, y0, size, time);
       if (opened && adv.loot) {
@@ -4813,10 +5319,36 @@
       for (const p of adv.pops) {
         ctx.globalAlpha = Math.max(0, 1 - p.t / 1.2);
         ctx.fillStyle = p.color || '#ff5c5c';
-        ctx.font = `bold ${p.big ? 34 : 22}px ${PIXEL_FONT}`;
+        // 這回合打得越多下字越大；剛跳出來時先放大再縮回去
+        const base = (p.big ? 34 : 22) + Math.min(10, (p.n || 1) - 1) * 1.6;
+        const punch = p.t < 0.12 ? 1 + 0.6 * (1 - p.t / 0.12) : 1;
+        ctx.font = `bold ${Math.round(base * punch)}px ${PIXEL_FONT}`;
         ctx.fillText(p.text, cx, S.y + 32 - p.t * 26);
       }
       ctx.globalAlpha = 1;
+      // 連擊數：這回合打中 3 下以上
+      if (round.strikes >= 3 && adv.status === 'playing') {
+        const k = 1 + 0.35 * (adv.hitT / 0.5);
+        ctx.font = `bold ${Math.round(16 * k)}px ${PIXEL_FONT}`;
+        ctx.textAlign = 'right';
+        const label = `${round.strikes} HITS`, w = ctx.measureText(label).width;
+        textBacking(S.x + S.w - w - 16, S.y + 62 - 10 * k, w + 12, 20 * k);
+        ctx.fillStyle = round.strikes >= 8 ? '#f472b6' : round.strikes >= 5 ? '#fb923c' : '#facc15';
+        ctx.fillText(label, S.x + S.w - 10, S.y + 62);
+        ctx.textAlign = 'center';
+      }
+      // 單顆傷害破紀錄
+      if (adv.recT > 0) {
+        const p = 1 - adv.recT / RECORD_FX;
+        const k = p < 0.1 ? 0.6 + 4 * p : 1;
+        ctx.globalAlpha = Math.min(1, adv.recT / 0.4);
+        ctx.font = `bold ${Math.round(18 * k)}px ${SANS}`;
+        const label = t('newRecord'), w = ctx.measureText(label).width;
+        textBacking(cx - w / 2 - 8, S.y + 62, w + 16, 24);
+        ctx.fillStyle = Math.floor(p * 16) % 2 ? '#fde68a' : '#facc15';
+        ctx.fillText(label, cx, S.y + 75);
+        ctx.globalAlpha = 1;
+      }
 
       // 左上：名字；右上：勝敗
       ctx.font = `bold 15px ${SANS}`;
@@ -4825,7 +5357,7 @@
       ctx.fillStyle = '#c8f7c5';
       ctx.fillText(monsterName(), S.x + 10, S.y + 14);
       if (skill()) {
-        let label = '★' + skillName();
+        let label = '★' + skillName() + (adv.enraged ? t('rageTag') : '');
         if (skill() === 'skeleton' && round.bone) label += ' ●';
         if (skill() === 'lich' && adv.shields) label += ` ${adv.shields.filter(Boolean).length}/${SLOT_COUNT}`;
         if (skill() === 'gargoyle' && stoneCutRate()) label += ` −${Math.round(stoneCutRate() * 100)}%`;
@@ -4935,13 +5467,12 @@
       ctx.textBaseline = 'middle';
       ctx.fillText('🎃', x, LED_Y);
     }
-    const flying = round.burnFx && round.burnFx.t < DRAGON_FLY;
-    if (flying) {
-      const fx = round.burnFx, x = B.left + (fx.slot + 0.5) * SLOT_W;
-      led(ctx, x, LED_Y, 6, true, fx.green ? 'green' : 'red');
-    }
-    if (round.burnt >= 0 && !flying) {
-      const x = B.left + (round.burnt + 0.5) * SLOT_W;
+    for (const s of round.burnt) {
+      const x = B.left + (s + 0.5) * SLOT_W, fx = round.burnFx.find(f => f.slot === s);
+      if (fx && fx.t < DRAGON_FLY) {
+        led(ctx, x, LED_Y, 6, true, fx.green ? 'green' : 'red');   // 火焰還沒燒到
+        continue;
+      }
       ctx.fillStyle = 'rgba(20, 10, 5, 0.6)';
       ctx.fillRect(x - SLOT_W / 2 + 3, SLOT_TOP, SLOT_W - 6, SLOT_FLOOR - SLOT_TOP);
       ctx.font = `${20 + 2 * Math.sin(t * 9)}px sans-serif`;
@@ -5532,8 +6063,8 @@
       }
       ctx.stroke();
     }
-    const bd = round.bandage;
-    if (bd && !bd.reeled && bd.t > 0) {
+    for (const bd of round.bandages) {
+      if (bd.reeled || bd.t <= 0) continue;
       if (bd.t < WEB_FLY) {
         // 甩出去：兩條布條從木乃伊身上拉出去，各自飛向一根釘子；綁好後才變成釘子之間的一條繃帶
         const k = bd.t / WEB_FLY, e = 1 - (1 - k) * (1 - k), m = monsterMouth();
@@ -5543,7 +6074,7 @@
         drawBandage(bd.ax, bd.ay, bd.bx, bd.by, bd.n >= BANDAGE_CAP);   // 纏滿了變淡
       }
     }
-    if (round.burnFx) drawDragonFire(time);
+    for (const fx of round.burnFx) if (fx.t >= 0) drawDragonFire(fx, time);
     if (skill() === 'lich' && adv.shields) {
       // 魔法護盾：每一排上方一道紫色光弧
       for (let i = 0; i < SLOT_COUNT; i++) {
@@ -5562,8 +6093,8 @@
   }
 
   // 小惡龍的火焰：一串火球從嘴巴噴到燈上，燒到後在那一排竄起火舌
-  function drawDragonFire(time) {
-    const fx = round.burnFx, m = monsterMouth();
+  function drawDragonFire(fx, time) {
+    const m = monsterMouth();
     const tx = B.left + (fx.slot + 0.5) * SLOT_W, ty = LED_Y;
     const cx = (m.x + tx) / 2 + (tx > m.x ? 40 : -40), cy = (m.y + ty) / 2;   // 微微彎的火柱
     ctx.save();
@@ -5781,7 +6312,11 @@
     const sp = !target && !round.placing && specialAt(p);
     const onScreen = mode === 'adv' && p.x > SCREEN.x && p.x < SCREEN.x + SCREEN.w && p.y > SCREEN.y && p.y < SCREEN.y + SCREEN.h;
     if (onScreen && !target && !round.placing) {
-      if (skill()) { say('skillInfo', { s: skillName(), d: SKILLS[skill()].desc[lang] }); Sound.clunk(); }
+      if (skill()) {
+        const rage = RAGE_DESC[skill()] ? t('rageInfo', { d: RAGE_DESC[skill()][lang] }) : '';
+        say('skillInfo', { s: skillName(), d: SKILLS[skill()].desc[lang] + rage });
+        Sound.clunk();
+      }
       return;
     }
     if (target === 'bag') openBag();
@@ -5870,7 +6405,7 @@
       effect.textContent = itemEffect(id);
       const when = document.createElement('p');
       when.className = 'bag-when';
-      when.textContent = t({ pre: 'whenPre', post: 'whenPost', both: 'whenBoth' }[it.when]);
+      when.textContent = t({ pre: 'whenPre', post: 'whenPost', both: 'whenBoth', passive: 'whenPassive' }[it.when]);
       const row = document.createElement('div');
       row.className = 'bag-row';
       const why = itemBlock(id);
@@ -5883,7 +6418,8 @@
       use.textContent = t('bagUse');
       use.disabled = !!why;
       use.addEventListener('click', () => { if (useItem(id)) bagDlg.close(); else renderBag(); });
-      row.append(reason, use);
+      row.append(reason);
+      if (it.when !== 'passive') row.append(use);     // 被動道具沒有「使用」按鈕
       li.append(head, quote, effect, when, row);
       bagList.append(li);
     }
@@ -5968,7 +6504,7 @@
     effect.textContent = it.effect[lang].replace(/\s*[（(][^）)]*\{n\}[^）)]*[）)]/, '');
     const when = document.createElement('p');
     when.className = 'bag-when';
-    when.textContent = t({ pre: 'whenPre', post: 'whenPost', both: 'whenBoth' }[it.when]);
+    when.textContent = t({ pre: 'whenPre', post: 'whenPost', both: 'whenBoth', passive: 'whenPassive' }[it.when]);
     const back = document.createElement('button');
     back.type = 'button';
     back.className = 'btn';
@@ -6025,7 +6561,7 @@
     row('stCritDmg', pct(critMult()));
 
     sec('stSecOther');
-    row('stRefillLights', t('stRefillLightsN', { n: 1 + boon('refillLight') }));
+    row('stRefillLights', t('stRefillLightsN', { n: 1 + boon('refillLight') + talentRefill() }));
     row('stRefill', t('statusBallsN', { n: refillBonus() }));
     row('stWeight', '×' + (1 + 0.5 * boon('weight')).toFixed(1));
     row('stPinsBoard', t('stPinsBoardN', { n: pins.filter(p => !p.kind).length, total: ALL_PINS.length }));
@@ -6142,7 +6678,9 @@
     h.textContent = t('talentInfoBoons');
     const list = document.createElement('ul');
     list.className = 'ti-boons';
-    for (const k of Object.keys(BOONS).filter(k => BOONS[k].talent === id)) {
+    // 一般流的卡在前、暴擊流的卡在後（畫面上不標路線）
+    const ids = Object.keys(BOONS).filter(k => BOONS[k].talent === id);
+    for (const k of [...ids.filter(k => BOONS[k].route !== 'crit'), ...ids.filter(k => BOONS[k].route === 'crit')]) {
       const li = document.createElement('li');
       const n = document.createElement('b');
       n.textContent = BOONS[k].name[lang];
@@ -6180,6 +6718,17 @@
   // ---- 遊戲模式的畫面切換 ----
   const ovTitle = $('ov-title'), ovText = $('ov-text'), ovBtn = $('overlay-coin'), ovItem = $('ov-item');
   const ovRestart = $('ov-restart');
+
+  // ---- 首頁吉祥物：目前選的天賦那一隻彈珠 ----
+  // 平常會眨眼（燒紅彈珠的火會跳動）；打贏時笑開、輸了掉眼淚
+  const mascotEl = $('ov-mascot');
+  let mascotMood = 'idle', mascotId = talentPick, mascotTick = 0;
+  const drawMascot = () => { if (mascotEl) paintHero(mascotEl, mascotId, 3, mascotMood, mascotMood === 'idle' && mascotTick % 22 === 0, mascotTick); };
+  setInterval(() => {
+    if (!mascotEl || mascotEl.hidden) return;
+    mascotTick++;
+    drawMascot();
+  }, 150);
   const ovRewards = $('ov-rewards');
 
   // 寶箱道具：同一個稀有度的 3 張道具卡片選 1 張
@@ -6228,7 +6777,7 @@
     weight: () => '×' + (1 + 0.5 * boon('weight')).toFixed(1),
     pin: () => t('rwPins', { n: 5 * boon('pin') }),
     refill: () => t('statusBallsN', { n: refillBonus() }),
-    refillLight: () => t('stRefillLightsN', { n: 1 + boon('refillLight') }),
+    refillLight: () => t('stRefillLightsN', { n: 1 + boon('refillLight') + talentRefill() }),
     chestRare: () => plusOf(boon('chestRare')),
     critRate: () => pctOf(critRate()),
     critDmg: () => pctOf(critMult()),
@@ -6238,10 +6787,13 @@
     chainCrit: () => plusOf(boon('chainCrit')),
     kindle: () => t('rwBurnN', { n: 1 + boon('kindle') }),
     smolder: () => `${boon('smolder') + 1}/${boon('smolder') + 2}`,
-    tinder: () => t('rwBurnN', { n: boon('tinder') }),
+    ram: () => plusOf(boon('ram')),
+    blaze: () => t('rwBurnN', { n: boon('blaze') }),
+    scorch: () => yesNo(boon('scorch')),
     rend: () => pctOf(traumaRate()),
     shatter: () => minusOf(boon('shatter')),
-    roll: () => yesNo(boon('roll')),
+    gash: () => yesNo(boon('gash')),
+    bleed: () => t('statusBallsN', { n: boon('bleed') }),
   };
   function boonStat(id) {
     if (id === 'balls') {
@@ -6298,8 +6850,8 @@
     const re = document.createElement('button');
     re.type = 'button';
     re.className = 'btn rw-reroll';
-    re.textContent = t('rewardReroll', { n: adv.rerollCost });
-    re.disabled = rerollBalls() < adv.rerollCost;
+    re.textContent = adv.freeRerolls > 0 ? t('rewardRerollFree', { n: adv.freeRerolls }) : t('rewardReroll', { n: adv.rerollCost });
+    re.disabled = adv.freeRerolls <= 0 && rerollBalls() < adv.rerollCost;
     re.addEventListener('click', rerollRewards);
     const sb = document.createElement('button');
     sb.type = 'button';
@@ -6436,10 +6988,12 @@
     const midRun = picking && campaignMidRun();
     const resume = picking && !midRun && advPlan === 'campaign' && adv.status === 'intro' && !!savedRun;
     if (ovRestart) ovRestart.hidden = !resume;
+    let mood = 'idle';
     if (picking) {
       const name = monsterName(), stage = adv.monsterIdx + 1, total = MONSTERS.length;
       // 結果只在「上一場的玩法」和目前選的玩法一樣時顯示，否則顯示該玩法的說明
       const hasResult = adv.status !== 'intro' && (adv.campaign ? 'campaign' : 'free') === advPlan;
+      if (hasResult && !midRun) mood = adv.status === 'won' && (!adv.campaign || adv.monsterIdx === LAST_STAGE) ? 'cheer' : adv.status === 'lost' ? 'cry' : 'idle';
       if (midRun && adv.lootChoices) {
         title = t('chestOpenTitle');
       } else if (midRun && adv.rewards) {
@@ -6491,6 +7045,13 @@
     overlay.classList.toggle('below-screen', mode === 'adv');
     // 瀏覽器快取到舊版 index.html 時這些元素可能不存在，略過就好，不要讓遊戲壞掉
     if (ovTitle) ovTitle.textContent = title;
+    // 吉祥物只在大冒險首頁、結果畫面出現（過關卡片不出現）
+    if (mascotEl) {
+      mascotEl.hidden = !picking || midRun;
+      // 要繼續的冒險顯示那一趟的天賦，其他時候顯示目前選的天賦
+      mascotId = resume && TALENTS[savedRun.talent] ? savedRun.talent : talentPick;
+      if (!mascotEl.hidden) { mascotMood = mood; drawMascot(); }
+    }
     if (ovText) { ovText.textContent = text; ovText.hidden = !text; }
     const choosing = midRun && !!(adv.rewards || adv.lootChoices);
     if (ovBtn) { ovBtn.textContent = btn; ovBtn.hidden = choosing; }
@@ -6632,7 +7193,9 @@
 
   let last = performance.now();
   function frame(now) {
-    const dt = Math.min((now - last) / 1000, 1 / 30);
+    const real = Math.min((now - last) / 1000, 1 / 30);
+    const dt = state.slowT > 0 ? real * SLOW_RATE : real;   // 擊殺後慢動作
+    state.slowT = Math.max(0, state.slowT - real);
     last = now;
     update(dt);
     render(now / 1000);

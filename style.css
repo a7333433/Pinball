@@ -120,6 +120,19 @@ body {
 
 .overlay-card p { margin: 0 0 6px; line-height: 1.6; }
 
+/* 大冒險首頁：標題上面是目前選的天賦那一隻彈珠，上下輕輕彈跳 */
+/* 吉祥物在標題上面 */
+.ov-head { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.ov-mascot {
+  image-rendering: pixelated;
+  animation: mascot-bounce 1.1s ease-in-out infinite;
+}
+.ov-mascot[hidden] { display: none; }
+@keyframes mascot-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
 .link {
   font: inherit;
   font-size: 14px;
