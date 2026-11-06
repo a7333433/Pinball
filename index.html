@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>柑仔店彈珠台</title>
-  <link rel="stylesheet" href="style.css?v=1.8.0">
+  <link rel="stylesheet" href="style.css?v=1.9.0">
 </head>
 <body>
   <div class="app">
@@ -102,10 +102,11 @@
       <ol>
         <li>按「冒險」（或 <kbd>Q</kbd>）切換到大冒險模式，隨時都能切回經典模式，兩邊的彈珠分開保留。</li>
         <li>開始前自己選要挑戰哪一隻怪物（星星越多越難，打倒過的會打勾）。上方的倍率欄變成怪物螢幕，怪物下方顯示牠的 HP；落獎區下方則變成訊息螢幕，顯示目前的狀況。</li>
-        <li>每場有 50 顆彈珠，不能投幣。<strong>每回合最多投 3 顆珠</strong>，過關獎勵「投珠上限」可以提高。大冒險的倍率從 <strong>×1</strong> 起跳、亮 7 顆燈，強化孔前 2 顆各加 1 倍、少一顆燈（×3 亮 5 顆，倍率最高就是 ×3），第 3 顆起倍率和燈數都不變，改成隨機把 1 顆紅燈強化成<strong>火焰燈</strong>（最終傷害 ×1.5；紅燈都強化過，再隨機挑一顆升到第二階，變成暗紫色火焰、傷害 ×2），強化只維持這一回合；用電路板或鋁箔包飲料把燈變成補珠燈時，火焰燈會變成綠色火焰的補珠燈，補珠數也 ×1.5（第二階 ×2）；加倍後手上至少要留 1 顆投珠，所以少於 2 顆時不能再投強化孔。玩法和經典模式一樣，但<strong>投幾顆珠，彈簧上就疊幾顆鋼珠，拉一次彈簧整疊一起射出</strong>，每顆各自結算；中獎不出珠，改成對怪物造成傷害。</li>
-        <li>每隻怪物都有<strong>防禦</strong>（顯示在 HP 旁邊的盾牌數字）：實際傷害 = 倍率 − 防禦。打不破防禦就是 0 傷害，怪物還會竊笑。越後面的怪物 HP 和防禦越高，前期要打好幾回合才能打倒。</li>
-        <li>定燈後，沒亮燈的排裡會隨機多亮一顆<strong>綠色的補珠燈</strong>。鋼珠落進補珠燈不會造成傷害，改成每顆補 2 顆彈珠；這回合第一顆落進補珠燈時，還會退回投進強化孔的珠。</li>
+        <li>每場有 50 顆彈珠，不能投幣。<strong>每回合最多投 3 顆珠</strong>，過關獎勵「投珠上限」可以提高。大冒險打怪時倍率固定 <strong>×1</strong>、亮 7 顆燈。<strong>強化孔</strong>最多投 3 顆，每投 1 顆，發射道最下面的金色<strong>強化魔法陣</strong>耐久 +1；經過它的珠變成<strong>強化珠</strong>（珠外多一圈轉動的金環），落進紅燈時傷害（扣完防禦後）×1.5、落進補珠燈時補珠數 ×1.5。這回合<strong>最後一顆</strong>經過的珠會吸走強化魔法陣剩下的所有耐久，每多吸 1 層倍率再 +0.5（2 層 ×2、3 層 ×2.5，珠外的金環也變成 2、3 圈），所以投珠比強化少時不會浪費；天賦魔法陣沒有這個效果。強化魔法陣不佔「一顆珠只吃一個魔法陣」的名額，所以強化珠也可以同時是燒紅珠或外傷珠（珠的顏色是天賦的顏色，外面再加金環）。投進強化孔的珠不會退回。<strong>火焰燈</strong>（最終傷害 ×1.5；紅燈都強化過再升第二階，暗紫色火焰、×2）只能靠雷射筆（紅）、高功率雷射筆（紫）做出來；用電路板或鋁箔包飲料把燈變成補珠燈時，火焰燈會變成綠色火焰的補珠燈，補珠數也 ×1.5（第二階 ×2）。投強化孔後手上至少要留 1 顆投珠，所以少於 2 顆時不能再投強化孔。玩法和經典模式一樣，但<strong>投幾顆珠，彈簧上就疊幾顆鋼珠，拉一次彈簧整疊一起射出</strong>，每顆各自結算；中獎不出珠，改成對怪物造成傷害。</li>
+        <li>每隻怪物都有<strong>防禦</strong>（顯示在 HP 旁邊的盾牌數字）：實際傷害 = 攻擊 − 防禦。打不破防禦就是 0 傷害，怪物還會竊笑。越後面的怪物 HP 和防禦越高，前期要打好幾回合才能打倒。</li>
+        <li>定燈後，沒亮燈的排裡會隨機多亮一顆<strong>綠色的補珠燈</strong>。鋼珠落進補珠燈不會造成傷害，改成每顆補 2 顆彈珠（強化珠 ×1.5）。</li>
         <li><strong>釘子隨關卡增加</strong>：第 1 關檯面上沒有釘子，之後每過一關都會長出新釘子，到最後一關巫妖時釘陣才完整。每一關的釘陣都是固定的，而且左右對稱。自由挑戰依怪物的關卡決定釘子。</li>
+        <li><strong>彈力柱</strong>：左右牆邊各有 4 根紅白橡膠柱，貼著牆滑下來的彈珠會被彈回中間。</li>
         <li><strong>特殊釘子</strong>（打怪時才有，每關位置固定、左右成對，越後面越多）：<span style="color:#fb923c">燒紅釘</span>——碰過的彈珠落進攻擊燈、造成傷害時，怪物燃燒 +1 層（任何天賦都會燃燒，跟燒紅彈珠疊在一起）；<span style="color:#67e8f9">螺旋尖刺</span>——彈珠會被彈開並分裂成 2 顆小珠，分裂後的彈珠不會再分裂；<strong>破洞</strong>——彈珠掉進洞口就直接消失。點一下特殊釘子，訊息螢幕會顯示它的效果。</li>
         <li><strong>怪物技能</strong>（怪物螢幕名字下方顯示，點怪物螢幕看說明）：蝙蝠「吸血」這回合沒有珠造成傷害就回 5 血；蜘蛛「結網」每回合在 2 根釘子上結網；木乃伊「繃帶」每回合在兩根釘子間拉一條繃帶，最多纏住 3 顆珠（網、繃帶的第一顆碰到的珠被黏住，之後的珠會被它彈開，落珠結束後收走）；幽靈「穿透」攻擊燈的珠有 15% 被閃避；南瓜頭「南瓜燈」每回合隨機一排，進珠回 5% 血；骷髏「骨盾」每回合擋下第一顆造成傷害的珠；小惡龍「噴火」定燈後燒掉一顆燈；地獄犬「撲火」燃燒傷害減半；巫妖「魔法護盾」每一排擋下第一顆珠，每 3 回合補滿；殭屍「再生」每回合結束回 2% 血；吸血鬼「吸珠」每顆沒落進燈的珠讓牠回 2 血；石像怪「石化」血量越少越硬，剩 80%／50%／20% 以下時所有傷害減 20%／40%／60%。</li>
         <li><strong>半血狂暴</strong>：有技能的怪物 HP 掉到一半以下會狂暴（怪物發出紅光），技能變強，直到打倒為止：蜘蛛每回合 3 張網；幽靈閃避 25%；南瓜燈回 8% 血；殭屍每回合回 4%；木乃伊每回合 2 條繃帶；骷髏另外閃避 15% 攻擊燈的珠；吸血鬼每顆回 4 血；小惡龍紅燈、綠燈各燒掉 1 顆；地獄犬也會噴火燒掉 1 顆燈；巫妖每 2 回合補滿護盾。蝙蝠不會狂暴；石像怪本來就會隨血量減傷，也不會狂暴。</li>
@@ -115,8 +116,9 @@
         <li><strong>天賦</strong>：冒險模式開始前先選 1 個天賦，效果持續整趟冒險（自由挑戰沒有天賦）。按天賦旁邊的「說明」可以看效果和專屬過關獎勵。
           <ul>
             <li>合金鋼珠：每顆珠攻擊 +1（扣防禦前）、暴擊率 +15%。</li>
-            <li>燒紅彈珠：每次落進攻擊燈讓怪物燃燒 +1 層（打不破防禦也算）；每回合結束受到「層數」點無視防禦的傷害，之後層數減半，換怪物時歸零。</li>
-            <li>外傷滾珠：每回合紅燈少 1 顆、補珠燈多 1 顆，強化孔的強化先給補珠燈（補珠 ×1.5，強化兩次 ×2）；落進補珠燈時照常補珠，另外造成等於補珠數的無視防禦傷害。</li>
+            <li><strong>魔法陣</strong>：畫在發射道上，往上經過的珠會變成對應的特殊珠（換顏色）。每經過一顆珠耐久 −1，用完就碎掉，每回合開始回滿；一顆珠只會吃一個魔法陣。被搖晃機台直接放到檯面上的珠不會經過發射道。</li>
+            <li>燒紅彈珠：發射道上有 1 個燒紅魔法陣（耐久 3）。燒紅珠落進攻擊燈讓怪物燃燒 +1 層（打不破防禦也算）；每回合結束受到「層數」點無視防禦的傷害，之後層數減半，換怪物時歸零。</li>
+            <li>外傷滾珠：每回合紅燈少 2 顆、補珠燈多 2 顆，發射道上有 1 個外傷魔法陣（耐久 3），外傷珠落進補珠燈時照常補珠，另外造成等於補珠數的無視防禦傷害。</li>
           </ul>
           每個天賦另有 4 個專屬過關獎勵（卡片有橘框），只有選了該天賦才抽得到：合金鋼珠有破甲合金（無視 1 點防禦）、衝撞（每顆珠攻擊 +1，疊珠再 +1）、鎢鋼彈芯（暴擊完全無視防禦，只能拿一次）、連鎖暴擊（同一回合內每暴擊一次，這回合後面的珠攻擊 +1）；燒紅彈珠有助燃（每次命中多疊 1 層）、悶燒（燃燒後保留 2/3、3/4…）、爆燃（暴擊率 +10%，暴擊多疊 1 層）、灼熱（暴擊率 +10%，回合結束的燃燒也會暴擊，只能拿一次）；外傷滾珠有撕裂（外傷比例 +25%）、碎甲（外傷觸發時怪物防禦 −1，每回合一次）、重創（暴擊率 +10%，外傷也會暴擊，外傷暴擊 ×2，只能拿一次）、放血（暴擊率 +10%，外傷暴擊多補 1 顆珠，要先有重創）。
         </li>
@@ -159,10 +161,11 @@
       <ol>
         <li>Press <strong>Quest</strong> (or <kbd>Q</kbd>) to switch to Pinball Quest. You can switch back to Classic at any time; each mode keeps its own balls.</li>
         <li>Before each game, pick which monster to fight (more stars = harder; ones you've beaten get a check mark). The multiplier columns at the top become a monster screen, with its HP shown below it, and the area under the prize lanes becomes a message screen.</li>
-        <li>You get 50 balls per game and can't insert coins. <strong>You can bet at most 3 balls per round</strong>; the Bet Limit reward raises this. In Quest the multiplier starts at <strong>×1</strong> with 7 lights lit; the first 2 balls in the boost hole each add ×1 and turn off one light (×3 with 5 lights, the highest multiplier); from the 3rd ball on, the multiplier and lights stay the same and a random red light becomes a <strong>flame light</strong> instead (final damage ×1.5; once every red light is a flame light, a random one upgrades again to a dark purple flame for ×2). Flame lights last for this round only. If a Circuit Board or Juice Box turns lights into refill lights, flame lights become green-flame refill lights that pay ×1.5 balls (×2 when upgraded twice). You must keep at least 1 ball to bet, so you can't raise the multiplier with fewer than 2 balls. Play works the same as Classic, but <strong>every ball you bet stacks on the spring, and one pull shoots them all</strong>, and each ball scores on its own. A win pays no balls: it damages the monster instead.</li>
-        <li>Every monster has <strong>defense</strong> (the shield number next to its HP): damage = multiplier − DEF. If your attack doesn't beat its defense it deals 0 and the monster snickers. Later monsters have more HP and defense, so early fights take several rounds.</li>
-        <li>After locking, one unlit lane also gets a <strong>green refill light</strong>. Landing there deals no damage; each ball gets 2 balls back, and the first one this round also refunds the balls you put into the multiplier.</li>
+        <li>You get 50 balls per game and can't insert coins. <strong>You can bet at most 3 balls per round</strong>; the Bet Limit reward raises this. When fighting in Quest the multiplier is always <strong>×1</strong> with 7 lights lit. You can put up to 3 balls in the <strong>boost hole</strong>; each one adds 1 durability to the gold <strong>boost circle</strong> at the bottom of the launch lane. Balls that pass through it become <strong>boosted balls</strong> (a spinning gold ring around the ball): ×1.5 damage on red lights (after DEF) and ×1.5 balls on refill lights. The <strong>last</strong> ball through it each round soaks up all the durability left, +0.5 per extra layer (2 layers ×2, 3 layers ×2.5, with 2 or 3 gold rings), so betting fewer balls than your boost wastes nothing. Talent circles don't do this. The boost circle doesn't count toward the one-circle-per-ball limit, so a boosted ball can also be red-hot or grinding (the ball takes the talent color, with the gold ring on top). Balls put in the boost hole are not refunded. <strong>Flame lights</strong> (final damage ×1.5; once every red light is a flame light, one upgrades again to a dark purple flame for ×2) now only come from the Laser Pointer (red) and High-power Laser (purple). If a Circuit Board or Juice Box turns lights into refill lights, flame lights become green-flame refill lights that pay ×1.5 balls (×2 when upgraded twice). You must keep at least 1 ball to bet, so you can't use the boost hole with fewer than 2 balls. Play works the same as Classic, but <strong>every ball you bet stacks on the spring, and one pull shoots them all</strong>, and each ball scores on its own. A win pays no balls: it damages the monster instead.</li>
+        <li>Every monster has <strong>defense</strong> (the shield number next to its HP): damage = attack − DEF. If your attack doesn't beat its defense it deals 0 and the monster snickers. Later monsters have more HP and defense, so early fights take several rounds.</li>
+        <li>After locking, one unlit lane also gets a <strong>green refill light</strong>. Landing there deals no damage; each ball gets 2 balls back (×1.5 for a boosted ball).</li>
         <li><strong>Pins grow each stage</strong>: stage 1 has no pins at all, and every stage after that adds new pins until the full field returns at the last stage (the Lich). Each stage's layout is fixed and mirrored left to right. Free fight uses the pins for that monster's stage.</li>
+        <li><strong>Rubber posts</strong>: four red-and-white posts on each side wall knock balls sliding down the wall back toward the middle.</li>
         <li><strong>Special pins</strong> (monster stages only, fixed mirrored spots, more in later stages): <span style="color:#fb923c">Red-hot pin</span> — a ball that touched it adds 1 burn when it deals damage on a red light (any talent can burn; stacks with Red-hot Marble); <span style="color:#67e8f9">Spiral spike</span> — knocks the ball away and splits it into two smaller balls (split balls can't split again); <strong>Hole</strong> — a ball that drops into it simply vanishes. Tap a special pin to see what it does on the message screen.</li>
         <li><strong>Monster skills</strong> (shown under the name on the monster screen; tap the screen for details): Bat heals 5 HP if no ball deals damage in a round; Spider webs 2 pins and Mummy ties a bandage between two pins each round that holds up to 3 balls (for a web, the first ball to touch it sticks, later balls bounce off it, and it is taken when the round ends); Ghost dodges 15% of attack-light balls; Pumpkin Head turns a random lane into a pumpkin lamp each round that heals 5% HP per ball; Skeleton blocks the first damaging ball each round; Baby Dragon burns one light after you lock; Hellhound takes half burn damage; Lich wards every lane against the first ball, refilled every 3 rounds; Zombie heals 2% HP every round; Vampire heals 2 HP per ball that lands on no light; Gargoyle gets harder as it loses HP: below 80%/50%/20% HP all damage is cut by 20%/40%/60%.</li>
         <li><strong>Rage at half HP</strong>: a monster with a skill that drops to half HP or less becomes enraged (it glows red) and its skill gets stronger until it is beaten: Spider webs 3 pins; Ghost dodges 25%; the pumpkin lamp heals 8%; Zombie heals 4% per round; Mummy ties 2 bandages; Skeleton also dodges 15% of attack-light balls; Vampire heals 4 HP per ball; Baby Dragon burns 1 red and 1 green light; Hellhound also burns 1 light; Lich refills its wards every 2 rounds. The Bat never rages, and neither does the Gargoyle, which already hardens as it loses HP.</li>
@@ -172,8 +175,9 @@
         <li><strong>Talents</strong>: before an Adventure, pick 1 talent that lasts the whole run (Free fight has none). Tap Info next to a talent to see its effect and exclusive rewards.
           <ul>
             <li>Alloy Marble: +1 attack per ball (before DEF), +15% crit chance.</li>
-            <li>Red-hot Marble: each red-light hit adds 1 burn (even if DEF blocks it); at the end of every round the monster takes damage equal to its burn, ignoring DEF, then burn halves. Burn resets for each monster.</li>
-            <li>Grinding Marble: 1 fewer red light and 1 more refill light every round, and boost-hole upgrades go to refill lights first (×1.5 balls, ×2 when upgraded twice). Refill lights still pay out, and also deal damage equal to the balls refilled (ignores DEF).</li>
+            <li><strong>Magic circles</strong> sit on the launch lane; a ball passing up through one turns into that kind of special ball (it changes color). Each ball uses up 1 durability, the circle shatters when it runs out, and it refills at the start of every round. A ball takes only one circle. Balls dropped straight onto the table by Shake the Machine skip the lane.</li>
+            <li>Red-hot Marble: one red-hot magic circle (3 uses) on the launch lane. Each red-hot ball on a red light adds 1 burn (even if DEF blocks it); at the end of every round the monster takes damage equal to its burn, ignoring DEF, then burn halves. Burn resets for each monster.</li>
+            <li>Grinding Marble: 2 fewer red lights and 2 more refill lights every round. One grinding magic circle (3 uses) on the launch lane; a grinding ball on a refill light still pays out, and also deals damage equal to the balls refilled (ignores DEF).</li>
           </ul>
           Each talent also has 4 exclusive rewards (orange cards) that only show up with that talent. Alloy: Armor Breaker (ignore 1 DEF), Ram (+1 attack per ball, +1 more for stacked balls), Tungsten Core (crits ignore DEF completely; once only), Chain Crit (each crit gives the later balls this round +1 attack). Red-hot: Kindling (+1 burn per hit), Smolder (burn keeps ⅔, ¾… instead of half), Flare (+10% crit, crits add 1 more burn), Searing (+10% crit, round-end burn can crit; once only). Grinding: Rend (+25% grind damage), Shatter (grind lowers DEF by 1, once per round), Deep Wound (+10% crit, grind can crit for ×2; once only), Bloodletting (+10% crit, grind crits refill 1 more ball; needs Deep Wound).
         </li>
@@ -201,7 +205,7 @@
       <p class="records">Pinball Quest: <b data-record="advWins">0</b> wins　<b data-record="advLosses">0</b> losses</p>
       <p class="records">Adventure: best <b data-record="campaignBest">0</b> defeated in a run　<b data-record="campaignClears">0</b> full clears</p>
     </div>
-    <p class="version">v<span data-version>1.8.0</span></p>
+    <p class="version">v<span data-version>1.9.0</span></p>
     <form method="dialog"><button class="btn coin" data-i18n="close">關閉</button></form>
   </dialog>
 
@@ -249,6 +253,6 @@
     </div>
   </dialog>
 
-  <script src="game.js?v=1.8.0"></script>
+  <script src="game.js?v=1.9.0"></script>
 </body>
 </html>
