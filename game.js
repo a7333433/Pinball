@@ -143,6 +143,12 @@
       quote: { zh: '請不要對任何生物照射。', en: 'Do not point at any living thing.' },
       effect: { zh: '新增一顆超強化攻擊燈（紫色火焰，傷害 ×2）；燈已經亮滿時改成把一顆攻擊燈變成超強化燈，持續這一關', en: 'Adds a super flame attack light (purple flame, ×2 damage); if the lights are full, turns an attack light into one instead. Lasts this stage' },
     },
+    talisman: {
+      tier: 2, when: 'both',
+      name: { zh: '鬼畫符', en: 'Scribbled Talisman' },
+      quote: { zh: '「敇！」', en: '"Begone!"' },
+      effect: { zh: '當前關卡的魔法陣耐久度 +1', en: 'Magic circle durability +1 this stage' },
+    },
     drink: {
       tier: 3, when: 'post',
       name: { zh: '鋁箔包飲料', en: 'Juice Box' },
@@ -171,39 +177,88 @@
   const GASH_BONUS = 0.5;         // 重創：外傷暴擊倍率比一般暴擊多多少      // 過關獎勵「補珠加量」最多拿幾次
   // 每打倒一隻怪物（最後一隻除外）從這裡隨機抽 3 樣選 1 樣，效果持續整個冒險、可以疊加
   const BOONS = {
-    balls: { name: { zh: '彈珠補給', en: 'Ball Supply' }, desc: { zh: '持有彈珠數增加 10', en: '+10 balls' } },
-    perBall: { name: { zh: '每珠增傷', en: 'Per-ball Damage' }, desc: { zh: '每顆投珠增加攻擊力 1（扣防禦前）', en: '+1 attack per ball bet (before DEF)' } },
-    multBase: { name: { zh: '基礎倍率', en: 'Base Multiplier' }, desc: { zh: '倍率 +1（打怪時從 ×1 變 ×2，可疊）', en: 'Multiplier +1 (×1 becomes ×2 when fighting; stacks)' } },
-    litUp: { name: { zh: '攻擊燈數', en: 'More Red Lights' }, desc: { zh: '每回合紅燈（攻擊燈）多亮 1 顆（只能拿一次）', en: '+1 red (attack) light every round (once only)' } },
-    pierce: { name: { zh: '穿透傷害', en: 'Piercing' }, desc: { zh: '攻擊打破防禦時，追加 1 點忽視防禦的傷害', en: '+1 damage that ignores DEF on hits that break DEF' } },
-    weight: { name: { zh: '加重彈珠', en: 'Heavier Marble' }, desc: { zh: '彈珠重量增加 0.5（撞釘子彈得比較低、比較不會亂跳）', en: 'Marble weight +0.5 (bounces lower and jitters less)' } },
-    pin: { name: { zh: '拔釘子', en: 'Fewer Pins' }, desc: { zh: '落珠區的釘子減少 5 根，之後每關也少長 5 根（特殊釘子不受影響）', en: 'Removes 5 pins now, and 5 fewer grow in every later stage (special pins stay)' } },
-    refill: { name: { zh: '補珠加量', en: 'Bigger Refills' }, desc: { zh: '補珠燈補珠時多得 1 顆（最多拿兩次）', en: '+1 ball on every refill light (twice at most)' } },
-    refillLight: { name: { zh: '補珠燈數', en: 'More Refill Lights' }, desc: { zh: '每回合補珠燈多 1 顆（只能拿一次）', en: '+1 refill light every round (once only)' } },
-    chestRare: { name: { zh: '寶箱升級', en: 'Better Chests' }, desc: { zh: '寶箱關卡的稀有（藍）燈 +1、一般（白）燈 −1', en: 'Chests get +1 rare (blue) lane, −1 common (white) lane' } },
-    critRate: { name: { zh: '暴擊率', en: 'Crit Rate' }, desc: { zh: '暴擊機率增加 20%', en: 'Crit chance +20%' } },
-    critDmg: { name: { zh: '暴擊傷害', en: 'Crit Damage' }, desc: { zh: '暴擊傷害倍率增加 50%', en: 'Crit damage +50%' } },
-    betCap: { name: { zh: '投珠上限', en: 'Bet Limit' }, desc: { zh: '每回合投珠上限 +2', en: '+2 max bet per round' } },
+    balls: { name: { zh: '補給', en: 'Supply' }, desc: { zh: '持有彈珠數增加 10', en: 'Balls held +10' } },
+    perBall: { name: { zh: '強化', en: 'Power' }, desc: { zh: '彈珠攻擊 +1', en: 'Ball attack +1' } },
+    multBase: { name: { zh: '倍化', en: 'Double' }, desc: { zh: '彈珠基礎攻擊 +100%', en: 'Ball base attack +100%' } },
+    litUp: { name: { zh: '紅燈', en: 'Red Light' }, desc: { zh: '獨特的，每回合攻擊燈 +1', en: 'Unique. +1 attack light every round' } },
+    pierce: { name: { zh: '穿透', en: 'Pierce' }, desc: { zh: '破防時 +1 真實傷害', en: '+1 true damage when you break DEF' } },
+    weight: { name: { zh: '加重', en: 'Weight' }, desc: { zh: '獨特的，減少彈跳幅度 50%', en: 'Unique. Bounces 50% less' } },
+    pin: { name: { zh: '拔釘子', en: 'Pluck' }, desc: { zh: '一般釘子減少 5 根', en: '5 fewer normal pins' } },
+    refill: { name: { zh: '補珠強化', en: 'Refill+' }, desc: { zh: '補珠量 +1（{n}/{max}）', en: 'Refill amount +1 ({n}/{max})' } },
+    refillLight: { name: { zh: '綠燈', en: 'Green Light' }, desc: { zh: '獨特的，每回合補珠燈 +1', en: 'Unique. +1 refill light every round' } },
+    chestRare: { name: { zh: '好運', en: 'Lucky' }, desc: { zh: '寶箱關卡的稀有燈 +1、一般燈 −1', en: 'Chest stages: rare lights +1, common lights −1' } },
+    critRate: { name: { zh: '暴擊率', en: 'Crit Rate' }, desc: { zh: '暴擊率 +20%', en: 'Crit chance +20%' } },
+    critDmg: { name: { zh: '暴擊傷害', en: 'Crit Damage' }, desc: { zh: '暴擊傷害倍率 +50%', en: 'Crit damage multiplier +50%' } },
+    betCap: { name: { zh: '投珠', en: 'More Balls' }, desc: { zh: '發射上限 +2', en: 'Shot limit +2' } },
     // 天賦專屬：只有選了該天賦才抽得到；每個天賦分成一般流（route: 'base'）和暴擊流（route: 'crit'），畫面上不標示
-    armor: { talent: 'alloy', route: 'base', name: { zh: '破甲合金', en: 'Armor Breaker' }, desc: { zh: '攻擊時無視 1 點防禦', en: 'Attacks ignore 1 DEF' } },
-    light: { talent: 'alloy', route: 'crit', name: { zh: '鎢鋼彈芯', en: 'Tungsten Core' }, desc: { zh: '暴擊的珠完全無視防禦（只能拿一次）', en: 'Critical hits ignore DEF completely (once only)' } },
-    chainCrit: { talent: 'alloy', route: 'crit', name: { zh: '連鎖暴擊', en: 'Chain Crit' }, desc: { zh: '同一回合內每暴擊一次，這回合後面的珠攻擊 +1（下回合歸零）', en: 'Each crit gives the later balls this round +1 attack (resets next round)' } },
-    ram: { talent: 'alloy', route: 'base', name: { zh: '衝撞', en: 'Ram' }, desc: { zh: '每顆珠攻擊 +1，疊珠的珠（同一顆燈第 2 顆起）再 +1（扣防禦前，可疊）', en: '+1 attack per ball, and +1 more for stacked balls (2nd ball on the same light onward; before DEF; stacks)' } },
-    kindle: { talent: 'burn', route: 'base', name: { zh: '助燃', en: 'Kindling' }, desc: { zh: '每次命中多疊 1 層燃燒', en: '+1 extra burn per hit' } },
-    smolder: { talent: 'burn', route: 'base', name: { zh: '悶燒', en: 'Smolder' }, desc: { zh: '回合結束燃燒後保留更多層（減半 → 保留 2/3 → 3/4…）', en: 'Burn decays slower after each round (½ → ⅔ → ¾ kept…)' } },
-    blaze: { talent: 'burn', route: 'crit', name: { zh: '爆燃', en: 'Flare' }, desc: { zh: '暴擊率 +10%；暴擊時多疊 1 層燃燒（可疊）', en: '+10% crit chance; crits add 1 more burn (stacks)' } },
-    scorch: { talent: 'burn', route: 'crit', name: { zh: '灼熱', en: 'Searing' }, desc: { zh: '暴擊率 +10%；回合結束的燃燒傷害也會暴擊（只能拿一次）', en: '+10% crit chance; round-end burn damage can crit (once only)' } },
-    rend: { talent: 'trauma', route: 'base', name: { zh: '撕裂', en: 'Rend' }, desc: { zh: '外傷傷害比例 +25%', en: 'Grind damage +25% of balls refilled' } },
-    shatter: { talent: 'trauma', route: 'base', name: { zh: '碎甲', en: 'Shatter' }, desc: { zh: '外傷觸發時這隻怪物防禦 −1（每回合最多一次）', en: 'Grind lowers this monster\u2019s DEF by 1 (once per round)' } },
-    gash: { talent: 'trauma', route: 'crit', name: { zh: '重創', en: 'Deep Wound' }, desc: { zh: '暴擊率 +10%；外傷傷害也會暴擊，外傷暴擊 ×2（暴擊傷害獎勵照樣往上加；只能拿一次）', en: '+10% crit chance; grind damage can crit for ×2 (Crit Damage still adds on; once only)' } },
-    bleed: { talent: 'trauma', route: 'crit', name: { zh: '放血', en: 'Bloodletting' }, desc: { zh: '暴擊率 +10%；外傷暴擊時多補 1 顆珠（可疊；要先有重創）', en: '+10% crit chance; grind crits refill 1 more ball (stacks; needs Deep Wound)' } },
+    armor: { talent: 'alloy', route: 'base', name: { zh: '破甲', en: 'Breach' }, desc: { zh: '攻擊時無視 1 點防禦', en: 'Attacks ignore 1 DEF' } },
+    light: { talent: 'alloy', route: 'crit', name: { zh: '鎢鋼', en: 'Tungsten' }, desc: { zh: '獨特的，暴擊時完全無視防禦', en: 'Unique. Crits ignore DEF completely' } },
+    chainCrit: { talent: 'alloy', route: 'crit', name: { zh: '連鎖', en: 'Chain' }, desc: { zh: '同一回合內每暴擊一次，後續的彈珠攻擊 +1', en: 'Each crit this round gives the later balls +1 attack' } },
+    ram: { talent: 'alloy', route: 'base', name: { zh: '衝撞', en: 'Ram' }, desc: { zh: '彈珠攻擊 +1，疊珠再 +1', en: 'Ball attack +1, +1 more when stacked' } },
+    kindle: { talent: 'burn', route: 'base', name: { zh: '助燃', en: 'Kindle' }, desc: { zh: '燃燒 +1', en: 'Burn +1' } },
+    smolder: { talent: 'burn', route: 'base', name: { zh: '悶燒', en: 'Smolder' }, desc: { zh: '獨特的，回合結束時減少的燃燒減少 50%', en: 'Unique. Burn lost at round end −50%' } },
+    blaze: { talent: 'burn', route: 'crit', name: { zh: '爆燃', en: 'Flare' }, desc: { zh: '暴擊率 +10%；暴擊時燃燒 +1', en: '+10% crit chance; crits add +1 burn' } },
+    scorch: { talent: 'burn', route: 'crit', name: { zh: '灼熱', en: 'Searing' }, desc: { zh: '獨特的，暴擊率 +10%；燃燒傷害也會暴擊', en: 'Unique. +10% crit chance; burn damage can crit' } },
+    rend: { talent: 'trauma', route: 'base', name: { zh: '撕裂', en: 'Rend' }, desc: { zh: '外傷 +25%', en: 'Grind +25%' } },
+    shatter: { talent: 'trauma', route: 'base', name: { zh: '碎甲', en: 'Shatter' }, desc: { zh: '每回合 1 次，外傷時怪物防禦 −1', en: 'Once per round, grind lowers the monster\u2019s DEF by 1' } },
+    gash: { talent: 'trauma', route: 'crit', name: { zh: '重創', en: 'Deep Wound' }, desc: { zh: '獨特的，暴擊率 +10%；外傷傷害也會暴擊，外傷暴擊倍率 200%', en: 'Unique. +10% crit chance; grind damage can crit, grind crit multiplier 200%' } },
+    bleed: { talent: 'trauma', route: 'crit', name: { zh: '放血', en: 'Bloodletting' }, desc: { zh: '暴擊率 +10%；外傷暴擊時補珠 +1', en: '+10% crit chance; grind crits refill +1 ball' } },
   };
   const BOON_IDS = Object.keys(BOONS);
+
+  // ===== 過關獎勵圖示：80×80 的 SVG（中心 0,0），外框顏色＝分類（通用灰、合金銀、燒紅橘、外傷粉） =====
+  const BOON_FRAME = { general: '#9ca3af', alloy: '#cbd5e1', burn: '#f97316', trauma: '#ec4899' };
+  const svgText = (x, y, size, fill, s) => `<text x="${x}" y="${y}" text-anchor="middle" font-size="${size}" font-weight="bold" font-family="sans-serif" fill="${fill}">${s}</text>`;
+  const svgStar = (x, y) => `<path transform="translate(${x},${y})" d="M0 -9 L3 -1 L11 -1 L5 5 L7 13 L0 8 L-7 13 L-5 5 L-11 -1 L-3 -1 Z" fill="#facc15"/>`;
+  // 三層往上的箭頭（每珠增傷、投珠上限）
+  const svgUp3 = (x, c1, c2) => [-30, -16, -2].map((y, k) => `<polygon points="${x},${y} ${x + 14},${y + 14} ${x + 7},${y + 14} ${x},${y + 7} ${x - 7},${y + 14} ${x - 14},${y + 14}" fill="${k < 2 ? c1 : c2}"/>`).join('');
+  // 一排燈、最右邊那顆亮起來，上面一個加號（攻擊燈數、補珠燈數）
+  const svgLights = (dim, lit, ring) => `<circle cx="-18" cy="10" r="8" fill="${dim}"/><circle cx="0" cy="10" r="8" fill="${dim}"/><circle cx="18" cy="10" r="10" fill="${lit}"/><circle cx="18" cy="10" r="15" fill="none" stroke="${ring}" stroke-width="2"/><rect x="-3" y="-30" width="6" height="18" rx="2" fill="${ring}"/><rect x="-9" y="-24" width="18" height="6" rx="2" fill="${ring}"/>`;
+  const BOON_ICON = {
+    balls: '<circle cx="-10" cy="8" r="11" fill="#cbd5e1"/><circle cx="12" cy="10" r="11" fill="#94a3b8"/><circle cx="1" cy="-10" r="11" fill="#e2e8f0"/><circle cx="-2" cy="-14" r="3" fill="#fff"/><rect x="14" y="-30" width="6" height="18" rx="2" fill="#4ade80"/><rect x="8" y="-24" width="18" height="6" rx="2" fill="#4ade80"/>',
+    perBall: '<circle cx="-10" cy="8" r="16" fill="#cbd5e1"/><circle cx="-15" cy="2" r="4" fill="#fff"/>' + svgUp3(18, '#f87171', '#fca5a5'),
+    multBase: svgText(0, 11, 32, '#facc15', '×2'),
+    litUp: svgLights('#7f1d1d', '#ef4444', '#fca5a5'),
+    pierce: '<path d="M0 -20 L16 -14 L16 2 Q16 16 0 24 Q-16 16 -16 2 L-16 -14 Z" fill="#64748b"/><path d="M-30 18 L26 -18 M26 -18 L14 -18 M26 -18 L22 -7" fill="none" stroke="#fde68a" stroke-width="5" stroke-linecap="round"/>',
+    weight: '<path d="M-20 22 L-14 -8 L14 -8 L20 22 Z" fill="#475569"/><path d="M-8 -8 Q-8 -22 0 -22 Q8 -22 8 -8" fill="none" stroke="#475569" stroke-width="5"/>' + svgText(0, 15, 13, '#e2e8f0', '−50%'),
+    pin: '<circle cx="0" cy="-12" r="7" fill="#fb923c"/><rect x="-2" y="-6" width="4" height="26" fill="#d6d3d1"/><path d="M-20 -24 L20 20 M20 -24 L-20 20" stroke="#ef4444" stroke-width="5" stroke-linecap="round" opacity="0.9"/>',
+    refill: '<circle cx="-6" cy="6" r="16" fill="#22c55e"/><circle cx="-11" cy="0" r="4" fill="#bbf7d0"/>' + svgText(18, -12, 16, '#bbf7d0', '+1'),
+    refillLight: svgLights('#14532d', '#22c55e', '#86efac'),
+    chestRare: '<rect x="-24" y="-6" width="48" height="26" rx="3" fill="#92400e"/><path d="M-24 -6 Q-24 -24 0 -24 Q24 -24 24 -6 Z" fill="#b45309"/><rect x="-24" y="-8" width="48" height="4" fill="#fbbf24"/><path d="M0 0 L8 8 L0 16 L-8 8 Z" fill="#60a5fa" stroke="#dbeafe" stroke-width="1.5"/>',
+    critRate: '<circle r="20" fill="none" stroke="#fde047" stroke-width="3"/><circle r="10" fill="none" stroke="#fde047" stroke-width="3"/><circle r="3" fill="#ef4444"/><path d="M0 -28 L0 -18 M0 18 L0 28 M-28 0 L-18 0 M18 0 L28 0" stroke="#fde047" stroke-width="3"/>',
+    critDmg: '<path d="M0 -26 L7 -9 L25 -12 L12 1 L22 18 L4 11 L-6 26 L-6 8 L-24 6 L-10 -5 L-18 -21 L-2 -12 Z" fill="#facc15"/>' + svgText(0, 6, 13, '#7c2d12', '!!'),
+    betCap: '<circle cx="-12" cy="18" r="8" fill="#cbd5e1"/><circle cx="-12" cy="2" r="8" fill="#e2e8f0"/><circle cx="-12" cy="-14" r="8" fill="#cbd5e1"/>' + svgUp3(16, '#4ade80', '#86efac'),
+    armor: '<path d="M0 -24 L18 -16 L18 2 Q18 18 0 26 Q-18 18 -18 2 L-18 -16 Z" fill="#64748b"/><path d="M-2 -24 L4 -8 L-4 2 L4 14 L0 26" fill="none" stroke="#2b2118" stroke-width="4"/><circle cx="20" cy="-20" r="9" fill="#e2e8f0"/>',
+    light: '<path d="M-22 22 L8 -8 Q20 -20 24 -24 Q20 -12 8 0 L-14 30 Z" fill="#94a3b8"/><path d="M8 -8 Q20 -20 24 -24 Q20 -12 8 0 Z" fill="#facc15"/><path d="M-26 -4 L-14 -4 M-20 -10 L-20 2" stroke="#fde047" stroke-width="3"/>',
+    chainCrit: '<rect x="-26" y="-8" width="24" height="14" rx="7" fill="none" stroke="#cbd5e1" stroke-width="4"/><rect x="-8" y="-2" width="24" height="14" rx="7" fill="none" stroke="#94a3b8" stroke-width="4"/>' + svgStar(20, -17),
+    ram: '<circle cx="-8" cy="0" r="15" fill="#cbd5e1"/><circle cx="-12" cy="-5" r="4" fill="#fff"/><path d="M-36 -8 L-26 -8 M-38 2 L-26 2 M-36 12 L-26 12" stroke="#94a3b8" stroke-width="3" stroke-linecap="round"/><rect x="14" y="-26" width="8" height="52" fill="#78716c"/><path d="M14 -10 L8 -4 L14 2 M14 6 L9 12" fill="none" stroke="#fde68a" stroke-width="2.5"/>',
+    kindle: '<path d="M-4 24 Q-22 20 -18 2 Q-14 -10 -6 -14 Q-8 -4 0 0 Q-2 -14 6 -26 Q12 -10 16 -2 Q22 10 12 22 Q6 26 -4 24 Z" fill="#f97316"/><path d="M0 22 Q-10 18 -6 8 Q-2 2 2 4 Q4 12 8 14 Q8 22 0 22 Z" fill="#fde047"/><rect x="18" y="-30" width="5" height="16" rx="2" fill="#fed7aa"/><rect x="13" y="-25" width="15" height="5" rx="2" fill="#fed7aa"/>',
+    smolder: '<ellipse cx="-8" cy="14" rx="14" ry="9" fill="#7c2d12"/><ellipse cx="10" cy="16" rx="12" ry="7" fill="#9a3412"/><path d="M-12 12 L-4 16 L4 10 M6 16 L14 13" stroke="#fb923c" stroke-width="2" fill="none"/><path d="M-2 -2 Q-6 -10 0 -18 Q2 -10 6 -8 Q8 -2 -2 -2 Z" fill="#f97316" opacity="0.8"/><path d="M14 -22 Q10 -26 14 -30 Q20 -26 14 -22 M20 -12 Q16 -16 20 -20" fill="none" stroke="#a8a29e" stroke-width="2"/>',
+    blaze: '<path d="M0 -28 L6 -12 L22 -20 L14 -4 L28 2 L12 8 L18 26 L2 14 L-8 28 L-8 10 L-26 12 L-14 0 L-26 -14 L-8 -10 Z" fill="#ef4444"/><path d="M0 -14 L4 -4 L14 -2 L4 4 L6 14 L-2 6 L-10 12 L-6 2 L-14 -4 L-4 -4 Z" fill="#fde047"/>',
+    scorch: '<path d="M-6 26 Q-26 20 -20 0 Q-16 -12 -6 -16 Q-8 -6 0 -2 Q-2 -16 8 -28 Q14 -10 18 0 Q24 14 12 24 Q4 28 -6 26 Z" fill="#dc2626"/><path d="M-2 22 Q-12 18 -8 8 Q-4 0 2 4 Q4 12 10 14 Q10 22 -2 22 Z" fill="#fff7ed"/>' + svgStar(22, -19),
+    rend: '<circle r="27" fill="#fda4af"/><polygon points="-22,-14 -14,-20 -2,22 -8,26" fill="#9f1239"/><polygon points="-8,-22 0,-26 12,18 6,22" fill="#9f1239"/><polygon points="6,-24 14,-26 24,10 18,16" fill="#9f1239"/><polygon points="-14,-14 -12,-16 -4,16 -6,18" fill="#fecdd3"/>',
+    shatter: '<path d="M-4 -24 L-20 -18 L-20 0 Q-20 14 -6 22 L-2 2 L-10 -6 Z" fill="#64748b"/><path d="M8 -20 L24 -14 L24 4 Q24 18 10 26 L12 4 L4 -4 Z" fill="#475569"/>' + svgText(0, 36, 12, '#f9a8d4', '−1'),
+    gash: '<circle cx="2" cy="2" r="26" fill="#fda4af"/><polygon points="-22,20 -16,10 20,-22 26,-18 -12,24" fill="#881337"/><polygon points="-14,14 18,-16 20,-14 -12,16" fill="#e11d48"/><path d="M-6 16 Q-8 26 -4 30 Q0 26 -2 18 Z" fill="#be123c"/><path d="M8 4 Q6 14 10 18 Q14 14 12 6 Z" fill="#be123c"/>' + svgStar(-22, -21) + svgText(20, 22, 13, '#fff1f2', '×2'),
+    bleed: '<path d="M-6 -26 Q-22 -2 -20 10 Q-18 24 -6 24 Q6 24 8 10 Q10 -2 -6 -26 Z" fill="#dc2626"/><circle cx="-11" cy="6" r="4" fill="#fecaca"/><circle cx="20" cy="14" r="10" fill="#22c55e"/>' + svgText(20, -8, 14, '#bbf7d0', '+1'),
+  };
+  const boonFrame = id => BOON_FRAME[BOONS[id].talent || 'general'];
+  // 獎勵說明：補珠強化顯示已拿幾次／上限
+  const boonDesc = id => BOONS[id].desc[lang].replace('{n}', boon(id)).replace('{max}', REFILL_BOON_MAX);
+  function boonIcon(id, size = 40, shadow = false) {
+    const el = document.createElement('span');
+    el.className = 'boon-icon';
+    let art = BOON_ICON[id] || '';
+    if (shadow) art = art.replace(/(fill|stroke)="#[0-9a-fA-F]{3,6}"/g, '$1="#000"');   // 沒拿過：黑影
+    el.innerHTML = `<svg viewBox="-42 -42 84 84" width="${size}" height="${size}" aria-hidden="true"><rect x="-40" y="-40" width="80" height="80" rx="14" fill="${shadow ? '#3a2e24' : '#2b2118'}" stroke="${boonFrame(id)}" stroke-opacity="${shadow ? 0.35 : 1}" stroke-width="3"/>${art}</svg>`;
+    return el;
+  }
+  // 左上角「過關獎勵」按鈕的圖示：金色獎章
+  const BOONS_BTN_SVG = '<svg viewBox="-20 -20 40 40" width="24" height="24" aria-hidden="true"><path d="M-9 2 L-14 19 L-7 15 L-3 21 L1 6 Z" fill="#dc2626"/><path d="M9 2 L14 19 L7 15 L3 21 L-1 6 Z" fill="#2563eb"/><circle cy="-4" r="13" fill="#facc15" stroke="#a16207" stroke-width="2"/><path d="M0 -12 L2.5 -6.5 L8.5 -6 L4 -2 L5.5 4 L0 1 L-5.5 4 L-4 -2 L-8.5 -6 L-2.5 -6.5 Z" fill="#fff7c2"/></svg>';
   // 天賦：冒險模式開始前選 1 個，效果持續整趟冒險
   const TALENTS = {
     alloy: { name: { zh: '合金鋼珠', en: 'Alloy Marble' }, desc: { zh: '每顆珠攻擊 +1（扣防禦前）、暴擊率 +15%', en: '+1 attack per ball (before DEF), +15% crit chance' } },
-    burn: { name: { zh: '燒紅彈珠', en: 'Red-hot Marble' }, desc: { zh: '發射道上有 1 個燒紅魔法陣（耐久 3，每回合回滿），經過的珠變成燒紅珠；燒紅珠落進攻擊燈讓怪物燃燒 +1 層，每回合結束受到「層數」點無視防禦的傷害，之後層數減半', en: 'A red-hot magic circle on the launch lane (3 uses, refills every round) turns passing balls into red-hot balls. Each red-hot ball on a red light adds 1 burn; at round end the monster takes burn damage (ignores DEF), then burn halves' } },
-    trauma: { name: { zh: '外傷滾珠', en: 'Grinding Marble' }, desc: { zh: '每回合紅燈少 2 顆、補珠燈多 2 顆，發射道上有 1 個外傷魔法陣（耐久 3，每回合回滿），經過的珠變成外傷珠；外傷珠落進補珠燈時照常補珠，另外造成等於補珠數的無視防禦傷害', en: '2 fewer red lights and 2 more refill lights every round. A grinding magic circle on the launch lane (3 uses, refills every round) turns passing balls into grinding balls; a grinding ball on a refill light still pays out, and also deals damage equal to the balls refilled (ignores DEF)' } },
+    burn: { name: { zh: '燒紅彈珠', en: 'Red-hot Marble' }, desc: { zh: '起始擁有 1 個耐久度 3 的火焰魔法陣，經過將珠附加魔法火焰，擊中怪物造成燃燒效果', en: 'Starts with 1 fire magic circle (durability 3). Balls passing through it gain magic fire and set the monster burning when they hit' } },
+    trauma: { name: { zh: '外傷滾珠', en: 'Grinding Marble' }, desc: { zh: '起始攻擊燈 −2、補珠燈 +2，起始擁有 1 個耐久度 3 的外傷魔法陣，經過將珠附加外傷魔法；外傷珠落進補珠燈時，額外造成等同補珠數的無視防禦傷害', en: 'Starts with 2 fewer attack lights and 2 more refill lights, and 1 grinding magic circle (durability 3). Balls passing through it gain grinding magic; a grinding ball on a refill light also deals damage equal to the balls refilled (ignores DEF)' } },
   };
   const TALENT_IDS = Object.keys(TALENTS);
   // 怪物技能：key 是 MONSTERS 的索引（第幾關 − 1）
@@ -456,6 +511,23 @@
         '..KSSSSSSK..',
         '...KKKKKK...',
         'Y.Y......Y.Y',
+      ],
+    },
+    talisman: {
+      pal: { K: '#78350f', Y: '#fde68a', R: '#dc2626' },
+      map: [
+        '...KKKKKK...',
+        '...KYRRYK...',
+        '...KRYYRK...',
+        '...KYRRYK...',
+        '...KYYRYK...',
+        '...KRRRRK...',
+        '...KYRYYK...',
+        '...KYYRYK...',
+        '...KYRRYK...',
+        '...KRYRYK...',
+        '...KYYYYK...',
+        '...KKKKKK...',
       ],
     },
     hourglass: {
@@ -1160,6 +1232,7 @@
       chestOpenTitle: '打開寶箱！', chestPickTitle: '選擇一個{tier}道具',
       chestWinTitle: '獲得道具！',
       cvBag: '道具', btnBag: '背包', bagTitle: '背包', bagUse: '使用',
+      boonsTitle: '過關獎勵', boonsGeneral: '共用', boonsRun: '，這趟冒險拿了 {n} 個（右上角 ×n）', boonsRunHave: '這趟冒險已有 ×{n}', boonsNow: '目前：{v}',
       cvStats: '狀態', btnStats: '狀態', statsTitle: '數值狀態',
       recTitle: '闖關紀錄', recOpen: '闖關紀錄', recSecBest: '最佳紀錄', recSecRecent: '最近 10 次',
       recRuns: '挑戰次數', recRunsN: '{runs} 次（全部通關 {clears} 次）', recStage: '最遠', recStageN: '打倒 {n}/{total} 隻',
@@ -1197,7 +1270,7 @@
       filePop: '尖刺！', tissuePop: '堵住！',
       useLaserRedHi: '高功率雷射筆（紅）：這一關每回合多強化 1 顆攻擊燈', useLaserGreenHi: '高功率雷射筆（綠）：這一關每回合強化 1 顆補珠燈',
       useLaserPurpleAdd: '高功率雷射筆（紫）：多亮一顆超強化燈（傷害 ×2），這一關有效', useLaserPurple: '高功率雷射筆（紫）：一顆攻擊燈變成超強化燈（傷害 ×2），這一關有效',
-      itemAllRefill: '已經全部是補珠燈了', itemNoPin: '檯面上沒有普通釘子', itemNoHole: '這一關沒有破洞',
+      itemAllRefill: '已經全部是補珠燈了', itemNoPin: '檯面上沒有普通釘子', itemNoCircle: '沒有天賦魔法陣（合金鋼珠用不到）', useTalisman: '鬼畫符：「敇！」這一關的魔法陣耐久變成 {n}', itemNoHole: '這一關沒有破洞',
       boostRefillTag: '（火焰補珠燈 ×{x}）', flameRefillTag: '（綠色火焰補珠燈 {n} 顆，補珠 ×1.5）', useKey: '用老闆的鑰匙打開珠箱，拿回 {n} 顆彈珠！',
       useShake: '搖晃機台！這回合的 {n} 顆彈珠，點檯面上的位置一顆一顆放下', shakeWhere: '點檯面上（釘子區）放下彈珠',
       shakeHint: '點檯面放珠', shakePlaced: '「你不能那樣做！」彈珠全部放下去了',
@@ -1322,6 +1395,7 @@
       chestOpenTitle: 'Chest opened!', chestPickTitle: 'Pick a {tier} item',
       chestWinTitle: 'New item!',
       cvBag: 'ITEMS', btnBag: 'Backpack', bagTitle: 'Backpack', bagUse: 'Use',
+      boonsTitle: 'Rewards', boonsGeneral: 'Shared', boonsRun: '; {n} taken this run (×n badge)', boonsRunHave: 'This run: ×{n}', boonsNow: 'Now: {v}',
       cvStats: 'STATS', btnStats: 'Stats', statsTitle: 'Stats',
       recTitle: 'Run records', recOpen: 'Run records', recSecBest: 'Best', recSecRecent: 'Last 10 runs',
       recRuns: 'Runs', recRunsN: '{runs} ({clears} full clears)', recStage: 'Furthest', recStageN: '{n}/{total} monsters',
@@ -1359,7 +1433,7 @@
       filePop: 'Spike!', tissuePop: 'Plugged!',
       useLaserRedHi: 'High-power red laser: 1 extra attack light upgrade every round this stage', useLaserGreenHi: 'High-power green laser: 1 refill light upgrade every round this stage',
       useLaserPurpleAdd: 'High-power purple laser: +1 super flame light (×2 damage) this stage', useLaserPurple: 'High-power purple laser: an attack light became a super flame light (×2 damage) this stage',
-      itemAllRefill: 'Every lane is already a refill light', itemNoPin: 'No normal pins on the board', itemNoHole: 'No holes in this stage',
+      itemAllRefill: 'Every lane is already a refill light', itemNoPin: 'No normal pins on the board', itemNoCircle: 'No talent magic circle (Alloy can\'t use this)', useTalisman: 'Scribbled Talisman: "Begone!" Magic circle durability is {n} this stage', itemNoHole: 'No holes in this stage',
       boostRefillTag: ' (flame refill ×{x})', flameRefillTag: ' ({n} green-flame refill light(s), ×1.5 balls)', useKey: 'The shopkeeper\'s key opened the ball box: {n} balls back!',
       useShake: 'Shake the machine! Tap the board to drop each of your {n} balls this round', shakeWhere: 'Tap the pin area of the board to drop the ball',
       shakeHint: 'Tap to drop', shakePlaced: '"You can\'t do that!" All balls dropped',
@@ -1853,6 +1927,7 @@
     stageRefill: 0,       // 雷射筆（綠）：這一關多亮幾顆補珠燈
     run: null,            // 這趟冒險的紀錄：回合數、花費彈珠、單回合最大傷害 / 補珠
     stageSuper: 0,        // 高功率雷射筆（紫）：這一關每回合有幾顆超強化燈（×2）
+    stageMagic: 0,        // 鬼畫符：這一關天賦魔法陣多幾點耐久
     pinMods: {},          // 打火機、銼刀、衛生紙：這一關改掉的釘子（ALL_PINS 索引 → fire / spike / plug）
     stageBoost: 0,        // 燈亮滿時用雷射筆（紅）：這一關每回合多強化幾次紅燈
     stageRefillBoost: 0,  // 燈亮滿時用雷射筆（綠）：這一關每回合強化幾次補珠燈
@@ -1876,6 +1951,14 @@
     if (itemsSeen.has(id)) return;
     itemsSeen.add(id);
     try { localStorage.setItem('candy-pinball-items-seen', JSON.stringify([...itemsSeen])); } catch (e) { /* 無痕模式 */ }
+  }
+  // 過關獎勵收藏庫：拿過哪些獎勵（同樣存在瀏覽器）
+  const boonsSeen = new Set();
+  try { (JSON.parse(localStorage.getItem('candy-pinball-boons-seen') || '[]')).forEach(id => boonsSeen.add(id)); } catch (e) { /* 無痕模式 */ }
+  function markBoonSeen(id) {
+    if (boonsSeen.has(id)) return;
+    boonsSeen.add(id);
+    try { localStorage.setItem('candy-pinball-boons-seen', JSON.stringify([...boonsSeen])); } catch (e) { /* 無痕模式 */ }
   }
   const itemCount = () => ITEM_IDS.reduce((s, id) => s + (adv.items[id] || 0), 0);
   const advActive = () => mode === 'adv' && adv.status === 'playing';
@@ -1940,7 +2023,7 @@
       v: 1, idx: adv.monsterIdx, chest: adv.chest, status: adv.status,
       hp: adv.hp, maxHp: adv.maxHp, defDown: adv.defDown, burn: adv.burn,
       stageLit: adv.stageLit, stageRefill: adv.stageRefill, lost: adv.lost,
-      stageBoost: adv.stageBoost, stageRefillBoost: adv.stageRefillBoost, stageSuper: adv.stageSuper, pinMods: adv.pinMods,
+      stageBoost: adv.stageBoost, stageRefillBoost: adv.stageRefillBoost, stageSuper: adv.stageSuper, stageMagic: adv.stageMagic, pinMods: adv.pinMods,
       run: adv.run && { ...adv.run, spent: adv.run.spent - unpaid },
       credits: state.credits + state.payoutQueue + unpaid,
       items: adv.items, boons: adv.boons, talent: adv.talent, rerollCost: adv.rerollCost, freeRerolls: adv.freeRerolls,
@@ -2032,6 +2115,7 @@
     adv.stageRefill = d.stageRefill;
     adv.stageBoost = d.stageBoost || 0;
     adv.stageSuper = d.stageSuper || 0;
+    adv.stageMagic = d.stageMagic || 0;
     adv.pinMods = d.pinMods || {};
     adv.run = d.run || newRunStats();
     adv.stageRefillBoost = d.stageRefillBoost || 0;
@@ -2130,7 +2214,7 @@
       adv.run = adv.campaign ? newRunStats() : null;
     }
     adv.burn = 0;
-    adv.stageLit = adv.stageRefill = adv.stageBoost = adv.stageRefillBoost = adv.stageSuper = 0;
+    adv.stageLit = adv.stageRefill = adv.stageBoost = adv.stageRefillBoost = adv.stageSuper = adv.stageMagic = 0;
     adv.pinMods = {};
     // 怪物技能：南瓜燈（每回合再換位置）；巫妖的護盾全滿
     adv.pumpkin = skill() === 'pumpkin' ? Math.floor(Math.random() * SLOT_COUNT) : -1;
@@ -2210,7 +2294,7 @@
     const crit = boon('scorch') && Math.random() < critRate();   // 灼熱：燃燒也會暴擊
     if (crit) dmg = Math.round(dmg * critMult());
     // 悶燒 n 層：保留 (n+1)/(n+2)，0 層就是減半
-    adv.burn = Math.floor(adv.burn * (boon('smolder') + 1) / (boon('smolder') + 2));
+    adv.burn = Math.floor(adv.burn * (boon('smolder') ? 3 / 4 : 1 / 2));   // 悶燒：減少的燃燒減半（保留 3/4）
     const done = extraDamage(dmg, crit ? '#ffd166' : '#fb923c', crit, W / 2, 'burnCritPop');
     say(crit ? 'burnMsgCrit' : hound ? 'burnMsgHound' : 'burnMsg', { dmg: done, left: adv.burn });
     Sound.burn();
@@ -2345,7 +2429,7 @@
     if (BOONS[id].talent && BOONS[id].talent !== adv.talent) return false;
     if (id === 'light') return !boon('light');    // 只能拿一次
     // 只能拿一次（攻擊燈、補珠燈疊太多會變成穩贏）
-    if (id === 'litUp' || id === 'refillLight' || id === 'scorch' || id === 'gash') return !boon(id);
+    if (id === 'litUp' || id === 'refillLight' || id === 'scorch' || id === 'gash' || id === 'weight' || id === 'smolder') return !boon(id);
     if (id === 'bleed') return !!boon('gash');      // 放血要先有重創
     if (id === 'refill') return boon(id) < REFILL_BOON_MAX;
     return true;
@@ -2389,6 +2473,7 @@
     Sound.init();
     if (!adv.rewards || !adv.rewards.includes(id)) return;
     adv.boons[id] = boon(id) + 1;
+    markBoonSeen(id);
     adv.rewards = null;
     if (id === 'balls') state.payoutQueue += 10;
     if (id === 'pin') growPins(adv.monsterIdx);
@@ -2400,7 +2485,7 @@
   // 寶箱：落在哪一排，就從那一排顏色等級的道具池抽 3 樣（不夠 3 樣就全部）讓玩家選 1 樣
   function openChest(slot, px) {
     const tier = round.tiers[slot];
-    const pool = ITEM_IDS.filter(id => ITEMS[id].tier === tier);
+    const pool = ITEM_IDS.filter(id => ITEMS[id].tier === tier && (id !== 'talisman' || talentCircles().length > 0));
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -2465,6 +2550,7 @@
       case 'drink': if (round.refills.size >= SLOT_COUNT - pumpkinLanes() - round.burnt.size) return 'itemAllRefill'; break;
       case 'lighter': case 'file': if (!normalPinIdx().length) return 'itemNoPin'; break;
       case 'tissue': if (!openHoleIdx().length) return 'itemNoHole'; break;
+      case 'talisman': if (!talentCircles().length) return 'itemNoCircle'; break;
       case 'key': if (adv.lost <= 0) return 'itemKeyEmpty'; break;
       case 'fake':
         if (round.bet >= betCap() && !(round.phase === 'select' && round.level < multRule().mults.length - 1)) return 'itemBetCap';
@@ -2626,6 +2712,18 @@
       say('useLaserGreenHi');
       Sound.lock();
     },
+    talisman() {
+      adv.stageMagic++;
+      const cx = (LANE_X + B.right) / 2;
+      for (const c of round.circles || []) {
+        if (c.type === 'boost') continue;
+        c.dur++;
+        c.hitT = 0.4;
+        magicFx.push({ x: cx, y: c.y, t: 0, color: MAGIC_COLOR[c.type], broke: false });
+      }
+      say('useTalisman', { n: MAGIC_DUR + adv.stageMagic });
+      Sound.magic();
+    },
     laserPurple() {
       // 有空位就多亮一顆燈當超強化燈，沒空位就把一顆攻擊燈變成超強化燈
       const add = !lightsFull();
@@ -2778,7 +2876,7 @@
   // 最下面是強化魔法陣（耐久 = 強化孔投了幾顆，先是 0、看不到），上面是天賦魔法陣
   function resetCircles() {
     round.circles = mode === 'adv'
-      ? ['boost', ...talentCircles()].map((type, i) => ({ type, dur: type === 'boost' ? round.level : MAGIC_DUR, y: MAGIC_Y - i * MAGIC_GAP, hitT: 0 }))
+      ? ['boost', ...talentCircles()].map((type, i) => ({ type, dur: type === 'boost' ? round.level : MAGIC_DUR + adv.stageMagic, y: MAGIC_Y - i * MAGIC_GAP, hitT: 0 }))
       : [];
   }
   // 投強化孔：強化魔法陣耐久跟著變
@@ -3577,7 +3675,7 @@
   }
 
   // ===== 物理 =====
-  let ballWeight = 1;     // 加重彈珠（每層 +0.5）：撞到東西時反彈係數、隨機抖動都除以重量
+  let ballWeight = 1;     // 加重（獨特的，重量 ×2）：撞到東西時反彈係數、隨機抖動都除以重量
   function collideCircle(b, px, py, rad, e, jitter = true) {
     e /= ballWeight;
     const dx = b.x - px, dy = b.y - py;
@@ -3660,7 +3758,7 @@
   }
 
   function stepBall(b, h) {
-    ballWeight = mode === 'adv' ? 1 + 0.5 * boon('weight') : 1;
+    ballWeight = mode === 'adv' ? 1 + Math.min(1, boon('weight')) : 1;
     b.vy += GRAVITY * h;
     const damp = 1 - 0.1 * h;
     b.vx *= damp; b.vy *= damp;
@@ -5593,10 +5691,7 @@
       g.addColorStop(1, 'rgba(251, 146, 60, 0)');
       ctx.fillStyle = g;
       ctx.fillRect(x - SLOT_W / 2 + 3, SLOT_TOP, SLOT_W - 6, SLOT_FLOOR - SLOT_TOP);
-      ctx.font = '18px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('🎃', x, LED_Y);
+      drawPumpkinLamp(x, LED_Y, t);
     }
     for (const s of round.burnt) {
       const x = B.left + (s + 0.5) * SLOT_W, fx = round.burnFx.find(f => f.slot === s);
@@ -5616,6 +5711,38 @@
       if (i < 0 || round.lit.has(i) || round.refills.has(i)) continue;
       ctx.fillRect(B.left + i * SLOT_W + 4, SLOT_TOP, SLOT_W - 8, SLOT_FLOOR - SLOT_TOP);
     }
+  }
+
+  // 南瓜燈：自己畫一顆會發光的南瓜（原本用 🎃 emoji，手機上縮小後看不出來，部分手機也畫不出 emoji）
+  function drawPumpkinLamp(x, y, time) {
+    const glow = 0.75 + 0.25 * Math.sin(time * 5);
+    ctx.save();
+    // 後面一圈橘光
+    ctx.fillStyle = `rgba(251, 146, 60, ${0.35 * glow})`;
+    ctx.beginPath(); ctx.arc(x, y, 17, 0, Math.PI * 2); ctx.fill();
+    // 南瓜本體：三瓣橢圓，黑色描邊讓縮小後也有輪廓
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#3b1405';
+    for (const [dx, rx, col] of [[-6, 7, '#ea580c'], [6, 7, '#ea580c'], [0, 7.5, '#f97316']]) {
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.ellipse(x + dx, y + 1, rx, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    ctx.fillStyle = '#f97316';
+    ctx.beginPath(); ctx.ellipse(x, y + 1, 6.3, 7.8, 0, 0, Math.PI * 2); ctx.fill();
+    // 綠色的蒂
+    ctx.fillStyle = '#4d7c0f';
+    ctx.strokeStyle = '#1a2e05';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x - 2, y - 7); ctx.lineTo(x - 1, y - 13); ctx.lineTo(x + 3, y - 12); ctx.lineTo(x + 2, y - 7); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // 發光的鬼臉：三角眼、鋸齒嘴
+    ctx.fillStyle = `rgba(254, 240, 138, ${glow})`;
+    ctx.beginPath();
+    ctx.moveTo(x - 7, y + 1); ctx.lineTo(x - 4, y - 4); ctx.lineTo(x - 1.5, y + 1); ctx.closePath();
+    ctx.moveTo(x + 7, y + 1); ctx.lineTo(x + 4, y - 4); ctx.lineTo(x + 1.5, y + 1); ctx.closePath();
+    ctx.moveTo(x - 7, y + 4); ctx.lineTo(x - 4.5, y + 6); ctx.lineTo(x - 2, y + 4.5); ctx.lineTo(x, y + 6.5); ctx.lineTo(x + 2, y + 4.5);
+    ctx.lineTo(x + 4.5, y + 6); ctx.lineTo(x + 7, y + 4); ctx.lineTo(x + 5, y + 8.5); ctx.lineTo(x - 5, y + 8.5); ctx.closePath();
+    ctx.fill();
+    ctx.restore();
   }
 
   // 火焰燈：紅燈後面一團往上竄的像素火焰（第一階紅橘色、第二階暗紫色），整排落點也染上火光
@@ -6530,6 +6657,7 @@
       case 'KeyQ': switchMode(); break;
       case 'KeyI': openBag(); break;
       case 'KeyT': openCodex(); break;
+      case 'KeyR': openBoons(); break;
       case 'KeyS': openStats(); break;
     }
   });
@@ -6687,6 +6815,88 @@
     }
   }
 
+  // 過關獎勵收藏庫：跟寶藏一樣，拿過的獎勵（存在瀏覽器，重新闖關也會保留）點開看效果，沒拿過的是黑影
+  // 分成通用、各天賦專屬四區；這趟冒險正在用的獎勵右上角標 ×n
+  const boonsDlg = $('boons'), boonsGrid = $('boons-grid'), boonsDetail = $('boons-detail'), boonsNote = $('boons-note');
+  const BOON_GROUPS = ['general', ...TALENT_IDS];
+  const boonGroup = id => BOONS[id].talent || 'general';
+  const boonGroupName = g => g === 'general' ? t('boonsGeneral') : TALENTS[g].name[lang];
+  function renderBoons() {
+    for (const id of BOON_IDS) if (boon(id) > 0) markBoonSeen(id);   // 舊存檔：這趟已經拿到的也算
+    boonsGrid.textContent = '';
+    boonsDetail.hidden = true;
+    boonsGrid.hidden = false;
+    const n = BOON_IDS.filter(id => boonsSeen.has(id)).length;
+    const run = BOON_IDS.reduce((s, id) => s + boon(id), 0);
+    boonsNote.textContent = t('codexCount', { n, total: BOON_IDS.length }) + (run ? t('boonsRun', { n: run }) : '');
+    for (const g of BOON_GROUPS) {
+      const color = BOON_FRAME[g];
+      const head = document.createElement('h3');
+      head.className = 'codex-tier';
+      head.style.setProperty('--tier', color);
+      head.textContent = boonGroupName(g);
+      const row = document.createElement('div');
+      row.className = 'codex-row';
+      for (const id of BOON_IDS.filter(x => boonGroup(x) === g)) {
+        const seen = boonsSeen.has(id);
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'codex-cell' + (seen ? '' : ' unknown');
+        b.style.setProperty('--tier', color);
+        b.disabled = !seen;
+        const name = document.createElement('span');
+        name.textContent = seen ? BOONS[id].name[lang] : '？？？';
+        b.append(boonIcon(id, 40, !seen), name);
+        if (boon(id) > 0) {
+          const have = document.createElement('em');
+          have.className = 'boon-have';
+          have.textContent = '×' + boon(id);
+          b.append(have);
+        }
+        if (seen) b.addEventListener('click', () => { Sound.clunk(); showBoon(id); });
+        row.append(b);
+      }
+      boonsGrid.append(head, row);
+    }
+  }
+  function showBoon(id) {
+    const g = boonGroup(id);
+    boonsDetail.textContent = '';
+    boonsDetail.style.setProperty('--tier', BOON_FRAME[g]);
+    const name = document.createElement('h3');
+    name.textContent = BOONS[id].name[lang];
+    const tag = document.createElement('span');
+    tag.className = 'bag-tier';
+    tag.textContent = boonGroupName(g);
+    const desc = document.createElement('p');
+    desc.textContent = boonDesc(id);
+    boonsDetail.append(boonIcon(id, 88), name, tag, desc);
+    // 這趟冒險有拿：拿了幾次、目前數值
+    if (boon(id) > 0) {
+      const now = document.createElement('p');
+      now.className = 'boon-now';
+      now.textContent = t('boonsRunHave', { n: boon(id) }) + (BOON_STAT[id] ? '　' + t('boonsNow', { v: BOON_STAT[id]() }) : '');
+      boonsDetail.append(now);
+    }
+    const back = document.createElement('button');
+    back.type = 'button';
+    back.className = 'btn';
+    back.textContent = t('codexBack');
+    back.addEventListener('click', () => { boonsDetail.hidden = true; boonsGrid.hidden = false; });
+    boonsDetail.append(back);
+    boonsGrid.hidden = true;
+    boonsDetail.hidden = false;
+  }
+  function openBoons() {
+    if (mode !== 'adv' || !boonsDlg) return;
+    Sound.init();
+    cancelCharge();
+    stopBetHold();
+    Sound.clunk();
+    renderBoons();
+    boonsDlg.showModal();
+  }
+
   function openBag() {
     if (mode !== 'adv' || !bagDlg) return;
     Sound.init();
@@ -6825,7 +7035,7 @@
     sec('stSecOther');
     row('stRefillLights', t('stRefillLightsN', { n: 1 + boon('refillLight') + talentRefill() }));
     row('stRefill', t('statusBallsN', { n: refillBonus() }));
-    row('stWeight', '×' + (1 + 0.5 * boon('weight')).toFixed(1));
+    row('stWeight', '×' + (1 + Math.min(1, boon('weight'))));
     row('stPinsBoard', t('stPinsBoardN', { n: pins.filter(p => !p.kind).length, total: ALL_PINS.length }));
     row('stPins', t('stPinsN', { n: 5 * boon('pin') }));
     row('stChest', t('stChestN', { n: boon('chestRare') }));
@@ -6841,7 +7051,7 @@
     const boons = BOON_IDS.filter(id => boon(id) > 0).map(id => {
       const chip = document.createElement('span');
       chip.className = 'st-item';
-      chip.title = BOONS[id].desc[lang];
+      chip.title = boonDesc(id);
       chip.textContent = `${BOONS[id].name[lang]} ×${boon(id)}`;
       return chip;
     });
@@ -6946,7 +7156,7 @@
       const li = document.createElement('li');
       const n = document.createElement('b');
       n.textContent = BOONS[k].name[lang];
-      li.append(n, '：' + BOONS[k].desc[lang]);
+      li.append(n, '：' + BOONS[k].desc[lang].replace('（{n}/{max}）', '').replace(' ({n}/{max})', ''));
       list.append(li);
     }
     body.append(p, h, list);
@@ -7036,7 +7246,7 @@
     multBase: () => '×' + (1 + boon('multBase')),
     litUp: () => plusOf(boon('litUp')),
     pierce: () => plusOf(boon('pierce')),
-    weight: () => '×' + (1 + 0.5 * boon('weight')).toFixed(1),
+    weight: () => '×' + (1 + Math.min(1, boon('weight'))),
     pin: () => t('rwPins', { n: 5 * boon('pin') }),
     refill: () => t('statusBallsN', { n: refillBonus() }),
     refillLight: () => t('stRefillLightsN', { n: 1 + boon('refillLight') + talentRefill() }),
@@ -7048,7 +7258,7 @@
     light: () => yesNo(boon('light')),
     chainCrit: () => plusOf(boon('chainCrit')),
     kindle: () => t('rwBurnN', { n: 1 + boon('kindle') }),
-    smolder: () => `${boon('smolder') + 1}/${boon('smolder') + 2}`,
+    smolder: () => boon('smolder') ? '3/4' : '1/2',
     ram: () => plusOf(boon('ram')),
     blaze: () => t('rwBurnN', { n: boon('blaze') }),
     scorch: () => yesNo(boon('scorch')),
@@ -7086,7 +7296,7 @@
       const name = document.createElement('b');
       name.textContent = BOONS[id].name[lang];
       const desc = document.createElement('span');
-      desc.textContent = BOONS[id].desc[lang];
+      desc.textContent = boonDesc(id);
       b.append(name, desc);
       const stat = boonStat(id);
       if (stat) {
@@ -7106,6 +7316,12 @@
         have.textContent = t('rewardHave', { n: boon(id) });
         b.append(have);
       }
+      // 左邊放獎勵圖示，文字收進右邊一欄
+      const body = document.createElement('div');
+      body.className = 'rw-text';
+      body.append(...b.childNodes);
+      b.classList.add('rw-iconed');
+      b.append(boonIcon(id, 52), body);
       b.addEventListener('click', () => pickReward(id));
       ovRewards.append(b);
     }
@@ -7399,6 +7615,10 @@
   for (const el of byAction('mode')) el.addEventListener('click', switchMode);
   for (const el of byAction('bag')) el.addEventListener('click', openBag);
   for (const el of byAction('stats')) el.addEventListener('click', openStats);
+  for (const el of byAction('boons')) {
+    el.insertAdjacentHTML('afterbegin', BOONS_BTN_SVG);
+    el.addEventListener('click', openBoons);
+  }
   for (const el of byAction('codex')) {
     // 寶藏按鈕只放寶箱的像素圖示，不寫字
     const icon = pixelCanvas(CHEST.map, CHEST.pal, 2);

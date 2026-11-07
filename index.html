@@ -12,6 +12,7 @@
     <header class="topbar">
       <button class="btn coin" data-action="coin" data-i18n="coin">投幣</button>
       <button class="btn icon treasure" data-action="codex" aria-label="寶藏 / Treasures"></button>
+      <button class="btn icon boons" data-action="boons" aria-label="過關獎勵 / Rewards"></button>
       <p class="msg" data-msg aria-live="polite">請投幣換彈珠</p>
       <button class="btn icon mode" data-action="mode" data-i18n="modeShort" data-i18n-adv="modeShortAdv" aria-label="切換遊戲模式 / Game mode">冒險</button>
       <button class="btn icon" data-action="lang" data-i18n="langShort" aria-label="切換語言 / Language">EN</button>
@@ -78,6 +79,7 @@
         <button class="btn stats" data-action="stats"><span data-i18n="btnStats">狀態</span> <kbd>S</kbd></button>
         <button class="btn bag" data-action="bag"><span data-i18n="btnBag">背包</span> <kbd>I</kbd></button>
         <button class="btn treasure" data-action="codex" aria-label="寶藏 / Treasures"><kbd>T</kbd></button>
+        <button class="btn boons" data-action="boons" aria-label="過關獎勵 / Rewards"><kbd>R</kbd></button>
         <button class="btn" data-action="help"><span data-i18n="howTo">玩法說明</span> <kbd>H</kbd></button>
         <button class="btn" data-action="lang"><span data-i18n="langBtn">English</span> <kbd>L</kbd></button>
         <button class="btn" data-action="mute" aria-label="切換音效 / Sound">🔊</button>
@@ -102,7 +104,7 @@
       <ol>
         <li>按「冒險」（或 <kbd>Q</kbd>）切換到大冒險模式，隨時都能切回經典模式，兩邊的彈珠分開保留。</li>
         <li>開始前自己選要挑戰哪一隻怪物（星星越多越難，打倒過的會打勾）。上方的倍率欄變成怪物螢幕，怪物下方顯示牠的 HP；落獎區下方則變成訊息螢幕，顯示目前的狀況。</li>
-        <li>每場有 50 顆彈珠，不能投幣。<strong>每回合最多投 3 顆珠</strong>，過關獎勵「投珠上限」可以提高。大冒險打怪時倍率固定 <strong>×1</strong>、亮 7 顆燈。<strong>強化孔</strong>最多投 3 顆，每投 1 顆，發射道最下面的金色<strong>強化魔法陣</strong>耐久 +1；經過它的珠變成<strong>強化珠</strong>（珠外多一圈轉動的金環），落進紅燈時傷害（扣完防禦後）×1.5、落進補珠燈時補珠數 ×1.5。這回合<strong>最後一顆</strong>經過的珠會吸走強化魔法陣剩下的所有耐久，每多吸 1 層倍率再 +0.5（2 層 ×2、3 層 ×2.5，珠外的金環也變成 2、3 圈），所以投珠比強化少時不會浪費；天賦魔法陣沒有這個效果。強化魔法陣不佔「一顆珠只吃一個魔法陣」的名額，所以強化珠也可以同時是燒紅珠或外傷珠（珠的顏色是天賦的顏色，外面再加金環）。投進強化孔的珠不會退回。<strong>火焰燈</strong>（最終傷害 ×1.5；紅燈都強化過再升第二階，暗紫色火焰、×2）只能靠雷射筆（紅）、高功率雷射筆（紫）做出來；用電路板或鋁箔包飲料把燈變成補珠燈時，火焰燈會變成綠色火焰的補珠燈，補珠數也 ×1.5（第二階 ×2）。投強化孔後手上至少要留 1 顆投珠，所以少於 2 顆時不能再投強化孔。玩法和經典模式一樣，但<strong>投幾顆珠，彈簧上就疊幾顆鋼珠，拉一次彈簧整疊一起射出</strong>，每顆各自結算；中獎不出珠，改成對怪物造成傷害。</li>
+        <li>每場有 50 顆彈珠，不能投幣。<strong>每回合最多投 3 顆珠</strong>，過關獎勵「投珠」可以提高。大冒險打怪時倍率固定 <strong>×1</strong>、亮 7 顆燈。<strong>強化孔</strong>最多投 3 顆，每投 1 顆，發射道最下面的金色<strong>強化魔法陣</strong>耐久 +1；經過它的珠變成<strong>強化珠</strong>（珠外多一圈轉動的金環），落進紅燈時傷害（扣完防禦後）×1.5、落進補珠燈時補珠數 ×1.5。這回合<strong>最後一顆</strong>經過的珠會吸走強化魔法陣剩下的所有耐久，每多吸 1 層倍率再 +0.5（2 層 ×2、3 層 ×2.5，珠外的金環也變成 2、3 圈），所以投珠比強化少時不會浪費；天賦魔法陣沒有這個效果。強化魔法陣不佔「一顆珠只吃一個魔法陣」的名額，所以強化珠也可以同時是燒紅珠或外傷珠（珠的顏色是天賦的顏色，外面再加金環）。投進強化孔的珠不會退回。<strong>火焰燈</strong>（最終傷害 ×1.5；紅燈都強化過再升第二階，暗紫色火焰、×2）只能靠雷射筆（紅）、高功率雷射筆（紫）做出來；用電路板或鋁箔包飲料把燈變成補珠燈時，火焰燈會變成綠色火焰的補珠燈，補珠數也 ×1.5（第二階 ×2）。投強化孔後手上至少要留 1 顆投珠，所以少於 2 顆時不能再投強化孔。玩法和經典模式一樣，但<strong>投幾顆珠，彈簧上就疊幾顆鋼珠，拉一次彈簧整疊一起射出</strong>，每顆各自結算；中獎不出珠，改成對怪物造成傷害。</li>
         <li>每隻怪物都有<strong>防禦</strong>（顯示在 HP 旁邊的盾牌數字）：實際傷害 = 攻擊 − 防禦。打不破防禦就是 0 傷害，怪物還會竊笑。越後面的怪物 HP 和防禦越高，前期要打好幾回合才能打倒。</li>
         <li>定燈後，沒亮燈的排裡會隨機多亮一顆<strong>綠色的補珠燈</strong>。鋼珠落進補珠燈不會造成傷害，改成每顆補 2 顆彈珠（強化珠 ×1.5）。</li>
         <li><strong>釘子隨關卡增加</strong>：第 1 關檯面上沒有釘子，之後每過一關都會長出新釘子，到最後一關巫妖時釘陣才完整。每一關的釘陣都是固定的，而且左右對稱。自由挑戰依怪物的關卡決定釘子。</li>
@@ -120,7 +122,7 @@
             <li>燒紅彈珠：發射道上有 1 個燒紅魔法陣（耐久 3）。燒紅珠落進攻擊燈讓怪物燃燒 +1 層（打不破防禦也算）；每回合結束受到「層數」點無視防禦的傷害，之後層數減半，換怪物時歸零。</li>
             <li>外傷滾珠：每回合紅燈少 2 顆、補珠燈多 2 顆，發射道上有 1 個外傷魔法陣（耐久 3），外傷珠落進補珠燈時照常補珠，另外造成等於補珠數的無視防禦傷害。</li>
           </ul>
-          每個天賦另有 4 個專屬過關獎勵（卡片有橘框），只有選了該天賦才抽得到：合金鋼珠有破甲合金（無視 1 點防禦）、衝撞（每顆珠攻擊 +1，疊珠再 +1）、鎢鋼彈芯（暴擊完全無視防禦，只能拿一次）、連鎖暴擊（同一回合內每暴擊一次，這回合後面的珠攻擊 +1）；燒紅彈珠有助燃（每次命中多疊 1 層）、悶燒（燃燒後保留 2/3、3/4…）、爆燃（暴擊率 +10%，暴擊多疊 1 層）、灼熱（暴擊率 +10%，回合結束的燃燒也會暴擊，只能拿一次）；外傷滾珠有撕裂（外傷比例 +25%）、碎甲（外傷觸發時怪物防禦 −1，每回合一次）、重創（暴擊率 +10%，外傷也會暴擊，外傷暴擊 ×2，只能拿一次）、放血（暴擊率 +10%，外傷暴擊多補 1 顆珠，要先有重創）。
+          每個天賦另有 4 個專屬過關獎勵（卡片有橘框），只有選了該天賦才抽得到：合金鋼珠有破甲（攻擊時無視 1 點防禦）、鎢鋼（獨特的，暴擊時完全無視防禦）、連鎖（同一回合內每暴擊一次，後續的彈珠攻擊 +1）、衝撞（彈珠攻擊 +1，疊珠再 +1）；燒紅彈珠有助燃（燃燒 +1）、悶燒（獨特的，回合結束時減少的燃燒減少 50%）、爆燃（暴擊率 +10%；暴擊時燃燒 +1）、灼熱（獨特的，暴擊率 +10%；燃燒傷害也會暴擊）；外傷滾珠有撕裂（外傷 +25%）、碎甲（每回合 1 次，外傷時怪物防禦 −1）、重創（獨特的，暴擊率 +10%；外傷傷害也會暴擊，外傷暴擊倍率 200%）、放血（暴擊率 +10%；外傷暴擊時補珠 +1，要先有重創）。
         </li>
         <li><strong>闖關紀錄</strong>：選天賦的畫面下面有「闖關紀錄」按鈕，可以看每個天賦的挑戰次數、最遠打到第幾隻、最少回合通關、通關最多剩珠、單回合最大傷害與補珠、單顆彈珠最大傷害與補珠，以及最近 10 次冒險的回合數、最後持有彈珠、總共花費彈珠、單回合最大傷害、單回合最大補珠、單顆彈珠最大傷害、單顆彈珠最大補珠。</li>
         <li><strong>等級</strong>：從 Lv1 開始，每打倒一隻怪物升 1 級。每升一級，之後的過關補珠多 2 顆（第 1 關後補 15、第 2 關後 17…）；每 2 級每顆珠攻擊 +1（扣防禦前）。自由挑戰會當作前面的怪物都打過，等級照算。目前等級顯示在螢幕右上角和狀態面板。</li>
@@ -134,13 +136,13 @@
       <h3>過關獎勵與暴擊</h3>
       <ol>
         <li>冒險模式每打倒一隻怪物（最後一隻除外），會從獎勵池隨機抽 3 樣讓你選 1 樣，效果持續整個冒險、可以疊加。不滿意可以重骰：每次先送 1 次免費重骰（稀有道具「好運骰子」每顆再多 1 次），用完才花彈珠，第 1 次 1 顆，之後每次多 1 顆。每張卡片會顯示「目前 → 拿了之後」的數值，也可以按「查看數值」看全部數值。</li>
-        <li>獎勵包含：投珠上限 +2、彈珠 +10、每珠增傷、基礎倍率 +1、攻擊燈數 +1（只能拿一次）、穿透傷害、加重彈珠、拔 5 根釘子（特殊釘子不受影響）、補珠加量（最多拿兩次）、補珠燈數（只能拿一次）、寶箱升級、暴擊率、暴擊傷害。</li>
+        <li>獎勵包含：補給（持有彈珠數 +10）、強化（彈珠攻擊 +1）、倍化（彈珠基礎攻擊 +100%）、紅燈（每回合攻擊燈 +1）、穿透（破防時 +1 真實傷害）、加重（減少彈跳幅度 50%）、拔釘子（一般釘子減少 5 根）、補珠強化（補珠量 +1，最多兩次）、綠燈（每回合補珠燈 +1）、好運（寶箱關卡的稀有燈 +1、一般燈 −1）、暴擊率（+20%）、暴擊傷害（倍率 +50%）、投珠（發射上限 +2）。寫著「獨特的」的獎勵只能拿一次。</li>
         <li>命中紅燈時有機會<strong>暴擊</strong>：基礎暴擊機率 5%、暴擊傷害 150%，可以靠過關獎勵提升。</li>
         <li>新的冒險開始時，過關獎勵會全部清空。</li>
         <li>冒險模式的進度會自動存在瀏覽器：玩到一半關掉頁面，下次打開可以選「繼續冒險」接著玩，或「重新開始」。回合打到一半關掉時，還沒發射的珠會退回，已經在檯面上的珠算用掉。</li>
       </ol>
       <h3>鍵盤</h3>
-      <p class="keys"><kbd>X</kbd> 強化孔　<kbd>D</kbd> 定燈　<kbd>B</kbd> 投珠孔　<kbd>Space</kbd> 拉彈簧　<kbd>C</kbd> 投幣　<kbd>Q</kbd> 切換模式　<kbd>S</kbd> 狀態　<kbd>I</kbd> 背包　<kbd>T</kbd> 寶藏　<kbd>L</kbd> 語言　<kbd>M</kbd> 靜音　<kbd>H</kbd> 說明</p>
+      <p class="keys"><kbd>X</kbd> 強化孔　<kbd>D</kbd> 定燈　<kbd>B</kbd> 投珠孔　<kbd>Space</kbd> 拉彈簧　<kbd>C</kbd> 投幣　<kbd>Q</kbd> 切換模式　<kbd>S</kbd> 狀態　<kbd>I</kbd> 背包　<kbd>T</kbd> 寶藏　<kbd>R</kbd> 過關獎勵　<kbd>L</kbd> 語言　<kbd>M</kbd> 靜音　<kbd>H</kbd> 說明</p>
       <h3>我的紀錄</h3>
       <p class="records">最高分（單局最高得珠）<b data-record="bestWin">0</b>　最多持珠 <b data-record="best">0</b></p>
       <p class="records">大冒險：勝 <b data-record="advWins">0</b> 場　敗 <b data-record="advLosses">0</b> 場</p>
@@ -161,7 +163,7 @@
       <ol>
         <li>Press <strong>Quest</strong> (or <kbd>Q</kbd>) to switch to Pinball Quest. You can switch back to Classic at any time; each mode keeps its own balls.</li>
         <li>Before each game, pick which monster to fight (more stars = harder; ones you've beaten get a check mark). The multiplier columns at the top become a monster screen, with its HP shown below it, and the area under the prize lanes becomes a message screen.</li>
-        <li>You get 50 balls per game and can't insert coins. <strong>You can bet at most 3 balls per round</strong>; the Bet Limit reward raises this. When fighting in Quest the multiplier is always <strong>×1</strong> with 7 lights lit. You can put up to 3 balls in the <strong>boost hole</strong>; each one adds 1 durability to the gold <strong>boost circle</strong> at the bottom of the launch lane. Balls that pass through it become <strong>boosted balls</strong> (a spinning gold ring around the ball): ×1.5 damage on red lights (after DEF) and ×1.5 balls on refill lights. The <strong>last</strong> ball through it each round soaks up all the durability left, +0.5 per extra layer (2 layers ×2, 3 layers ×2.5, with 2 or 3 gold rings), so betting fewer balls than your boost wastes nothing. Talent circles don't do this. The boost circle doesn't count toward the one-circle-per-ball limit, so a boosted ball can also be red-hot or grinding (the ball takes the talent color, with the gold ring on top). Balls put in the boost hole are not refunded. <strong>Flame lights</strong> (final damage ×1.5; once every red light is a flame light, one upgrades again to a dark purple flame for ×2) now only come from the Laser Pointer (red) and High-power Laser (purple). If a Circuit Board or Juice Box turns lights into refill lights, flame lights become green-flame refill lights that pay ×1.5 balls (×2 when upgraded twice). You must keep at least 1 ball to bet, so you can't use the boost hole with fewer than 2 balls. Play works the same as Classic, but <strong>every ball you bet stacks on the spring, and one pull shoots them all</strong>, and each ball scores on its own. A win pays no balls: it damages the monster instead.</li>
+        <li>You get 50 balls per game and can't insert coins. <strong>You can bet at most 3 balls per round</strong>; the More Balls reward raises this. When fighting in Quest the multiplier is always <strong>×1</strong> with 7 lights lit. You can put up to 3 balls in the <strong>boost hole</strong>; each one adds 1 durability to the gold <strong>boost circle</strong> at the bottom of the launch lane. Balls that pass through it become <strong>boosted balls</strong> (a spinning gold ring around the ball): ×1.5 damage on red lights (after DEF) and ×1.5 balls on refill lights. The <strong>last</strong> ball through it each round soaks up all the durability left, +0.5 per extra layer (2 layers ×2, 3 layers ×2.5, with 2 or 3 gold rings), so betting fewer balls than your boost wastes nothing. Talent circles don't do this. The boost circle doesn't count toward the one-circle-per-ball limit, so a boosted ball can also be red-hot or grinding (the ball takes the talent color, with the gold ring on top). Balls put in the boost hole are not refunded. <strong>Flame lights</strong> (final damage ×1.5; once every red light is a flame light, one upgrades again to a dark purple flame for ×2) now only come from the Laser Pointer (red) and High-power Laser (purple). If a Circuit Board or Juice Box turns lights into refill lights, flame lights become green-flame refill lights that pay ×1.5 balls (×2 when upgraded twice). You must keep at least 1 ball to bet, so you can't use the boost hole with fewer than 2 balls. Play works the same as Classic, but <strong>every ball you bet stacks on the spring, and one pull shoots them all</strong>, and each ball scores on its own. A win pays no balls: it damages the monster instead.</li>
         <li>Every monster has <strong>defense</strong> (the shield number next to its HP): damage = attack − DEF. If your attack doesn't beat its defense it deals 0 and the monster snickers. Later monsters have more HP and defense, so early fights take several rounds.</li>
         <li>After locking, one unlit lane also gets a <strong>green refill light</strong>. Landing there deals no damage; each ball gets 2 balls back (×1.5 for a boosted ball).</li>
         <li><strong>Pins grow each stage</strong>: stage 1 has no pins at all, and every stage after that adds new pins until the full field returns at the last stage (the Lich). Each stage's layout is fixed and mirrored left to right. Free fight uses the pins for that monster's stage.</li>
@@ -179,7 +181,7 @@
             <li>Red-hot Marble: one red-hot magic circle (3 uses) on the launch lane. Each red-hot ball on a red light adds 1 burn (even if DEF blocks it); at the end of every round the monster takes damage equal to its burn, ignoring DEF, then burn halves. Burn resets for each monster.</li>
             <li>Grinding Marble: 2 fewer red lights and 2 more refill lights every round. One grinding magic circle (3 uses) on the launch lane; a grinding ball on a refill light still pays out, and also deals damage equal to the balls refilled (ignores DEF).</li>
           </ul>
-          Each talent also has 4 exclusive rewards (orange cards) that only show up with that talent. Alloy: Armor Breaker (ignore 1 DEF), Ram (+1 attack per ball, +1 more for stacked balls), Tungsten Core (crits ignore DEF completely; once only), Chain Crit (each crit gives the later balls this round +1 attack). Red-hot: Kindling (+1 burn per hit), Smolder (burn keeps ⅔, ¾… instead of half), Flare (+10% crit, crits add 1 more burn), Searing (+10% crit, round-end burn can crit; once only). Grinding: Rend (+25% grind damage), Shatter (grind lowers DEF by 1, once per round), Deep Wound (+10% crit, grind can crit for ×2; once only), Bloodletting (+10% crit, grind crits refill 1 more ball; needs Deep Wound).
+          Each talent also has 4 exclusive rewards (orange cards) that only show up with that talent. Alloy: Breach (attacks ignore 1 DEF), Tungsten (unique; crits ignore DEF completely), Chain (each crit this round gives the later balls +1 attack), Ram (ball attack +1, +1 more when stacked). Red-hot: Kindle (burn +1), Smolder (unique; burn lost at round end −50%), Flare (+10% crit; crits add +1 burn), Searing (unique; +10% crit; burn damage can crit). Grinding: Rend (grind +25%), Shatter (once per round, grind lowers DEF by 1), Deep Wound (unique; +10% crit; grind can crit with a 200% multiplier), Bloodletting (+10% crit; grind crits refill +1 ball; needs Deep Wound).
         </li>
         <li><strong>Run records</strong>: tap "Run records" under the talents to see, for each talent, your number of runs, furthest stage, fewest rounds for a clear, most balls left after a clear, best single-round damage and refill, best single-ball damage and refill, plus your last 10 runs (rounds used, balls left, balls spent, best round damage and refill, best single-ball damage and refill).</li>
         <li><strong>Levels</strong>: you start at Lv1 and gain a level for every monster you defeat. Each level adds 2 balls to later stage bonuses (15 after stage 1, 17 after stage 2…), and every 2 levels give +1 attack per ball (before DEF). Free fight counts the earlier monsters as defeated. Your level is shown top-right on the screen and in the stats panel.</li>
@@ -193,13 +195,13 @@
       <h3>Stage rewards and crits</h3>
       <ol>
         <li>In Adventure, every monster you beat (except the last) offers 3 random rewards; pick 1. Rewards last for the whole adventure and stack. You get 1 free reroll each time (each Lucky Dice, a rare item, adds 1 more); after that, rerolls cost balls: 1 the first time, then 1 more each time. Each card shows your current value and the value after picking it, and "View stats" opens the full stats panel.</li>
-        <li>Rewards: +2 bet limit, +10 balls, per-ball damage, +1 base multiplier, +1 red light (once only), piercing damage, heavier marble, 5 fewer pins (special pins stay), bigger refills (twice at most), more refill lights (once only), better chests, crit rate, crit damage.</li>
+        <li>Rewards: Supply (+10 balls), Power (ball attack +1), Double (ball base attack +100%), Red Light (+1 attack light every round), Pierce (+1 true damage when you break DEF), Weight (bounces 50% less), Pluck (5 fewer normal pins), Refill+ (refill amount +1, twice at most), Green Light (+1 refill light every round), Lucky (chest stages: rare lights +1, common lights −1), Crit Rate (+20%), Crit Damage (multiplier +50%), More Balls (shot limit +2). Rewards marked Unique can only be taken once.</li>
         <li>Hits on red lights can <strong>crit</strong>: base crit chance 5% and crit damage 150%, raised by rewards.</li>
         <li>Rewards reset when a new adventure starts.</li>
         <li>Adventure progress is saved in your browser automatically. Close the page mid-run and next time you can pick Continue or Start over. Closing mid-round refunds balls not yet fired; balls already on the board are spent.</li>
       </ol>
       <h3>Keyboard</h3>
-      <p class="keys"><kbd>X</kbd> Boost hole　<kbd>D</kbd> Lock　<kbd>B</kbd> Bet　<kbd>Space</kbd> Pull　<kbd>C</kbd> Coin　<kbd>Q</kbd> Switch mode　<kbd>S</kbd> Stats　<kbd>I</kbd> Backpack　<kbd>T</kbd> Treasures　<kbd>L</kbd> Language　<kbd>M</kbd> Mute　<kbd>H</kbd> Help</p>
+      <p class="keys"><kbd>X</kbd> Boost hole　<kbd>D</kbd> Lock　<kbd>B</kbd> Bet　<kbd>Space</kbd> Pull　<kbd>C</kbd> Coin　<kbd>Q</kbd> Switch mode　<kbd>S</kbd> Stats　<kbd>I</kbd> Backpack　<kbd>T</kbd> Treasures　<kbd>R</kbd> Rewards　<kbd>L</kbd> Language　<kbd>M</kbd> Mute　<kbd>H</kbd> Help</p>
       <h3>My records</h3>
       <p class="records">High score (best single win) <b data-record="bestWin">0</b>　Most balls held <b data-record="best">0</b></p>
       <p class="records">Pinball Quest: <b data-record="advWins">0</b> wins　<b data-record="advLosses">0</b> losses</p>
@@ -213,6 +215,14 @@
     <h2 data-i18n="bagTitle">背包</h2>
     <p id="bag-note" class="bag-note"></p>
     <ul id="bag-list" class="bag-list"></ul>
+    <form method="dialog"><button class="btn coin" data-i18n="close">關閉</button></form>
+  </dialog>
+
+  <dialog id="boons" class="help codex">
+    <h2 data-i18n="boonsTitle">過關獎勵</h2>
+    <p id="boons-note" class="bag-note"></p>
+    <div id="boons-grid"></div>
+    <div id="boons-detail" class="codex-detail" hidden></div>
     <form method="dialog"><button class="btn coin" data-i18n="close">關閉</button></form>
   </dialog>
 

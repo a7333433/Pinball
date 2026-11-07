@@ -353,8 +353,10 @@ body {
 body[data-mode="adv"] [data-action="coin"] { display: none; }
 body:not([data-mode="adv"]) [data-action="bag"],
 body:not([data-mode="adv"]) [data-action="stats"],
-body:not([data-mode="adv"]) [data-action="codex"] { display: none; }
+body:not([data-mode="adv"]) [data-action="codex"],
+body:not([data-mode="adv"]) [data-action="boons"] { display: none; }
 .btn.treasure { background: #b45309; box-shadow: 0 4px 0 #6b2f05; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.btn.boons { background: #6d28d9; box-shadow: 0 4px 0 #3b0f7a; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .btn.bag { background: #8a5a2b; box-shadow: 0 4px 0 #4a2c12; }
 .btn.stats { background: #2c5282; box-shadow: 0 4px 0 #16304f; }
 .btn kbd { margin-left: 4px; vertical-align: 1px; }
@@ -488,6 +490,13 @@ body[data-mode="adv"] .overlay-card .link { display: none; }
 .rw-loot-head { display: flex; align-items: center; gap: 8px; }
 .rw-loot-head canvas { flex-shrink: 0; }
 .rw-card .rw-stat { font-size: 13px; font-style: normal; color: #86efac; }
+.rw-card.rw-iconed { flex-direction: row; align-items: center; gap: 10px; }
+.rw-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.boon-icon { flex-shrink: 0; display: inline-flex; line-height: 0; }
+.help .boon-now { color: #86efac; font-size: 13px; }
+.codex-cell { position: relative; }
+.boon-have { position: absolute; top: 3px; right: 5px; font-style: normal; font-weight: bold; font-size: 12px; color: #86efac; }
+#boons-grid[hidden] { display: none; }
 .rw-bar { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
 .rw-reroll { justify-self: center; padding: 8px 20px; font-size: 14px; }
 .rw-talent-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
@@ -573,7 +582,8 @@ body[data-mode="adv"] .overlay-card .link { display: none; }
 
   /* 大冒險：訊息改在機台的訊息螢幕顯示，上方列換成寶藏按鈕 */
   body[data-mode="adv"] .topbar .msg { display: none; }
-  .topbar .btn.treasure { margin-right: auto; box-shadow: 0 3px 0 #6b2f05; }
+  .topbar .btn.treasure { box-shadow: 0 3px 0 #6b2f05; }
+  .topbar .btn.boons { margin-right: auto; box-shadow: 0 3px 0 #3b0f7a; }
 
   .stage { flex: 1 1 auto; width: 100%; }
   .panel { display: none; }
