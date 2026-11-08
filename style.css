@@ -489,12 +489,55 @@ body[data-mode="adv"] .overlay-card .link { display: none; }
 .rw-card small { font-size: 12px; opacity: 0.7; }
 .rw-loot-head { display: flex; align-items: center; gap: 8px; }
 .rw-loot-head canvas { flex-shrink: 0; }
+/* 裝備欄滿了：最上面那張是新裝備（不能點，發光提示） */
+.rw-card.rw-new { cursor: default; background: rgba(255, 209, 102, 0.12); box-shadow: 0 0 10px rgba(255, 209, 102, 0.45); }
+.rw-card.rw-new small { color: var(--gold); opacity: 1; }
 .rw-card .rw-stat { font-size: 13px; font-style: normal; color: #86efac; }
 .rw-card.rw-iconed { flex-direction: row; align-items: center; gap: 10px; }
 .rw-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .boon-icon { flex-shrink: 0; display: inline-flex; line-height: 0; }
 .help .boon-now { color: #86efac; font-size: 13px; }
 .codex-cell { position: relative; }
+/* 冒險地圖 */
+.map-wrap { width: 100%; max-width: 340px; max-height: 46vh; margin: 4px auto; overflow-y: auto; border-radius: 10px; border: 2px solid #5b4630; }
+.map-svg { display: block; width: 100%; height: auto; }
+.map-wrap { background: #1c1410; }
+.map-bg { image-rendering: pixelated; }
+.map-shade { fill: #000; opacity: 0.28; }
+.map-split { stroke: #000; stroke-width: 2; opacity: 0.6; }
+.map-scene { fill: #fde68a; font-size: 12px; font-weight: bold; paint-order: stroke; stroke: #1c1410; stroke-width: 3px; stroke-linejoin: round; }
+.map-edge { stroke: #f5f5f4; stroke-width: 2.5; stroke-linecap: round; opacity: 0.85; }
+.map-edge-case { stroke: #0c0a09; stroke-width: 5.5; stroke-linecap: round; opacity: 0.6; }
+.map-edge.walked { stroke: #fde68a; stroke-width: 3.5; opacity: 1; }
+.map-edge-case.walked { stroke-width: 7; opacity: 0.7; }
+.map-edge.open { stroke: #fbbf24; stroke-width: 3; stroke-dasharray: 5 4; opacity: 1; }
+.map-edge-case.open { stroke-width: 6.5; opacity: 0.7; }
+.map-edge.past, .map-edge-case.past { opacity: 0.25; }
+.map-ball { pointer-events: none; image-rendering: pixelated; filter: drop-shadow(0 1px 1px rgba(0,0,0,.6)); }
+.map-node circle { fill: #2b2118; stroke: #9ca3af; stroke-width: 2; }
+.map-node.chest circle { stroke: #fbbf24; }
+.map-node.elite circle { stroke: #ef4444; }
+.map-node.boss circle { stroke: #c084fc; stroke-width: 3; }
+.map-node.castle circle { stroke: #93c5fd; }
+.map-node.event circle { stroke: #34d399; }
+.event-art { display: block; margin: 4px auto 2px; image-rendering: pixelated; }
+.event-text { white-space: pre-line; font-size: 14px; line-height: 1.6; margin: 6px 4px 8px; text-align: left; }
+.event-opt { display: block; width: 100%; margin: 6px 0; padding: 9px 12px; font-size: 14px; white-space: normal; }
+.map-node circle.map-badge { fill: #dc2626; stroke: #fff; stroke-width: 1.5; }
+.map-badge-text { fill: #fff; font-size: 10px; font-weight: bold; }
+.map-node image { image-rendering: pixelated; }
+.map-node.past { opacity: 0.3; }
+.map-node.done { opacity: 0.8; }
+.map-node circle.map-ring-case { fill: none; stroke: #0c0a09; stroke-width: 6; opacity: 0.65; }
+.map-node circle.map-ring { fill: none; stroke-width: 3.5; }
+.map-node.here circle.map-ring { stroke: #fff; }
+.map-node.here circle.map-dot { stroke: #fff; stroke-width: 3; }
+.map-node.can { cursor: pointer; outline: none; }
+.map-node.can circle.map-ring { stroke: #fde047; animation: map-pulse 0.7s ease-in-out infinite alternate; }
+.map-node.can circle.map-dot { stroke-width: 3; }
+.map-node.can:hover circle.map-dot, .map-node.can:focus circle.map-dot { fill: #6b5236; }
+.map-node.can:hover circle.map-ring, .map-node.can:focus circle.map-ring { animation: none; stroke: #fff; }
+@keyframes map-pulse { from { stroke-opacity: 1; } to { stroke-opacity: 0.35; } }
 .boon-have { position: absolute; top: 3px; right: 5px; font-style: normal; font-weight: bold; font-size: 12px; color: #86efac; }
 #boons-grid[hidden] { display: none; }
 .rw-bar { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
