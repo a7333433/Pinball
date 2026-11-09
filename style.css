@@ -502,6 +502,16 @@ body[data-mode="adv"] .overlay-card .link { display: none; }
 .map-wrap { width: 100%; max-width: 340px; max-height: 46vh; margin: 4px auto; overflow-y: auto; border-radius: 10px; border: 2px solid #5b4630; }
 .map-svg { display: block; width: 100%; height: auto; }
 .map-wrap { background: #1c1410; }
+/* 地圖：卡片拿掉框，蓋滿整個彈珠台；地圖撐滿剩下的高度，太長就捲動 */
+.overlay.map-mode { background: #1c1410; }
+.overlay.map-mode .overlay-card {
+  width: 100%; height: 100%; max-width: none; max-height: none;
+  padding: 10px 8px 8px; gap: 6px;
+  border: none; border-radius: 12px; box-shadow: none; background: #1c1410;
+  overflow: hidden;
+}
+.overlay.map-mode .ov-rewards { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.overlay.map-mode .map-wrap { flex: 1; min-height: 0; max-height: none; max-width: none; margin: 0; border: none; border-radius: 8px; }
 .map-bg { image-rendering: pixelated; }
 .map-shade { fill: #000; opacity: 0.28; }
 .map-split { stroke: #000; stroke-width: 2; opacity: 0.6; }
@@ -520,6 +530,12 @@ body[data-mode="adv"] .overlay-card .link { display: none; }
 .map-node.boss circle { stroke: #c084fc; stroke-width: 3; }
 .map-node.castle circle { stroke: #93c5fd; }
 .map-node.event circle { stroke: #34d399; }
+.map-node.merchant circle { stroke: #38bdf8; }
+/* 商人：價錢放在名稱右邊；買不起變暗；賣掉的格子 */
+.shop-price { margin-left: auto; font-style: normal; font-weight: bold; color: var(--gold); white-space: nowrap; }
+.shop-card:disabled { cursor: default; opacity: 0.45; }
+.shop-card:disabled:hover { background: rgba(0, 0, 0, 0.3); }
+.shop-card.sold { align-items: center; border-style: dashed; border-color: #6b7280; }
 .event-art { display: block; margin: 4px auto 2px; image-rendering: pixelated; }
 .event-text { white-space: pre-line; font-size: 14px; line-height: 1.6; margin: 6px 4px 8px; text-align: left; }
 .event-opt { display: block; width: 100%; margin: 6px 0; padding: 9px 12px; font-size: 14px; white-space: normal; }
@@ -630,4 +646,19 @@ body[data-mode="adv"] .overlay-card .link { display: none; }
 
   .stage { flex: 1 1 auto; width: 100%; }
   .panel { display: none; }
+}
+
+/* 按「開始冒險」後按鈕閃 1 秒（配擊敗魔物的音效）才進地圖 */
+.btn.start-flash { animation: start-flash 0.2s steps(1, end) 5; pointer-events: none; }
+@keyframes start-flash {
+  0% { filter: brightness(1.9); box-shadow: 0 0 0 4px #fff, 0 0 18px 6px var(--gold); }
+  50% { filter: none; box-shadow: none; }
+}
+
+/* 背景音樂開關：關掉時變淡、加一條斜線 */
+.btn.music { position: relative; }
+.btn.music.off { opacity: 0.55; }
+.btn.music.off::after {
+  content: ''; position: absolute; left: 22%; right: 22%; top: 50%;
+  height: 2px; background: #ef4444; transform: rotate(-35deg); pointer-events: none;
 }
